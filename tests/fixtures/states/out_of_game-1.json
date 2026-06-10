@@ -1,0 +1,8 @@
+{
+  "available_commands": [
+    "start",
+    "state"
+  ],
+  "in_game": false,
+  "ready_for_command": true
+}

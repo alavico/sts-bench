@@ -1,0 +1,9 @@
+.DS_Store
+
+# Python / uv
+.venv/
+__pycache__/
+*.pyc
+
+# Runtime logs
+logs/

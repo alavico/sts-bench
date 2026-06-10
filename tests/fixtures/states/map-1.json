@@ -1,0 +1,1081 @@
+{
+  "available_commands": [
+    "choose",
+    "return",
+    "key",
+    "click",
+    "wait",
+    "state"
+  ],
+  "game_state": {
+    "act": 1,
+    "act_boss": "The Guardian",
+    "action_phase": "WAITING_ON_USER",
+    "ascension_level": 0,
+    "choice_list": [
+      "x=0",
+      "x=2",
+      "x=3",
+      "x=5",
+      "x=6"
+    ],
+    "class": "DEFECT",
+    "current_hp": 75,
+    "deck": [
+      {
+        "cost": 1,
+        "ethereal": false,
+        "exhausts": false,
+        "has_target": true,
+        "id": "Strike_B",
+        "name": "Strike+",
+        "rarity": "BASIC",
+        "type": "ATTACK",
+        "upgrades": 1,
+        "uuid": "b7239017-e37e-408e-8efc-ccfd675bebaa"
+      },
+      {
+        "cost": 1,
+        "ethereal": false,
+        "exhausts": false,
+        "has_target": true,
+        "id": "Strike_B",
+        "name": "Strike",
+        "rarity": "BASIC",
+        "type": "ATTACK",
+        "upgrades": 0,
+        "uuid": "c1f975e2-ac21-4edb-90d1-136f1de2268c"
+      },
+      {
+        "cost": 1,
+        "ethereal": false,
+        "exhausts": false,
+        "has_target": true,
+        "id": "Strike_B",
+        "name": "Strike",
+        "rarity": "BASIC",
+        "type": "ATTACK",
+        "upgrades": 0,
+        "uuid": "01a0d69d-9679-4163-8369-75fa58d6b41c"
+      },
+      {
+        "cost": 1,
+        "ethereal": false,
+        "exhausts": false,
+        "has_target": true,
+        "id": "Strike_B",
+        "name": "Strike",
+        "rarity": "BASIC",
+        "type": "ATTACK",
+        "upgrades": 0,
+        "uuid": "5851c847-64a8-48b2-b1d0-d6b79547a44b"
+      },
+      {
+        "cost": 1,
+        "ethereal": false,
+        "exhausts": false,
+        "has_target": false,
+        "id": "Defend_B",
+        "name": "Defend",
+        "rarity": "BASIC",
+        "type": "SKILL",
+        "upgrades": 0,
+        "uuid": "b8c15f98-b20e-40d8-b538-0dc155265166"
+      },
+      {
+        "cost": 1,
+        "ethereal": false,
+        "exhausts": false,
+        "has_target": false,
+        "id": "Defend_B",
+        "name": "Defend",
+        "rarity": "BASIC",
+        "type": "SKILL",
+        "upgrades": 0,
+        "uuid": "c5ede3ee-9a74-4cb3-a729-cf0b2f7c31d6"
+      },
+      {
+        "cost": 1,
+        "ethereal": false,
+        "exhausts": false,
+        "has_target": false,
+        "id": "Defend_B",
+        "name": "Defend",
+        "rarity": "BASIC",
+        "type": "SKILL",
+        "upgrades": 0,
+        "uuid": "3a7de844-bdad-4cdb-a8b6-45c668d006e8"
+      },
+      {
+        "cost": 1,
+        "ethereal": false,
+        "exhausts": false,
+        "has_target": false,
+        "id": "Defend_B",
+        "name": "Defend",
+        "rarity": "BASIC",
+        "type": "SKILL",
+        "upgrades": 0,
+        "uuid": "d5922baf-6a34-4d9e-8398-97027a5178a3"
+      },
+      {
+        "cost": 1,
+        "ethereal": false,
+        "exhausts": false,
+        "has_target": false,
+        "id": "Zap",
+        "name": "Zap",
+        "rarity": "BASIC",
+        "type": "SKILL",
+        "upgrades": 0,
+        "uuid": "6e12021d-5688-4305-834e-99a37f45f5c4"
+      },
+      {
+        "cost": 1,
+        "ethereal": false,
+        "exhausts": false,
+        "has_target": false,
+        "id": "Dualcast",
+        "name": "Dualcast",
+        "rarity": "BASIC",
+        "type": "SKILL",
+        "upgrades": 0,
+        "uuid": "172855b2-59ed-4f6b-8c65-988cea4f5d5d"
+      }
+    ],
+    "floor": 0,
+    "gold": 99,
+    "is_screen_up": true,
+    "map": [
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 1
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 0,
+        "y": 0
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 1
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 2,
+        "y": 0
+      },
+      {
+        "children": [
+          {
+            "x": 2,
+            "y": 1
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 3,
+        "y": 0
+      },
+      {
+        "children": [
+          {
+            "x": 5,
+            "y": 1
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 5,
+        "y": 0
+      },
+      {
+        "children": [
+          {
+            "x": 6,
+            "y": 1
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 6,
+        "y": 0
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 2
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 0,
+        "y": 1
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 2
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 1,
+        "y": 1
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 2
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 2,
+        "y": 1
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 2
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 5,
+        "y": 1
+      },
+      {
+        "children": [
+          {
+            "x": 5,
+            "y": 2
+          },
+          {
+            "x": 6,
+            "y": 2
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 6,
+        "y": 1
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 3
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 0,
+        "y": 2
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 3
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 1,
+        "y": 2
+      },
+      {
+        "children": [
+          {
+            "x": 2,
+            "y": 3
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 3,
+        "y": 2
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 3
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 4,
+        "y": 2
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 3
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 5,
+        "y": 2
+      },
+      {
+        "children": [
+          {
+            "x": 5,
+            "y": 3
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 6,
+        "y": 2
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 4
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 0,
+        "y": 3
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 4
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 1,
+        "y": 3
+      },
+      {
+        "children": [
+          {
+            "x": 2,
+            "y": 4
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 2,
+        "y": 3
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 4
+          },
+          {
+            "x": 4,
+            "y": 4
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 4,
+        "y": 3
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 4
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 5,
+        "y": 3
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 5
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 0,
+        "y": 4
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 5
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 1,
+        "y": 4
+      },
+      {
+        "children": [
+          {
+            "x": 2,
+            "y": 5
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 2,
+        "y": 4
+      },
+      {
+        "children": [
+          {
+            "x": 2,
+            "y": 5
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 3,
+        "y": 4
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 5
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 4,
+        "y": 4
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 6
+          }
+        ],
+        "parents": [],
+        "symbol": "R",
+        "x": 0,
+        "y": 5
+      },
+      {
+        "children": [
+          {
+            "x": 2,
+            "y": 6
+          },
+          {
+            "x": 3,
+            "y": 6
+          }
+        ],
+        "parents": [],
+        "symbol": "E",
+        "x": 2,
+        "y": 5
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 6
+          }
+        ],
+        "parents": [],
+        "symbol": "R",
+        "x": 3,
+        "y": 5
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 7
+          },
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "parents": [],
+        "symbol": "E",
+        "x": 1,
+        "y": 6
+      },
+      {
+        "children": [
+          {
+            "x": 2,
+            "y": 7
+          }
+        ],
+        "parents": [],
+        "symbol": "R",
+        "x": 2,
+        "y": 6
+      },
+      {
+        "children": [
+          {
+            "x": 2,
+            "y": 7
+          },
+          {
+            "x": 3,
+            "y": 7
+          },
+          {
+            "x": 4,
+            "y": 7
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 3,
+        "y": 6
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 8
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 0,
+        "y": 7
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 8
+          },
+          {
+            "x": 3,
+            "y": 8
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 2,
+        "y": 7
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 8
+          }
+        ],
+        "parents": [],
+        "symbol": "$",
+        "x": 3,
+        "y": 7
+      },
+      {
+        "children": [
+          {
+            "x": 5,
+            "y": 8
+          }
+        ],
+        "parents": [],
+        "symbol": "E",
+        "x": 4,
+        "y": 7
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 9
+          }
+        ],
+        "parents": [],
+        "symbol": "T",
+        "x": 1,
+        "y": 8
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ],
+        "parents": [],
+        "symbol": "T",
+        "x": 3,
+        "y": 8
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 9
+          }
+        ],
+        "parents": [],
+        "symbol": "T",
+        "x": 4,
+        "y": 8
+      },
+      {
+        "children": [
+          {
+            "x": 6,
+            "y": 9
+          }
+        ],
+        "parents": [],
+        "symbol": "T",
+        "x": 5,
+        "y": 8
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 10
+          },
+          {
+            "x": 1,
+            "y": 10
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 0,
+        "y": 9
+      },
+      {
+        "children": [
+          {
+            "x": 2,
+            "y": 10
+          },
+          {
+            "x": 4,
+            "y": 10
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 3,
+        "y": 9
+      },
+      {
+        "children": [
+          {
+            "x": 5,
+            "y": 10
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 6,
+        "y": 9
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 11
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 0,
+        "y": 10
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 11
+          },
+          {
+            "x": 2,
+            "y": 11
+          }
+        ],
+        "parents": [],
+        "symbol": "R",
+        "x": 1,
+        "y": 10
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 11
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 2,
+        "y": 10
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 11
+          }
+        ],
+        "parents": [],
+        "symbol": "E",
+        "x": 4,
+        "y": 10
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 11
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 5,
+        "y": 10
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 12
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 0,
+        "y": 11
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 12
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 1,
+        "y": 11
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 12
+          }
+        ],
+        "parents": [],
+        "symbol": "$",
+        "x": 2,
+        "y": 11
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 12
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 3,
+        "y": 11
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 12
+          },
+          {
+            "x": 5,
+            "y": 12
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 4,
+        "y": 11
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 13
+          },
+          {
+            "x": 1,
+            "y": 13
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 1,
+        "y": 12
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 13
+          }
+        ],
+        "parents": [],
+        "symbol": "$",
+        "x": 3,
+        "y": 12
+      },
+      {
+        "children": [
+          {
+            "x": 5,
+            "y": 13
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 4,
+        "y": 12
+      },
+      {
+        "children": [
+          {
+            "x": 6,
+            "y": 13
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 5,
+        "y": 12
+      },
+      {
+        "children": [
+          {
+            "x": 0,
+            "y": 14
+          }
+        ],
+        "parents": [],
+        "symbol": "E",
+        "x": 0,
+        "y": 13
+      },
+      {
+        "children": [
+          {
+            "x": 1,
+            "y": 14
+          },
+          {
+            "x": 2,
+            "y": 14
+          }
+        ],
+        "parents": [],
+        "symbol": "?",
+        "x": 1,
+        "y": 13
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 14
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 4,
+        "y": 13
+      },
+      {
+        "children": [
+          {
+            "x": 4,
+            "y": 14
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 5,
+        "y": 13
+      },
+      {
+        "children": [
+          {
+            "x": 5,
+            "y": 14
+          }
+        ],
+        "parents": [],
+        "symbol": "M",
+        "x": 6,
+        "y": 13
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 16
+          }
+        ],
+        "parents": [],
+        "symbol": "R",
+        "x": 0,
+        "y": 14
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 16
+          }
+        ],
+        "parents": [],
+        "symbol": "R",
+        "x": 1,
+        "y": 14
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 16
+          }
+        ],
+        "parents": [],
+        "symbol": "R",
+        "x": 2,
+        "y": 14
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 16
+          }
+        ],
+        "parents": [],
+        "symbol": "R",
+        "x": 4,
+        "y": 14
+      },
+      {
+        "children": [
+          {
+            "x": 3,
+            "y": 16
+          }
+        ],
+        "parents": [],
+        "symbol": "R",
+        "x": 5,
+        "y": 14
+      }
+    ],
+    "max_hp": 75,
+    "potions": [
+      {
+        "can_discard": false,
+        "can_use": false,
+        "id": "Potion Slot",
+        "name": "Potion Slot",
+        "requires_target": false
+      },
+      {
+        "can_discard": false,
+        "can_use": false,
+        "id": "Potion Slot",
+        "name": "Potion Slot",
+        "requires_target": false
+      },
+      {
+        "can_discard": false,
+        "can_use": false,
+        "id": "Potion Slot",
+        "name": "Potion Slot",
+        "requires_target": false
+      }
+    ],
+    "relics": [
+      {
+        "counter": -1,
+        "id": "Cracked Core",
+        "name": "Cracked Core"
+      }
+    ],
+    "room_phase": "COMPLETE",
+    "room_type": "NeowRoom",
+    "screen_name": "MAP",
+    "screen_state": {
+      "boss_available": false,
+      "current_node": {
+        "x": 0,
+        "y": -1
+      },
+      "first_node_chosen": false,
+      "next_nodes": [
+        {
+          "symbol": "M",
+          "x": 0,
+          "y": 0
+        },
+        {
+          "symbol": "M",
+          "x": 2,
+          "y": 0
+        },
+        {
+          "symbol": "M",
+          "x": 3,
+          "y": 0
+        },
+        {
+          "symbol": "M",
+          "x": 5,
+          "y": 0
+        },
+        {
+          "symbol": "M",
+          "x": 6,
+          "y": 0
+        }
+      ]
+    },
+    "screen_type": "MAP",
+    "seed": 62652368782046
+  },
+  "in_game": true,
+  "ready_for_command": true
+}
