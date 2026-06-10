@@ -14,15 +14,21 @@ the renderer stays swappable for format ablations.
 from __future__ import annotations
 
 from .schema import (
+    BossRewardScreen,
     Card,
     CardRewardScreen,
+    ChestScreen,
     CombatRewardScreen,
     CombatState,
     EventScreen,
+    GameOverScreen,
     GameState,
     GridScreen,
+    HandSelectScreen,
     MapScreen,
     Monster,
+    RestScreen,
+    ShopScreen,
     StateMessage,
 )
 
@@ -121,6 +127,33 @@ def _screen_section(state: GameState) -> str | None:
             if screen.confirm_up:
                 lines.append("confirm to finish")
             return "<screen type=\"GRID\">\n" + "\n".join(lines) + "\n</screen>"
+        case RestScreen():
+            lines = ["already rested" if screen.has_rested else "options: " + ", ".join(screen.rest_options)]
+            return "<screen type=\"REST\">\n" + "\n".join(lines) + "\n</screen>"
+        case ChestScreen():
+            status = "already open" if screen.chest_open else "unopened"
+            return f"<screen type=\"CHEST\">\n{screen.chest_type} ({status})\n</screen>"
+        case ShopScreen():
+            lines = []
+            lines += [f"card {_card(c, i)} -- {c.price} gold" for i, c in enumerate(screen.cards)]
+            lines += [f"relic [{i}] {r.name} -- {r.price} gold" for i, r in enumerate(screen.relics)]
+            lines += [f"potion [{i}] {p.name} -- {p.price} gold" for i, p in enumerate(screen.potions)]
+            if screen.purge_available:
+                lines.append(f"card removal -- {screen.purge_cost} gold")
+            return "<screen type=\"SHOP\">\n" + "\n".join(lines) + "\n</screen>"
+        case BossRewardScreen():
+            lines = [f"[{i}] {relic.name}" for i, relic in enumerate(screen.relics)]
+            return "<screen type=\"BOSS_REWARD\">\npick one relic:\n" + "\n".join(lines) + "\n</screen>"
+        case HandSelectScreen():
+            zero = ", picking none is allowed" if screen.can_pick_zero else ""
+            lines = [f"select up to {screen.max_cards} card(s) from hand{zero}"]
+            lines += [_card(card, i) for i, card in enumerate(screen.hand)]
+            if screen.selected:
+                lines.append("selected: " + ", ".join(c.name for c in screen.selected))
+            return "<screen type=\"HAND_SELECT\">\n" + "\n".join(lines) + "\n</screen>"
+        case GameOverScreen():
+            outcome = "VICTORY" if screen.victory else "DEFEAT"
+            return f"<screen type=\"GAME_OVER\">\n{outcome} | score {screen.score}\n</screen>"
     return None  # NONE screen: combat section carries the content
 
 
@@ -148,7 +181,7 @@ def _combat_lines(combat: CombatState) -> str:
 
 def _monster(monster: Monster, index: int) -> str:
     intent = monster.intent.value
-    if monster.move_adjusted_damage >= 0:
+    if monster.move_adjusted_damage is not None and monster.move_adjusted_damage >= 0:
         intent += f" {monster.move_adjusted_damage}x{monster.move_hits}"
     powers = ("; " + ", ".join(_power(p) for p in monster.powers)) if monster.powers else ""
     block = f" block {monster.block}" if monster.block else ""

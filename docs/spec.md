@@ -106,17 +106,20 @@ Tools fall into three classes with different rules:
 
 - `get_legal_actions()`
 - `get_deck()` / `get_draw_pile()` (unordered, as in-game) / `get_discard_pile()` / `get_exhaust_pile()`
-- `get_map()`
+- `get_map()` — floor-by-floor adjacency from the current position (`floor 3: M(x=1) -> ?(x=0), E(x=2)`), not raw node JSON and not ASCII art; models handle adjacency lists better than either.
 - `get_relics()` / `get_potions()`
-- `inspect_card(card_id | card_name)` — full card text
+- `inspect_card(card_id | card_name)` — full card text, including the upgraded variant
 - `inspect_relic(relic_id | relic_name)` — full relic text
+- `inspect_potion(potion_id | potion_name)` — full potion text
+
+The `inspect_*` text comes from the game's own localization files (`cards.json`, `relics.json`, `potions.json` inside the installed game's `desktop-1.0.jar`), extracted once into a versioned data file. That guarantees exact in-game wording matched to the installed patch — no wiki scraping, no community-dump drift. The payload's `id` field is the join key.
 
 This makes information-gathering itself a measured skill: which facts a model bothers to look up, and at what token cost, is part of the benchmark. Log every observation call.
 
 **Advisor tools** — experimental knobs only. These offload arithmetic, summarization, or search; they must not grant new hidden information:
 
 - `summarize_combat()`
-- `evaluate_map_paths()`
+- `evaluate_map_paths()` — enumerate the distinct routes from the current node as symbol sequences (`M ? E R $ ... B`), deduped; this is path *planning* pre-chewed, which is why it is an advisor, not an observation
 - `summarize_deck()`
 - `simulate_turn()` or `simulate_action()` only when explicitly testing search-augmented agents.
 
@@ -152,6 +155,8 @@ Typical flow:
 5. Mod executes it and returns the next stable state or an error shaped like `{"error": "...", "ready_for_command": true}`.
 
 The mod captures the external process's stdout and stderr, which is useful for debugging.
+
+Known serializer gaps (from reading `GameStateConverter.java`): the combat player object has **no stance field**, so Watcher's stance is invisible to the harness. Ironclad/Silent/Defect are unaffected (orbs are serialized). Before benchmarking Watcher, either patch the mod (small Java change) or accept stance-blind play and say so in results.
 
 Setup note: copy `CommunicationMod.jar` into the ModTheSpire mods directory, enable it, and set the launch command in the SpireConfig file, for example `command=python /path/to/sts-bench/main.py`.
 

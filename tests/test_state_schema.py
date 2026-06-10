@@ -46,9 +46,37 @@ def test_unknown_field_fails_loudly():
     assert excinfo.value.raw is raw  # payload preserved for harvesting
 
 
-def test_unmodeled_screen_fails_loudly():
+def test_unknown_screen_type_fails_loudly():
     raw = json.loads((Path(__file__).parent / "fixtures" / "states" / "map-1.json").read_text())
-    raw["game_state"]["screen_type"] = "SHOP_SCREEN"
-    raw["game_state"]["screen_state"] = {}
-    with pytest.raises(StateParseError, match="no model yet"):
+    raw["game_state"]["screen_type"] = "SOME_FUTURE_SCREEN"
+    with pytest.raises(StateParseError):
         parse_message(raw)
+
+
+def test_every_screen_type_has_a_model():
+    from sts_bench.state.schema import SCREEN_MODELS
+
+    assert set(SCREEN_MODELS) == set(ScreenType)
+
+
+def test_source_modeled_screens_parse_synthetic_payloads():
+    """Smallest plausible payloads for screens with no fixture coverage yet.
+
+    These pin the field names taken from GameStateConverter; a live capture
+    that disagrees will fail loudly and replace them with a real fixture.
+    """
+    from sts_bench.state.schema import (
+        ChestScreen,
+        GameOverScreen,
+        HandSelectScreen,
+        RestScreen,
+        ShopScreen,
+    )
+
+    ChestScreen.model_validate({"chest_type": "SmallChest", "chest_open": False})
+    RestScreen.model_validate({"has_rested": False, "rest_options": ["rest", "smith"]})
+    GameOverScreen.model_validate({"score": 250, "victory": False})
+    HandSelectScreen.model_validate({"hand": [], "selected": [], "max_cards": 1, "can_pick_zero": True})
+    ShopScreen.model_validate(
+        {"cards": [], "relics": [], "potions": [], "purge_available": True, "purge_cost": 75}
+    )
