@@ -1,6 +1,6 @@
 """Blocking Env over the CommunicationMod protocol.
 
-Protocol recap (see docs/spec.md): after this side says `ready`, the mod sends
+Protocol recap: after this side says `ready`, the mod sends
 a state JSON whenever the game is stable. We send one command; the reply is
 either the next stable state or `{"error": ..., "ready_for_command": true}`
 with the game unchanged. States can also arrive unprompted (animations

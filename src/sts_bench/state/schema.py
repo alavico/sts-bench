@@ -110,11 +110,15 @@ class Card(Base):
 
 
 class Power(Base):
-    # No fixture coverage yet (every captured powers[] was empty); shape taken
-    # from spirecomm. First real power in a harvest will confirm or correct it.
+    # The mod sends id/name/amount always, plus per-power extras pulled off the
+    # power object by reflection (see GameStateConverter.convertCreaturePowersToJson).
     id: str
     name: str
     amount: int
+    damage: int | None = None  # powers that store a damage value (e.g. Flame Barrier)
+    misc: int | None = None  # power-specific counter (Malleable base, Invincible cap, Flight stacks, ...)
+    just_applied: bool | None = None  # debuffs that skip their first tick (Vulnerable/Weak/Frail, Ritual)
+    card: Card | None = None  # powers holding a card (e.g. Nightmare)
 
 
 class Orb(Base):

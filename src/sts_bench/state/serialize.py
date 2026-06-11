@@ -1,7 +1,7 @@
 """Cursory state view: the compact digest the model sees at every decision point.
 
-Design (docs/spec.md): plain-text lines inside XML section delimiters -- tags
-mark the regions, prose stays terse. Deliberately *not* everything: deck
+Format: plain-text lines inside XML section delimiters -- tags mark the
+regions, prose stays terse. Deliberately *not* everything: deck
 contents, full map, draw/discard piles and card/relic text live behind
 observation tools. What is always here: who/where, the screen, the combat
 essentials (hand, energy, enemy intents), the choice list, and what commands

@@ -127,13 +127,14 @@ def _progress(state: RawState) -> str:
 
 
 def run(args: argparse.Namespace) -> int:
-    log = ProtocolLog(LOG_DIR, name="smoke")
     say = lambda msg: print(f"[smoke] {msg}", file=sys.stderr)
-    say(f"protocol log: {log.path}")
 
     with HarnessServer(port=args.port) as server:
         say(f"listening on {server.host}:{server.port} -- start the external process in-game")
         conn = server.accept(timeout=300)
+        # Only now is there a run worth a logfile; aborted startups leave none.
+        log = ProtocolLog(LOG_DIR, name="smoke")
+        say(f"protocol log: {log.path}")
         say(f"relay connected from {conn.peer}")
 
         env = CommunicationModEnv(conn, on_protocol_line=log.line)

@@ -1,10 +1,10 @@
 """Typed actions: the only way an agent affects the game.
 
-These mirror the action tools in docs/spec.md one-to-one; in M3 each model
-becomes a tool definition and parsed tool calls land here. All indices are
-0-based as the agent sees them (hand position, monster position, choice list,
-potion slot) -- the translator owns the quirks of CommunicationMod's wire
-format (e.g. PLAY is 1-based).
+Each model here doubles as an LLM tool definition: the tool name is `kind`,
+the arguments are the fields, and parsed tool calls land back in these types.
+All indices are 0-based as the agent sees them (hand position, monster
+position, choice list, potion slot) -- the translator owns the quirks of
+CommunicationMod's wire format (e.g. PLAY is 1-based).
 """
 
 from __future__ import annotations

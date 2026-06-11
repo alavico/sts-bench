@@ -1,9 +1,14 @@
 """Timestamped protocol logfile, shared by smoke runner and future runners.
 
-Every line that crosses the socket lands here tagged with its direction, so a
-hung or misbehaving run can always be reconstructed with `tail -f`. Each
-session gets its own file (old logs are fixture-harvesting material -- never
-overwrite them); `latest.log` is a symlink to the newest for easy tailing.
+Every line that crosses the socket lands here tagged with its direction
+(`>>` sent to the game, `<<` received), so a hung or misbehaving run can
+always be reconstructed with `tail -f`. Runners may interleave further
+channels: `--` narrative (decisions in readable form, floor/combat
+landmarks) and `>m`/`<m` model traffic (what the LLM was sent / sent back;
+arrow direction means sent/received as on the wire, the letter names the peer).
+Wire lines stay verbatim, so filtering by tag still yields clean
+fixture-harvesting material. Each session gets its own file (never overwrite
+old ones); `latest.log` is a symlink to the newest for easy tailing.
 """
 
 from __future__ import annotations

@@ -1,8 +1,9 @@
 """Env contract: what every backend (real game now, simulator later) provides.
 
-For M1 the state is the raw CommunicationMod dict and actions are raw command
-strings. M2 replaces both with typed schemas; the shape of the protocol below
-is what stays stable -- it is also the future RL interface.
+The env speaks raw CommunicationMod dicts and command strings; typed
+state/action layers sit above it (sts_bench.state, sts_bench.actions). The
+protocol shape below is the stable surface -- it is also the future RL
+interface.
 """
 
 from __future__ import annotations
@@ -10,7 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-# Raw CommunicationMod state message until M2's typed schema lands.
+# Raw CommunicationMod state message as parsed JSON.
 RawState = dict[str, Any]
 
 

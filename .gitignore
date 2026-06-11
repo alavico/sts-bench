@@ -7,3 +7,6 @@ __pycache__/
 
 # Runtime logs
 logs/
+
+.env
+

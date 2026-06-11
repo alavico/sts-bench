@@ -30,6 +30,16 @@ def test_combat_fixture_semantics():
     assert state.screen_type == ScreenType.NONE
 
 
+def test_power_extras_parse():
+    # none-5 was harvested live: Jaw Worm with Strength plus a fresh Vulnerable,
+    # which carries the per-power `just_applied` extra.
+    raw = json.loads((Path(__file__).parent / "fixtures" / "states" / "none-5.json").read_text())
+    monster = parse_message(raw).game_state.combat_state.monsters[0]
+    powers = {p.name: p for p in monster.powers}
+    assert powers["Strength"].amount == 1
+    assert powers["Vulnerable"].just_applied is False
+
+
 def test_out_of_game_has_no_game_state():
     raw = json.loads((Path(__file__).parent / "fixtures" / "states" / "out_of_game-1.json").read_text())
     message = parse_message(raw)
