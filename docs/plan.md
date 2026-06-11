@@ -61,18 +61,20 @@ Files: `providers/base.py`, `providers/openai_compat.py`, `agents/base.py`, `age
 
 ***ACCEPTED** (2026-06-10): clean acceptance run, gpt-5.4, Ironclad A0 seed STSBENCH1 — 311 decisions, 0 forced, 0 unparsed states, dead floor 23 (act 2, Slaver/Taskmaster gauntlet at 22 HP), score 214, ~389k tokens in ~10.5 min. The shop that looped in run 1 resolved in single-round decisions via the trail; the loop guard never fired. Notable model behavior for M5/M6: 91% of decisions made zero observation lookups (49 total: map/deck/relics/potions; the pile tools and `get_legal_actions` were never called), ~22 completion tokens per decision (no visible deliberation). The protocol log now interleaves four channels (`>>`/`<<` game wire verbatim, `>m`/`<m` model traffic with the system prompt logged once, `--` narrative with floor/combat landmarks and readable decisions); logfile creation is deferred until the relay connects. 105 tests.*
 
-## M4 — Trajectory logging
+*Post-acceptance additions (2026-06-10, recorded here since they extend M3's surface): provider trio behind one `ModelProvider` protocol — `chat` (universal compat), `responses` (OpenAI native: reasoning summaries + reasoning carried across tool rounds via echoed items), `anthropic` (native Messages: thinking blocks, prompt-cache breakpoint on the system block, structured tool inputs); `--api auto` picks the native surface per backend; `--reasoning-effort` maps to each provider's effort knob (and turns adaptive thinking on for Claude) — without it, gpt-5-class models do essentially no reasoning (verified live: reflex baseline vs effort-low run with visible traces); reasoning text logs as `<m (reasoning)` lines, hidden reasoning spend as `(of which N reasoning)`; log header records model/api/effort/seed; README added. 129 tests.*
 
-**Goal:** every decision point produces the structured record from the spec (run/step ids, seed, model, prompts, messages, tool calls, validation result, command, reward, latency, tokens).
+## M4 — Floor conversations + trajectory logging
 
-Files: `trajectory/schema.py`, `trajectory/jsonl.py`, `env/rewards.py`.
+**Goal:** the context unit, eval unit, and storage unit all become the **floor** (see spec: Context Boundaries). A `FloorAgent` keeps one conversation per floor; every floor produces a self-contained packet; every decision produces a structured record pointing into it.
 
-1. JSONL writer, one file per run, atomic appends; record schema as Pydantic with a `schema_version`.
-2. Reward extraction from state deltas (floor advanced, combat won, HP delta, run won, legal/illegal action) — versioned (`reward_spec_version`), per the RLVR section.
-3. Always store `raw_state_json` so rewards are recomputable under future reward specs.
-4. Wire into the agent loop so M3's runs are fully traced.
+Files: `agents/floor.py`, `trajectory/schema.py`, `trajectory/jsonl.py`, `env/rewards.py`.
 
-**Accept:** replay a logged run's decisions from the JSONL alone (a `trajectory/replay` sanity script that re-renders each decision point).
+1. `FloorAgent` (new default; zero-shot kept behind `--agent stepwise` as the ablation baseline): one conversation per floor; each decision opens by closing the previous action's tool call (executed / rejected+reason / fallback played), then appends the fresh digest; reset on floor change with one carried-over summary line; `<recent_decisions>` and `agent.record()` retire from the default path.
+2. Runner/logging deltas: `>m`/`<m` logging emits only each decision's new conversation slice (never re-dump the transcript — O(n²) otherwise); decision brackets gain nothing, but a `--` floor summary line lands at each boundary (decisions, tokens incl. cache reads, HP/gold delta, pick made).
+3. Trajectory JSONL, one file per run, atomic appends, Pydantic with `schema_version`: run record (config + outcome + totals), floor record (the packet: full conversation, boundary raw states, scorecard, versioned reward), decision record (message index range — not a copy — plus action/validation/usage/latency). The store-once invariant gets its own test.
+4. Reward extraction from floor-boundary state deltas (HP, gold, floor advanced, combat won, run won) — versioned (`reward_spec_version`); raw boundary states stored so rewards are recomputable.
+
+**Accept:** replay a logged run from the JSONL alone (re-render each floor's conversation and each decision), and verify the packet property: the floor record's conversation matches what the wire saw, with no message stored twice.
 
 ## M5 — Runner, baselines, report (MVP complete)
 
@@ -91,10 +93,11 @@ Files: `runner/async_runner.py`, `runner/seeds.py`, `runner/metrics.py`, `runner
 
 **Goal:** the experiment axes: turn-script mode, advisor tools, reflection/planning.
 
-1. Turn-script agent: model emits an ordered play list; harness executes with per-step revalidation; halt-and-return on invalidation; log script completion rate.
-2. Card/relic DB (`tools/card_db.py`, `relic_db.py`) for `inspect_*` tools — source from a community data dump, pinned to game version.
-3. Reflection/planning scaffold; advisor tools behind config flags.
-4. Config system (one TOML/YAML per experiment: model, scaffold, tools, suite) so runs are reproducible by config hash.
+1. Stateless vs floor-stateful: same model, same seeds, `--agent stepwise` vs the M4 default — the first scaffold ablation, already free once M4 lands. Likewise reasoning effort sweeps (`--reasoning-effort` off/low/medium) per model.
+2. Turn-script agent: model emits an ordered play list; harness executes with per-step revalidation; halt-and-return on invalidation; log script completion rate.
+3. Card/relic DB (`tools/card_db.py`, `relic_db.py`) for `inspect_*` tools — source from a community data dump, pinned to game version.
+4. Reflection/planning scaffold; advisor tools behind config flags.
+5. Config system (one TOML/YAML per experiment: model, scaffold, tools, suite) so runs are reproducible by config hash.
 
 **Accept:** same seed suite run under ≥2 scaffolds produces a report separating scaffold effect from model effect.
 

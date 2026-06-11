@@ -27,6 +27,11 @@ OLLAMA_BASE_URL = "http://localhost:11434/v1"
 DEFAULT_TIMEOUT = 120.0
 DEFAULT_MAX_RETRIES = 3
 
+# Visible-reasoning message keys used across OpenAI-compatible backends:
+# `reasoning_content` (DeepSeek convention; vLLM, SGLang, LiteLLM) and
+# `reasoning` (OpenRouter). OpenAI itself returns neither on chat completions.
+REASONING_KEYS = frozenset({"reasoning_content", "reasoning"})
+
 # transport: payload dict -> decoded response dict. Injectable for tests.
 Transport = Callable[[dict[str, Any]], dict[str, Any]]
 
@@ -36,6 +41,8 @@ class RetryableError(Exception):
 
 
 class OpenAICompatProvider:
+    ENDPOINT = "/chat/completions"
+
     def __init__(
         self,
         base_url: str,
@@ -44,6 +51,7 @@ class OpenAICompatProvider:
         timeout: float = DEFAULT_TIMEOUT,
         max_retries: int = DEFAULT_MAX_RETRIES,
         transport: Transport | None = None,
+        reasoning_effort: str | None = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.model = model
@@ -51,6 +59,9 @@ class OpenAICompatProvider:
         self._timeout = timeout
         self._max_retries = max_retries
         self._transport = transport or self._http_post
+        # Reasoning models accept an effort level; left unset, gpt-5-class
+        # models barely deliberate at all. Only sent when configured.
+        self._reasoning_effort = reasoning_effort
 
     @classmethod
     def from_env(
@@ -80,6 +91,12 @@ class OpenAICompatProvider:
                 model = model or "gpt-4o-mini"
             else:
                 base_url = OLLAMA_BASE_URL
+        elif api_key is None:
+            # An explicit base URL for a known vendor picks up that vendor's key.
+            if "api.anthropic.com" in base_url:
+                api_key = os.environ.get("ANTHROPIC_API_KEY")
+            elif "api.openai.com" in base_url:
+                api_key = os.environ.get("OPENAI_API_KEY")
         if model is None:
             raise ProviderError(
                 f"no model configured for {base_url}: pass --model or set STS_BENCH_MODEL"
@@ -91,30 +108,49 @@ class OpenAICompatProvider:
         messages: list[dict[str, Any]],
         tools: list[dict[str, Any]] | None = None,
     ) -> ModelResponse:
-        payload: dict[str, Any] = {"model": self.model, "messages": messages}
-        if tools:
-            payload["tools"] = tools
-
+        payload = self._payload(messages, tools)
         last_error: Exception | None = None
         for attempt in range(self._max_retries + 1):
             if attempt:
                 time.sleep(min(2 ** (attempt - 1), 30))
             try:
-                return _parse_response(self._transport(payload))
+                return self._parse(self._transport(payload))
             except RetryableError as exc:
                 last_error = exc
         raise ProviderError(
-            f"chat completion failed after {self._max_retries + 1} attempts: {last_error}"
+            f"completion failed after {self._max_retries + 1} attempts: {last_error}"
         ) from last_error
 
-    def _http_post(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _payload(
+        self, messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None
+    ) -> dict[str, Any]:
+        # Reasoning traces stay in the local history for logging, but must not
+        # go back over the wire: DeepSeek-convention backends reject inputs
+        # carrying reasoning_content.
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "messages": [_without_reasoning(m) for m in messages],
+        }
+        if tools:
+            payload["tools"] = tools
+        if self._reasoning_effort is not None:
+            payload["reasoning_effort"] = self._reasoning_effort
+        return payload
+
+    def _parse(self, data: dict[str, Any]) -> ModelResponse:
+        return _parse_response(data)
+
+    def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
+        return headers
+
+    def _http_post(self, payload: dict[str, Any]) -> dict[str, Any]:
         request = urllib.request.Request(
-            f"{self.base_url}/chat/completions",
+            f"{self.base_url}{self.ENDPOINT}",
             data=json.dumps(payload).encode("utf-8"),
-            headers=headers,
+            headers=self._headers(),
             method="POST",
         )
         try:
@@ -133,6 +169,12 @@ class OpenAICompatProvider:
             raise ProviderError(f"non-JSON response: {body[:500]!r}") from exc
 
 
+def _without_reasoning(message: dict[str, Any]) -> dict[str, Any]:
+    if REASONING_KEYS & message.keys():
+        return {k: v for k, v in message.items() if k not in REASONING_KEYS}
+    return message
+
+
 def _parse_response(data: dict[str, Any]) -> ModelResponse:
     try:
         message = data["choices"][0]["message"]
@@ -141,6 +183,11 @@ def _parse_response(data: dict[str, Any]) -> ModelResponse:
 
     tool_calls = tuple(_parse_tool_call(tc) for tc in message.get("tool_calls") or [])
     usage = data.get("usage") or {}
+    details = usage.get("completion_tokens_details") or {}
+    reasoning = next(
+        (message[k] for k in REASONING_KEYS if isinstance(message.get(k), str) and message[k]),
+        None,
+    )
     return ModelResponse(
         message=message,
         text=message.get("content"),
@@ -148,7 +195,9 @@ def _parse_response(data: dict[str, Any]) -> ModelResponse:
         usage=Usage(
             prompt_tokens=usage.get("prompt_tokens") or 0,
             completion_tokens=usage.get("completion_tokens") or 0,
+            reasoning_tokens=details.get("reasoning_tokens") or 0,
         ),
+        reasoning=reasoning,
     )
 
 

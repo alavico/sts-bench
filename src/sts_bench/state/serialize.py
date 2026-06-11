@@ -160,6 +160,10 @@ def _screen_section(state: GameState) -> str | None:
 def _combat_lines(combat: CombatState) -> str:
     player = combat.player
     lines = [f"turn {combat.turn} | energy {player.energy} | block {player.block}"]
+    if combat.card_in_play is not None:
+        # A card paused mid-effect (e.g. Survivor awaiting its discard pick):
+        # the model should know what is resolving when a selection screen asks.
+        lines.append(f"resolving: {combat.card_in_play.name}")
     if player.powers:
         lines.append("you: " + ", ".join(_power(p) for p in player.powers))
     orbs = [o for o in player.orbs if o.id is not None]

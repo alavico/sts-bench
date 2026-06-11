@@ -33,14 +33,18 @@ decision points (oldest first). Use it to avoid going in circles: if you already
 visited a screen and nothing has changed, pick a different action this time \
 (e.g. proceed past a shop you just left).
 
+You may reason briefly in plain text before or alongside your tool calls; \
+only a tool call acts on the game.
+
 When you have decided, respond with exactly one action tool call \
 (play_card, end_turn, choose, use_potion, discard_potion, proceed, return_back). \
 All indices are 0-based exactly as shown in the listings. If an action is \
 rejected, read the rejection reason and pick a legal alternative."""
 
 NUDGE = (
-    "Reply with exactly one action tool call (or an observation tool call first "
-    "if you still need information). Plain text does not act on the game."
+    "When you are ready, commit with exactly one action tool call (observation "
+    "tool calls first are fine if you still need information). Reasoning in "
+    "plain text is welcome, but only a tool call acts on the game."
 )
 
 DEFAULT_MAX_ROUNDS = 10

@@ -4,7 +4,14 @@ import json
 from pathlib import Path
 
 from sts_bench.actions import Choose, DiscardPotion, PlayCard, Proceed, ReturnBack
-from sts_bench.play import LoopGuard, _model_traffic, _screen_label, _transition_notes, describe_action
+from sts_bench.play import (
+    LoopGuard,
+    _auto_api,
+    _model_traffic,
+    _screen_label,
+    _transition_notes,
+    describe_action,
+)
 from sts_bench.state import parse_message
 
 FIXTURES = Path(__file__).parent / "fixtures" / "states"
@@ -108,6 +115,23 @@ def test_transition_notes_quiet_outside_a_run():
     assert _transition_notes({}, {}) == []
 
 
+def test_auto_api_prefers_native_surface_per_backend(monkeypatch):
+    for var in ("STS_BENCH_BASE_URL", "STS_BENCH_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+
+    # explicit base URL decides directly
+    assert _auto_api("https://api.anthropic.com/v1") == "anthropic"
+    assert _auto_api("http://localhost:11434/v1") == "chat"
+
+    # no base URL: an Anthropic key selects the native messages api
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    assert _auto_api(None) == "anthropic"
+
+    # an explicit generic key means an unnamed compat backend
+    monkeypatch.setenv("STS_BENCH_API_KEY", "sk-other")
+    assert _auto_api(None) == "chat"
+
+
 def test_model_traffic_tags_directions_and_skips_system():
     transcript = [
         {"role": "system", "content": "you are playing..."},
@@ -120,11 +144,12 @@ def test_model_traffic_tags_directions_and_skips_system():
             ],
         },
         {"role": "tool", "tool_call_id": "c1", "content": "10 cards"},
-        {"role": "assistant", "content": "I will strike."},
+        {"role": "assistant", "content": "I will strike.", "reasoning_content": "deck is thin"},
     ]
     assert _model_traffic(transcript) == [
         (">m", "<run>floor 1</run>"),
         ("<m", "call get_deck {}"),
         (">m", "[c1] 10 cards"),
+        ("<m", "(reasoning) deck is thin"),
         ("<m", "I will strike."),
     ]

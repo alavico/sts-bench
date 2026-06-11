@@ -226,7 +226,8 @@ sts-bench/
       translate.py             # Action -> CommunicationMod command
     agents/
       base.py                  # Agent protocol
-      zero_shot.py
+      zero_shot.py             # stateless: fresh conversation per decision (ablation baseline)
+      floor.py                 # default: one conversation per floor (see Context Boundaries)
       reflection_planning.py
       heuristic.py             # baseline
       scripted.py              # smoke-test agent
@@ -271,37 +272,29 @@ class ModelProvider:
 
 The agent should never send arbitrary raw commands to the game. It proposes a typed action. The validator accepts/rejects that action against the current state's legal commands. The translator converts accepted actions into CommunicationMod commands.
 
+## Context Boundaries: floors as conversations
+
+The unit of context is the **floor**, not the decision. The game loop divides naturally into floors with outcomes at the boundaries; what matters to a decision is what happened earlier *this* floor (previous combat turns, earlier branches of a multi-part event, the shop already visited), not the tail of the previous fight.
+
+The default agent therefore keeps **one conversation per floor**: each decision appends to the same message list — a tool result closing the previous action call (its fate: executed, or rejected with the reason / a fallback played), then a fresh state digest, then the model's rounds. On floor change the conversation resets to system prompt + digest, plus one carried-over line summarizing the previous floor (cheap insurance against map↔return loops). Consequences:
+
+- **The packet property:** the floor's final request + final response is the complete, self-contained record of the floor. Trajectory storage and analysis lean on this.
+- **The model learns its action's fate** — rejections and forced fallbacks land in-conversation, not just in logs.
+- **Caching pays:** within a floor each request extends the previous one, the shape provider caches (and the Responses API's carried reasoning) are built for.
+- **Token growth is real and bounded by floor length** — tracked per decision; the floor summary reports the floor's total.
+- **Log/store each message exactly once, at the level that owns it:** model-traffic logging emits per-decision *deltas* of the conversation; the trajectory's floor record owns the full conversation, decision records hold indices into it. Anything else goes O(n²) per floor.
+
+The stateless zero-shot agent (fresh conversation per decision, `<recent_decisions>` trail) is kept behind a flag as the M6 ablation baseline: stateless vs floor-stateful, same model, same seeds.
+
 ## Trajectory Logging
 
-Trajectory logging is a first-class output, not an afterthought. Every decision point should produce a structured record:
+Trajectory logging is a first-class output, not an afterthought. Records form a hierarchy mirroring the context design — **run > floor > decision** — with each piece of data stored once, at the level that owns it:
 
-```text
-run_id
-step_id
-seed
-character
-ascension
-game_version
-mod_version
-model
-provider_base_url
-agent_scaffold
-prompt_hash
-tool_schema_hash
-raw_state_json
-serialized_state
-messages
-available_actions
-model_response
-tool_call
-validation_result
-command_sent
-reward
-next_state_summary
-latency_ms
-token_usage
-cost_estimate
-```
+**Run record** (one per run): run_id, seed, character, ascension, game_version, mod_version, model, provider_base_url, api (wire format), reasoning_effort, agent_scaffold, prompt_hash, tool_schema_hash, outcome (win/loss, floor reached, score), totals (decisions, forced, unparsed, tokens, cost_estimate).
+
+**Floor record** (one per floor; the packet): run_id, floor, floor_type, the **full conversation** (final request messages + final response), entry/exit state summaries, raw_state_json at boundaries, and the floor scorecard — HP delta, gold delta, cards/relics/potions gained, turns taken, reward (versioned `reward_spec_version`).
+
+**Decision record** (one per decision point): run_id, floor, step_id, message index range into the floor conversation (not a copy), available_actions, tool calls made, validation_result(s), command_sent, forced_reason, latency_ms, token_usage (incl. reasoning split and cache reads).
 
 This is both benchmark evidence and future training data. Keep it convertible to:
 
@@ -313,7 +306,7 @@ This is both benchmark evidence and future training data. Keep it convertible to
 
 Track game outcomes and agent-quality metrics.
 
-Run-level metrics:
+Run-level metrics (the headline eval):
 
 - win/loss
 - act reached
@@ -324,7 +317,15 @@ Run-level metrics:
 - run duration
 - total tokens and cost
 
-Decision-level metrics:
+Floor-level metrics (the comparison unit — decisions have no observable outcome; floors have a scorecard, and fixed seeds make floors *paired* across models, same encounter same position):
+
+- HP delta vs entry state (entry-conditioned: floor scores are comparative, not absolute)
+- combat turns taken
+- gold delta; shop value extracted
+- reward choices (card taken/skipped, potion use)
+- tokens and latency per floor
+
+Decision-level metrics (diagnostics, not eval):
 
 - invalid action rate
 - correction retries per decision

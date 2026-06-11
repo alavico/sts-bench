@@ -32,7 +32,13 @@ from .agents.zero_shot import SYSTEM_PROMPT, ZeroShotAgent
 from .actions import Action, translate
 from .env import CommunicationModEnv, HarnessServer, StepResult
 from .protocol_log import ProtocolLog
-from .providers import OpenAICompatProvider, ProviderError, Usage
+from .providers import (
+    AnthropicProvider,
+    OpenAICompatProvider,
+    ProviderError,
+    ResponsesProvider,
+    Usage,
+)
 from .smoke import LOG_DIR, MAX_STEPS, choose_action, choose_command, dump_unparsed, fallback_command
 from .state import StateMessage, StateParseError, parse_message
 
@@ -101,6 +107,25 @@ def describe_action(action: Action, message: StateMessage) -> str:
             return action.kind
 
 
+def _auto_api(base_url_flag: str | None) -> str:
+    """Pick the best wire format the backend is known to speak.
+
+    Anthropic backends get the native messages api (thinking, caching, typed
+    tool inputs). Everything else gets chat completions, the universal format.
+    OpenAI's responses api stays explicit opt-in: its reasoning request is
+    rejected by non-reasoning models, and the model's capability cannot be
+    detected from its name.
+    """
+    base_url = base_url_flag or os.environ.get("STS_BENCH_BASE_URL")
+    if base_url is not None:
+        return "anthropic" if "api.anthropic.com" in base_url else "chat"
+    if os.environ.get("STS_BENCH_API_KEY"):
+        return "chat"  # explicit key for an unnamed backend: assume compat
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return "anthropic"
+    return "chat"
+
+
 def _model_traffic(transcript: list[dict]) -> list[tuple[str, str]]:
     """(tag, text) pairs for the model channel of one decision's conversation.
 
@@ -118,12 +143,21 @@ def _model_traffic(transcript: list[dict]) -> list[tuple[str, str]]:
         elif role == "tool":
             pairs.append((">m", f"[{msg.get('tool_call_id')}] {msg.get('content')}"))
         elif role == "assistant":
+            for key in ("reasoning_content", "reasoning"):
+                if isinstance(msg.get(key), str) and msg[key]:
+                    pairs.append(("<m", f"(reasoning) {msg[key]}"))
+                    break
             if msg.get("content"):
                 pairs.append(("<m", msg["content"]))
             for tc in msg.get("tool_calls") or []:
                 fn = tc.get("function") or {}
                 pairs.append(("<m", f"call {fn.get('name')} {fn.get('arguments')}"))
     return pairs
+
+
+def _reasoning_note(usage: Usage) -> str:
+    """' (of which N reasoning)' when the backend reports hidden thinking."""
+    return f" (of which {usage.reasoning_tokens} reasoning)" if usage.reasoning_tokens else ""
 
 
 def _screen_label(game_state: dict) -> str:
@@ -179,13 +213,30 @@ def run(args: argparse.Namespace) -> int:
         say(f"env file {env_file} not found")
         return 1
 
+    api = args.api or os.environ.get("STS_BENCH_API") or "auto"
+    if api == "auto":
+        api = _auto_api(args.base_url)
+    providers = {
+        "chat": OpenAICompatProvider,  # universal wire format; local/OSS backends
+        "responses": ResponsesProvider,  # OpenAI native: visible+carried reasoning
+        "anthropic": AnthropicProvider,  # Claude native: thinking, caching, typed tool inputs
+    }
+    if api not in providers:
+        say(f"unknown api {api!r}: expected {', '.join(providers)} or auto")
+        return 1
+    provider_cls = providers[api]
+    provider_kwargs = (
+        {"reasoning_effort": args.reasoning_effort} if args.reasoning_effort else {}
+    )
     try:
-        provider = OpenAICompatProvider.from_env(model=args.model, base_url=args.base_url)
+        provider = provider_cls.from_env(
+            model=args.model, base_url=args.base_url, **provider_kwargs
+        )
     except ProviderError as exc:
         say(str(exc))
         return 1
     agent = ZeroShotAgent(provider, max_rounds=args.max_rounds)
-    say(f"model: {provider.model} @ {provider.base_url}")
+    say(f"model: {provider.model} @ {provider.base_url} ({api} api)")
 
     totals = Usage()
     decisions = forced = unparsed = 0
@@ -195,9 +246,10 @@ def run(args: argparse.Namespace) -> int:
         say(f"listening on {server.host}:{server.port} -- start the external process in-game")
         conn = server.accept(timeout=300)
         log = ProtocolLog(LOG_DIR, name="play")
+        effort_note = f", effort {args.reasoning_effort}" if args.reasoning_effort else ""
         log.line(
             "--",
-            f"model: {provider.model} @ {provider.base_url} | "
+            f"model: {provider.model} @ {provider.base_url} ({api} api{effort_note}) | "
             f"{args.character} ascension {args.ascension} seed {args.seed or 'random'}",
         )
         log.line("--", "system prompt (sent with every decision, logged once):")
@@ -253,7 +305,8 @@ def run(args: argparse.Namespace) -> int:
                         f"decision {decisions} ({_screen_label(game_state)}): {history} "
                         f"[rounds {decision.rounds}, lookups {decision.observation_calls}, "
                         f"invalid {decision.invalid_actions}, "
-                        f"tokens {decision.usage.prompt_tokens}+{decision.usage.completion_tokens}]"
+                        f"tokens {decision.usage.prompt_tokens}+{decision.usage.completion_tokens}"
+                        f"{_reasoning_note(decision.usage)}]"
                     )
                 else:
                     forced += 1
@@ -299,6 +352,7 @@ def run(args: argparse.Namespace) -> int:
     say(
         f"totals: {decisions} decisions, {forced} forced, {unparsed} unparsed states, "
         f"tokens {totals.prompt_tokens} prompt + {totals.completion_tokens} completion"
+        f"{_reasoning_note(totals)}"
     )
     return 0
 
@@ -307,6 +361,22 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--model", default=None, help="model name (default: from env)")
     parser.add_argument("--base-url", default=None, help="chat-completions base URL (default: from env)")
+    parser.add_argument(
+        "--api",
+        choices=("auto", "chat", "responses", "anthropic"),
+        default=None,
+        help="wire format: auto (default; native messages for Anthropic backends, "
+        "chat elsewhere), chat (works everywhere), responses (OpenAI reasoning "
+        "models), anthropic (Claude native); env STS_BENCH_API",
+    )
+    parser.add_argument(
+        "--reasoning-effort",
+        default=None,
+        help="ask the model to deliberate, surfacing what reasoning it can: "
+        "OpenAI takes minimal/low/medium/high; Claude takes low/medium/high/max "
+        "(and this also turns adaptive thinking on). Unset = provider default, "
+        "which for gpt-5-class models means almost no reasoning.",
+    )
     parser.add_argument("--seed", default="STSBENCH1", help="run seed (alphanumeric); empty string for random")
     parser.add_argument("--character", default="ironclad")
     parser.add_argument("--ascension", type=int, default=0)

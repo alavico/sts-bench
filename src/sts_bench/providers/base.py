@@ -20,11 +20,16 @@ class ProviderError(Exception):
 class Usage:
     prompt_tokens: int = 0
     completion_tokens: int = 0
+    # Hidden-deliberation spend, when the backend reports it (OpenAI's
+    # completion_tokens_details). Already counted inside completion_tokens;
+    # tracked separately to tell terse models from quietly thinking ones.
+    reasoning_tokens: int = 0
 
     def __add__(self, other: "Usage") -> "Usage":
         return Usage(
             prompt_tokens=self.prompt_tokens + other.prompt_tokens,
             completion_tokens=self.completion_tokens + other.completion_tokens,
+            reasoning_tokens=self.reasoning_tokens + other.reasoning_tokens,
         )
 
 
@@ -49,12 +54,16 @@ class ModelResponse:
 
     `message` is the raw assistant message dict, ready to append to the
     conversation history unchanged (required for tool-call follow-ups).
+    `reasoning` is the visible thinking trace some OpenAI-compatible backends
+    attach (`reasoning_content` by the DeepSeek/vLLM convention); None when
+    the backend keeps its reasoning hidden, as OpenAI itself does.
     """
 
     message: dict[str, Any]
     text: str | None
     tool_calls: tuple[ToolCall, ...] = ()
     usage: Usage = field(default_factory=Usage)
+    reasoning: str | None = None
 
 
 class ModelProvider(Protocol):

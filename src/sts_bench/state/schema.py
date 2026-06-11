@@ -184,6 +184,9 @@ class CombatState(Base):
     limbo: list[Card] = Field(default_factory=list)
     cards_discarded_this_turn: int
     times_damaged: int
+    # Sent while a card is paused mid-effect awaiting input (e.g. Survivor's
+    # discard pick on a HAND_SELECT screen); the only conditional combat key.
+    card_in_play: Card | None = None
 
 
 class NodeRef(Base):

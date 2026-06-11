@@ -30,6 +30,33 @@ def test_payload_carries_model_messages_and_tools():
     assert seen == {"model": "test-model", "messages": messages, "tools": tools}
 
 
+def test_from_env_explicit_known_base_url_picks_that_vendors_key(monkeypatch):
+    from sts_bench.providers import OpenAICompatProvider
+
+    for var in ("STS_BENCH_BASE_URL", "STS_BENCH_MODEL", "STS_BENCH_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-openai-test")
+
+    provider = OpenAICompatProvider.from_env(
+        model="gpt-test", base_url="https://api.openai.com/v1"
+    )
+    assert provider._api_key == "sk-openai-test"
+
+
+def test_reasoning_effort_is_sent_only_when_configured():
+    seen = {}
+
+    def transport(payload):
+        seen.update(payload)
+        return completion({"role": "assistant", "content": "ok"})
+
+    make_provider(transport).complete([])
+    assert "reasoning_effort" not in seen
+    make_provider(transport, reasoning_effort="high").complete([])
+    assert seen["reasoning_effort"] == "high"
+
+
 def test_parses_text_response_and_usage():
     provider = make_provider(
         lambda p: completion(
@@ -42,6 +69,56 @@ def test_parses_text_response_and_usage():
     assert response.tool_calls == ()
     assert (response.usage.prompt_tokens, response.usage.completion_tokens) == (12, 5)
     assert response.message["content"] == "thinking..."
+
+
+def test_reasoning_token_count_is_parsed():
+    provider = make_provider(
+        lambda p: completion(
+            {"role": "assistant", "content": "end."},
+            usage={
+                "prompt_tokens": 100,
+                "completion_tokens": 250,
+                "completion_tokens_details": {"reasoning_tokens": 240},
+            },
+        )
+    )
+    usage = provider.complete([]).usage
+    assert usage.reasoning_tokens == 240
+    assert usage.completion_tokens == 250  # reasoning is a subset, not extra
+    total = usage + usage
+    assert total.reasoning_tokens == 480
+
+
+def test_reasoning_content_is_captured_and_kept_in_message():
+    message = {"role": "assistant", "content": "strike.", "reasoning_content": "low HP, kill fastest"}
+    response = make_provider(lambda p: completion(message)).complete([])
+    assert response.reasoning == "low HP, kill fastest"
+    assert response.text == "strike."
+    # raw message keeps the trace so the transcript (and its log) can show it
+    assert response.message["reasoning_content"] == "low HP, kill fastest"
+
+
+def test_no_reasoning_means_none():
+    response = make_provider(lambda p: completion({"role": "assistant", "content": "hi"})).complete([])
+    assert response.reasoning is None
+
+
+def test_reasoning_is_stripped_from_outbound_messages():
+    seen = {}
+
+    def transport(payload):
+        seen.update(payload)
+        return completion({"role": "assistant", "content": "ok"})
+
+    history = [
+        {"role": "user", "content": "state"},
+        {"role": "assistant", "content": "strike.", "reasoning_content": "because..."},
+        {"role": "user", "content": "next state"},
+    ]
+    make_provider(transport).complete(history)
+    assert seen["messages"][1] == {"role": "assistant", "content": "strike."}
+    # the local history object is untouched, only the wire copy is cleaned
+    assert history[1]["reasoning_content"] == "because..."
 
 
 def test_parses_tool_calls_with_json_arguments():
