@@ -128,6 +128,15 @@ class Orb(Base):
     passive_amount: int
 
 
+# Empty belt slots arrive as placeholder potions, so the potions list is
+# always slot-capacity long.
+EMPTY_POTION_ID = "Potion Slot"
+
+# Harness-level commands the model never sees; its action surface is the typed
+# tools, and these would only invite junk like raw clicks.
+HIDDEN_COMMANDS = frozenset({"key", "click", "wait", "state"})
+
+
 class Potion(Base):
     id: str
     name: str
@@ -388,6 +397,10 @@ class GameState(Base):
             )
         self.screen = model.model_validate(self.screen_state)
         return self
+
+    @property
+    def potions_full(self) -> bool:
+        return bool(self.potions) and all(p.id != EMPTY_POTION_ID for p in self.potions)
 
 
 class StateMessage(Base):

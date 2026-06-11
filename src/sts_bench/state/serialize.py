@@ -13,7 +13,12 @@ the renderer stays swappable for format ablations.
 
 from __future__ import annotations
 
+from ..tools.card_db import card_text
+from ..tools.potion_db import potion_text
+from ..tools.relic_db import relic_text
 from .schema import (
+    EMPTY_POTION_ID,
+    HIDDEN_COMMANDS,
     BossRewardScreen,
     Card,
     CardRewardScreen,
@@ -32,11 +37,19 @@ from .schema import (
     StateMessage,
 )
 
-EMPTY_POTION_ID = "Potion Slot"
-
-# Harness-level commands the model never sees; its action surface is the typed
-# tools, and these would only invite junk like raw clicks.
-HIDDEN_COMMANDS = frozenset({"key", "click", "wait", "state"})
+# The model acts through tools, so the legal-commands line speaks tool names,
+# keeping the game's own button word visible where it differs (the screen
+# says "leave"/"confirm"; the tools say return_back/proceed).
+TOOL_COMMAND_NAMES = {
+    "play": "play_card",
+    "end": "end_turn",
+    "potion": "use_potion, discard_potion",
+    "confirm": "proceed (confirm)",
+    "return": "return_back",
+    "skip": "return_back (skip)",
+    "cancel": "return_back (cancel)",
+    "leave": "return_back (leave)",
+}
 
 
 def cursory_view(message: StateMessage) -> str:
@@ -51,16 +64,74 @@ def cursory_view(message: StateMessage) -> str:
             sections.append(screen)
         if state.combat_state is not None:
             sections.append(f"<combat>\n{_combat_lines(state.combat_state)}\n</combat>")
-        if state.choice_list:
+        # The loot screen renders its own indexed lines; a second list of the
+        # same items in keyword form only invites misreads.
+        if state.choice_list and not isinstance(state.screen, CombatRewardScreen):
             choices = "\n".join(f"[{i}] {choice}" for i, choice in enumerate(state.choice_list))
             sections.append(f"<choices>\n{choices}\n</choices>")
     visible = [c for c in message.available_commands if c not in HIDDEN_COMMANDS]
-    sections.append(f"<commands>{', '.join(visible)}</commands>")
+    sections.append(f"<commands>{', '.join(TOOL_COMMAND_NAMES.get(c, c) for c in visible)}</commands>")
     return "\n".join(sections)
 
 
+def combat_briefing(state: GameState) -> str:
+    """What a player sees at the top of every fight without clicking around:
+    the relic bar, the potion belt, and the deck's printed card text (hover
+    text included throughout). The floor agent injects this once per combat;
+    the conversation keeps it in view for the rest of the fight."""
+    parts = [relic_bar(state)]
+    belt = potion_belt(state)
+    if belt:
+        parts.append(belt)
+    parts.append(deck_reference(state))
+    return "\n".join(parts)
+
+
+def potion_belt(state: GameState) -> str | None:
+    held = [p for p in state.potions if p.id != EMPTY_POTION_ID]
+    if not held:
+        return None
+    lines = [f"your potions ({len(held)}/{len(state.potions)}):"]
+    for potion in held:
+        text = potion_text(potion)
+        lines.append(f"{potion.name}{f': {text}' if text else ''}")
+    return "<potion_belt>\n" + "\n".join(lines) + "\n</potion_belt>"
+
+
+def relic_bar(state: GameState) -> str:
+    lines = ["your relics:"]
+    for relic in state.relics:
+        counter = f" (counter {relic.counter})" if relic.counter >= 0 else ""
+        text = relic_text(relic)
+        lines.append(f"{relic.name}{counter}{f': {text}' if text else ''}")
+    return "<relic_bar>\n" + "\n".join(lines) + "\n</relic_bar>"
+
+
+def deck_reference(state: GameState) -> str:
+    """Combat briefing: the deck's printed card text, grouped and counted.
+
+    A player reads this off the card faces; the model gets it once per combat
+    (the floor agent injects it at combat start and the conversation keeps it
+    in view), not in every digest. Buff-adjusted numbers are not computed --
+    the combat section carries the buffs.
+    """
+    counts: dict[str, int] = {}
+    first: dict[str, Card] = {}
+    for card in state.deck:
+        counts[card.name] = counts.get(card.name, 0) + 1
+        first.setdefault(card.name, card)
+    lines = ["your deck (printed card text):"]
+    for name, card in first.items():
+        copies = f" x{counts[name]}" if counts[name] > 1 else ""
+        text = card_text(card)
+        lines.append(f"{name}{copies} ({card.cost}){f': {text}' if text else ''}")
+    return "<deck_reference>\n" + "\n".join(lines) + "\n</deck_reference>"
+
+
 def _run_line(state: GameState) -> str:
-    potions = [p.name for p in state.potions if p.id != EMPTY_POTION_ID]
+    held = [p.name for p in state.potions if p.id != EMPTY_POTION_ID]
+    slots = len(state.potions)
+    full = ", full" if held and len(held) == slots else ""
     parts = [
         f"{state.character} (ascension {state.ascension_level})",
         f"act {state.act} floor {state.floor}",
@@ -68,9 +139,11 @@ def _run_line(state: GameState) -> str:
         f"gold {state.gold}",
         f"deck {len(state.deck)} cards",
         f"relics {len(state.relics)}",
-        f"potions: {', '.join(potions) if potions else 'none'}",
+        f"potions ({len(held)}/{slots}{full}): {', '.join(held) if held else 'none'}",
     ]
     return " | ".join(parts)
+
+
 
 
 def _screen_section(state: GameState) -> str | None:
@@ -94,7 +167,8 @@ def _screen_section(state: GameState) -> str | None:
             lines.append("(symbols: M monster, E elite, $ shop, R rest, T chest, ? event, B boss; full layout via get_map)")
             return "<screen type=\"MAP\">\n" + "\n".join(lines) + "\n</screen>"
         case CardRewardScreen():
-            lines = [_card(card, i) for i, card in enumerate(screen.cards)]
+            # A player reads the full card before picking; so does the model.
+            lines = [_card_with_text(card, i) for i, card in enumerate(screen.cards)]
             extras = []
             if screen.skip_available:
                 extras.append("skipping is allowed")
@@ -104,17 +178,17 @@ def _screen_section(state: GameState) -> str | None:
                 lines.append("; ".join(extras))
             return "<screen type=\"CARD_REWARD\">\n" + "\n".join(lines) + "\n</screen>"
         case CombatRewardScreen():
-            lines = []
-            for reward in screen.rewards:
-                if reward.gold is not None:
-                    lines.append(f"{reward.reward_type}: {reward.gold} gold")
-                elif reward.potion is not None:
-                    lines.append(f"{reward.reward_type}: {reward.potion.name}")
-                elif reward.relic is not None:
-                    lines.append(f"{reward.reward_type}: {reward.relic.name}")
-                else:
-                    lines.append(reward.reward_type)
-            return "<screen type=\"COMBAT_REWARD\">\n" + "\n".join(lines) + "\n</screen>"
+            # Loot is not a pick-one menu: every item is claimable, in any
+            # order. The genuine decisions are the card (opens a skippable
+            # pick) and a potion when the belt is full.
+            if not screen.rewards:
+                body = "all loot claimed -- proceed to move on"
+            else:
+                lines = ["loot -- take each in any order (choose), proceed when done:"]
+                for i, reward in enumerate(screen.rewards):
+                    lines.append(f"[{i}] {_reward(reward, state)}")
+                body = "\n".join(lines)
+            return f"<screen type=\"COMBAT_REWARD\">\n{body}\n</screen>"
         case GridScreen():
             purpose = (
                 "purge" if screen.for_purge else "transform" if screen.for_transform else "upgrade" if screen.for_upgrade else "select"
@@ -128,28 +202,49 @@ def _screen_section(state: GameState) -> str | None:
                 lines.append("confirm to finish")
             return "<screen type=\"GRID\">\n" + "\n".join(lines) + "\n</screen>"
         case RestScreen():
-            lines = ["already rested" if screen.has_rested else "options: " + ", ".join(screen.rest_options)]
+            lines = [
+                "already rested -- proceed to move on"
+                if screen.has_rested
+                else "options: " + ", ".join(screen.rest_options)
+            ]
             return "<screen type=\"REST\">\n" + "\n".join(lines) + "\n</screen>"
         case ChestScreen():
             status = "already open" if screen.chest_open else "unopened"
             return f"<screen type=\"CHEST\">\n{screen.chest_type} ({status})\n</screen>"
         case ShopScreen():
+            # No bracketed indices here: buying goes through the <choices>
+            # list, whose numbering (purge first, then wares) does not match
+            # a per-category count.
             lines = []
-            lines += [f"card {_card(c, i)} -- {c.price} gold" for i, c in enumerate(screen.cards)]
-            lines += [f"relic [{i}] {r.name} -- {r.price} gold" for i, r in enumerate(screen.relics)]
-            lines += [f"potion [{i}] {p.name} -- {p.price} gold" for i, p in enumerate(screen.potions)]
+            lines += [f"card: {_card_with_text(c)} -- {c.price} gold" for c in screen.cards]
+            lines += [f"relic: {_with_text(r.name, relic_text(r))} -- {r.price} gold" for r in screen.relics]
+            lines += [f"potion: {_with_text(p.name, potion_text(p))} -- {p.price} gold" for p in screen.potions]
             if screen.purge_available:
                 lines.append(f"card removal -- {screen.purge_cost} gold")
             return "<screen type=\"SHOP\">\n" + "\n".join(lines) + "\n</screen>"
         case BossRewardScreen():
-            lines = [f"[{i}] {relic.name}" for i, relic in enumerate(screen.relics)]
+            lines = [
+                f"[{i}] {_with_text(relic.name, relic_text(relic))}"
+                for i, relic in enumerate(screen.relics)
+            ]
             return "<screen type=\"BOSS_REWARD\">\npick one relic:\n" + "\n".join(lines) + "\n</screen>"
         case HandSelectScreen():
             zero = ", picking none is allowed" if screen.can_pick_zero else ""
             lines = [f"select up to {screen.max_cards} card(s) from hand{zero}"]
-            lines += [_card(card, i) for i, card in enumerate(screen.hand)]
-            if screen.selected:
+            if len(screen.selected) >= screen.max_cards:
+                # Nothing left to choose; indexed lines would only invite a
+                # dead `choose` call.
                 lines.append("selected: " + ", ".join(c.name for c in screen.selected))
+                lines.append(
+                    f"selection complete ({len(screen.selected)}/{screen.max_cards}) "
+                    "-- proceed to confirm"
+                )
+                if screen.hand:
+                    lines.append("(unselected: " + ", ".join(c.name for c in screen.hand) + ")")
+            else:
+                lines += [_card(card, i) for i, card in enumerate(screen.hand)]
+                if screen.selected:
+                    lines.append("selected: " + ", ".join(c.name for c in screen.selected))
             return "<screen type=\"HAND_SELECT\">\n" + "\n".join(lines) + "\n</screen>"
         case GameOverScreen():
             outcome = "VICTORY" if screen.victory else "DEFEAT"
@@ -185,6 +280,11 @@ def _combat_lines(combat: CombatState) -> str:
 
 def _monster(monster: Monster, index: int) -> str:
     intent = monster.intent.value
+    if intent == "DEBUG":
+        # The combat's first snapshot can land before intents finish rolling;
+        # the wire reports the game's DEBUG placeholder. Distinct from
+        # UNKNOWN, which is the game's real question-mark intent.
+        intent = "not yet revealed"
     if monster.move_adjusted_damage is not None and monster.move_adjusted_damage >= 0:
         intent += f" {monster.move_adjusted_damage}x{monster.move_hits}"
     powers = ("; " + ", ".join(_power(p) for p in monster.powers)) if monster.powers else ""
@@ -194,14 +294,46 @@ def _monster(monster: Monster, index: int) -> str:
     )
 
 
-def _card(card: Card, index: int, show_target: bool = False) -> str:
-    upgraded = "+" * card.upgrades
+def _card(card: Card, index: int | None = None, show_target: bool = False) -> str:
+    # The mod's name already carries upgrade marks ("Strike+", "Searing Blow+2").
     tags = ""
     if show_target and card.has_target:
         tags += " [needs target]"
     if card.is_playable is False:
         tags += " [unplayable]"
-    return f"[{index}] {card.name}{upgraded} ({card.cost}){tags}"
+    prefix = "" if index is None else f"[{index}] "
+    return f"{prefix}{card.name} ({card.cost}){tags}"
+
+
+def _card_with_text(card: Card, index: int | None = None) -> str:
+    line = _card(card, index)
+    text = card_text(card)
+    return f"{line} -- {text}" if text else line
+
+
+def _reward(reward, state: GameState) -> str:
+    match reward.reward_type:
+        case "GOLD":
+            label = f"{reward.gold} gold"
+        case "STOLEN_GOLD":
+            label = f"{reward.gold} gold (stolen back)"
+        case "POTION" if reward.potion is not None:
+            label = f"potion: {_with_text(reward.potion.name, potion_text(reward.potion))}"
+            if state.potions_full:
+                label += " (belt full -- discard_potion to make room, or leave it)"
+        case "RELIC" if reward.relic is not None:
+            label = f"relic: {_with_text(reward.relic.name, relic_text(reward.relic))}"
+        case "CARD":
+            label = "card (opens a pick of cards, skippable)"
+        case other:
+            label = other.lower().replace("_", " ")
+    if reward.link is not None:
+        label += f" (linked: taking this forfeits {reward.link.name})"
+    return label
+
+
+def _with_text(name: str, text: str | None) -> str:
+    return f"{name} -- {text}" if text else name
 
 
 def _power(power) -> str:

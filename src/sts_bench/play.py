@@ -28,7 +28,7 @@ from pathlib import Path
 
 from dotenv import dotenv_values, load_dotenv
 
-from .agents.zero_shot import SYSTEM_PROMPT, ZeroShotAgent
+from .agents import floor, zero_shot
 from .actions import Action, translate
 from .env import CommunicationModEnv, HarnessServer, StepResult
 from .protocol_log import ProtocolLog
@@ -45,6 +45,11 @@ from .state import StateMessage, StateParseError, parse_message
 MAX_DECISIONS = 1000
 LOOP_GUARD_LIMIT = 3
 DEFAULT_ENV_FILE = ".env"
+
+AGENTS = {
+    "floor": (floor.FloorAgent, floor.SYSTEM_PROMPT),  # one conversation per floor
+    "stepwise": (zero_shot.ZeroShotAgent, zero_shot.SYSTEM_PROMPT),  # stateless baseline
+}
 
 
 class LoopGuard:
@@ -127,7 +132,11 @@ def _auto_api(base_url_flag: str | None) -> str:
 
 
 def _model_traffic(transcript: list[dict]) -> list[tuple[str, str]]:
-    """(tag, text) pairs for the model channel of one decision's conversation.
+    """(tag, text) pairs for the model channel of one decision's new messages.
+
+    The input is the decision's transcript delta, never a full persistent
+    conversation -- each message is logged exactly once, by the decision that
+    introduced it.
 
     Arrow direction matches the wire tags (right = sent, left = received);
     the letter names the peer: `>m` is what we sent the model (state view,
@@ -158,6 +167,17 @@ def _model_traffic(transcript: list[dict]) -> list[tuple[str, str]]:
 def _reasoning_note(usage: Usage) -> str:
     """' (of which N reasoning)' when the backend reports hidden thinking."""
     return f" (of which {usage.reasoning_tokens} reasoning)" if usage.reasoning_tokens else ""
+
+
+def _floor_summary(entry: dict, exit_state: dict, decisions: int, usage: Usage) -> str:
+    """One line per finished floor: the spend and the damage, reported at the
+    boundary -- the first point where the floor's result is observable."""
+    return (
+        f"floor {entry.get('floor')} summary: {decisions} decisions, "
+        f"tokens {usage.prompt_tokens}+{usage.completion_tokens}{_reasoning_note(usage)}, "
+        f"HP {entry.get('current_hp')}->{exit_state.get('current_hp')}, "
+        f"gold {entry.get('gold')}->{exit_state.get('gold')}"
+    )
 
 
 def _screen_label(game_state: dict) -> str:
@@ -235,125 +255,139 @@ def run(args: argparse.Namespace) -> int:
     except ProviderError as exc:
         say(str(exc))
         return 1
-    agent = ZeroShotAgent(provider, max_rounds=args.max_rounds)
-    say(f"model: {provider.model} @ {provider.base_url} ({api} api)")
+    agent_cls, system_prompt = AGENTS[args.agent]
+    agent = agent_cls(provider, max_rounds=args.max_rounds)
+    say(f"model: {provider.model} @ {provider.base_url} ({api} api), {args.agent} agent")
 
     totals = Usage()
     decisions = forced = unparsed = 0
     guard = LoopGuard()
 
-    with HarnessServer(port=args.port) as server:
-        say(f"listening on {server.host}:{server.port} -- start the external process in-game")
-        conn = server.accept(timeout=300)
-        log = ProtocolLog(LOG_DIR, name="play")
-        effort_note = f", effort {args.reasoning_effort}" if args.reasoning_effort else ""
-        log.line(
-            "--",
-            f"model: {provider.model} @ {provider.base_url} ({api} api{effort_note}) | "
-            f"{args.character} ascension {args.ascension} seed {args.seed or 'random'}",
-        )
-        log.line("--", "system prompt (sent with every decision, logged once):")
-        for prompt_line in SYSTEM_PROMPT.format(character=args.character.upper()).splitlines():
-            log.line(">m", prompt_line)
-        say(f"protocol log: {log.path}")
-        say(f"relay connected from {conn.peer}")
+    try:
+        with HarnessServer(port=args.port) as server:
+            say(f"listening on {server.host}:{server.port} -- start the external process in-game")
+            conn = server.accept(timeout=300)
+            log = ProtocolLog(LOG_DIR, name="play")
+            effort_note = f", effort {args.reasoning_effort}" if args.reasoning_effort else ""
+            log.line(
+                "--",
+                f"model: {provider.model} @ {provider.base_url} ({api} api{effort_note}) | "
+                f"{args.agent} agent | {args.character} ascension {args.ascension} seed {args.seed or 'random'}",
+            )
+            log.line("--", "system prompt (constant; logged once):")
+            for prompt_line in system_prompt.format(character=args.character.upper()).splitlines():
+                log.line(">m", prompt_line)
+            say(f"protocol log: {log.path}")
+            say(f"relay connected from {conn.peer}")
 
-        env = CommunicationModEnv(conn, on_protocol_line=log.line)
-        state = env.handshake()
+            env = CommunicationModEnv(conn, on_protocol_line=log.line)
+            state = env.handshake()
 
-        prev_game_state: dict = {}
-        for step_no in range(1, MAX_STEPS + 1):
-            game_state = state.get("game_state") or {}
-            for note in _transition_notes(prev_game_state, game_state):
-                say(note)
-            prev_game_state = game_state
-            command = None
-            history = None  # what to tell the agent actually happened here
+            prev_game_state: dict = {}
+            floor_entry: dict = {}
+            floor_decisions = 0
+            floor_usage = Usage()
+            for step_no in range(1, MAX_STEPS + 1):
+                game_state = state.get("game_state") or {}
+                if game_state and game_state.get("floor") != floor_entry.get("floor"):
+                    if floor_entry:
+                        say(_floor_summary(floor_entry, prev_game_state, floor_decisions, floor_usage))
+                    floor_entry, floor_decisions, floor_usage = game_state, 0, Usage()
+                for note in _transition_notes(prev_game_state, game_state):
+                    say(note)
+                prev_game_state = game_state
+                command = None
+                history = None  # what to tell the agent actually happened here
 
-            try:
-                message = parse_message(state)
-            except StateParseError as exc:
-                unparsed += 1
-                path = dump_unparsed(exc.raw)
-                say(f"state didn't fit the schema; captured -> {path} (scripted fallback)")
-                message = None
+                try:
+                    message = parse_message(state)
+                except StateParseError as exc:
+                    unparsed += 1
+                    path = dump_unparsed(exc.raw)
+                    say(f"state didn't fit the schema; captured -> {path} (scripted fallback)")
+                    message = None
 
-            if message is not None and "start" not in message.available_commands:
-                if decisions >= MAX_DECISIONS:
-                    say(f"hit MAX_DECISIONS={MAX_DECISIONS}; stopping")
-                    break
-                decisions += 1
-                decision = agent.decide(message)
-                totals += decision.usage
-                for tag, text in _model_traffic(decision.transcript):
-                    for content_line in text.splitlines():
-                        log.line(tag, content_line)
-                action = decision.action
-                if action is not None:
-                    command = translate(action, message)
-                    if guard.trips(game_state, command):
+                if message is not None and "start" not in message.available_commands:
+                    if decisions >= MAX_DECISIONS:
+                        say(f"hit MAX_DECISIONS={MAX_DECISIONS}; stopping")
+                        break
+                    decisions += 1
+                    floor_decisions += 1
+                    decision = agent.decide(message)
+                    totals += decision.usage
+                    floor_usage += decision.usage
+                    for tag, text in _model_traffic(decision.transcript):
+                        for content_line in text.splitlines():
+                            log.line(tag, content_line)
+                    action = decision.action
+                    if action is not None:
+                        command = translate(action, message)
+                        if guard.trips(game_state, command):
+                            say(
+                                f"decision {decisions}: loop guard -- "
+                                f"{describe_action(action, message)} chosen {LOOP_GUARD_LIMIT}x "
+                                f"from an unchanged state; forcing scripted fallback"
+                            )
+                            decision.forced_reason = "loop guard"
+                            action = command = None
+                    if action is not None:
+                        history = describe_action(action, message)
                         say(
-                            f"decision {decisions}: loop guard -- "
-                            f"{describe_action(action, message)} chosen {LOOP_GUARD_LIMIT}x "
-                            f"from an unchanged state; forcing scripted fallback"
+                            f"decision {decisions} ({_screen_label(game_state)}): {history} "
+                            f"[rounds {decision.rounds}, lookups {decision.observation_calls}, "
+                            f"invalid {decision.invalid_actions}, "
+                            f"tokens {decision.usage.prompt_tokens}+{decision.usage.completion_tokens}"
+                            f"{_reasoning_note(decision.usage)}]"
                         )
-                        decision.forced_reason = "loop guard"
-                        action = command = None
-                if action is not None:
-                    history = describe_action(action, message)
-                    say(
-                        f"decision {decisions} ({_screen_label(game_state)}): {history} "
-                        f"[rounds {decision.rounds}, lookups {decision.observation_calls}, "
-                        f"invalid {decision.invalid_actions}, "
-                        f"tokens {decision.usage.prompt_tokens}+{decision.usage.completion_tokens}"
-                        f"{_reasoning_note(decision.usage)}]"
-                    )
-                else:
-                    forced += 1
-                    scripted = choose_action(message)
-                    command = translate(scripted, message) if scripted else None
-                    history = f"{describe_action(scripted, message)} (forced)" if scripted else None
-                    say(f"decision {decisions}: FORCED ({decision.forced_reason}) -> {history or command!r}")
+                    else:
+                        forced += 1
+                        scripted = choose_action(message)
+                        command = translate(scripted, message) if scripted else None
+                        history = f"{describe_action(scripted, message)} (forced)" if scripted else None
+                        say(f"decision {decisions}: FORCED ({decision.forced_reason}) -> {history or command!r}")
 
-            if command is None:
-                command = choose_command(state, args.character, args.ascension, args.seed)
-                if state.get("in_game"):
-                    history = f"{command} (scripted)"
+                if command is None:
+                    command = choose_command(state, args.character, args.ascension, args.seed)
+                    if state.get("in_game"):
+                        history = f"{command} (scripted)"
 
-            result: StepResult = env.step(command)
-            if not result.ok:
-                say(f"mod rejected {command!r}: {result.error}")
-                retry = fallback_command(result.state)
-                if retry is None:
-                    say("no fallback available; stopping")
-                    return 1
-                result = env.step(retry)
+                result: StepResult = env.step(command)
                 if not result.ok:
-                    say(f"fallback {retry!r} also rejected: {result.error}; stopping")
-                    return 1
-                history = f"{retry} (fallback after {command!r} was rejected)"
-            state = result.state
+                    say(f"step {command!r} failed: {result.error}")
+                    retry = fallback_command(result.state)
+                    if retry is None:
+                        say("no fallback available; stopping")
+                        return 1
+                    result = env.step(retry)
+                    if not result.ok:
+                        say(f"fallback {retry!r} also failed: {result.error}; stopping")
+                        return 1
+                    history = f"{retry} (fallback after {command!r} failed)"
+                state = result.state
 
-            if history is not None:
-                agent.record(
-                    f"floor {game_state.get('floor')} {_screen_label(game_state)}: {history}"
-                )
+                if history is not None:
+                    agent.record(
+                        f"floor {game_state.get('floor')} {_screen_label(game_state)}: {history}"
+                    )
 
-            new_game_state = state.get("game_state") or {}
-            if new_game_state.get("screen_type") == "GAME_OVER":
-                screen = new_game_state.get("screen_state") or {}
-                say(f"run over: {'VICTORY' if screen.get('victory') else 'DEFEAT'} "
-                    f"on floor {new_game_state.get('floor')}, score {screen.get('score')}")
-            if not state.get("in_game") and decisions:
-                break
-        else:
-            say(f"hit MAX_STEPS={MAX_STEPS}; stopping")
+                new_game_state = state.get("game_state") or {}
+                if new_game_state.get("screen_type") == "GAME_OVER":
+                    screen = new_game_state.get("screen_state") or {}
+                    say(f"run over: {'VICTORY' if screen.get('victory') else 'DEFEAT'} "
+                        f"on floor {new_game_state.get('floor')}, score {screen.get('score')}")
+                if not state.get("in_game") and decisions:
+                    break
+            else:
+                say(f"hit MAX_STEPS={MAX_STEPS}; stopping")
 
-    say(
-        f"totals: {decisions} decisions, {forced} forced, {unparsed} unparsed states, "
-        f"tokens {totals.prompt_tokens} prompt + {totals.completion_tokens} completion"
-        f"{_reasoning_note(totals)}"
-    )
+    finally:
+        # The bottom line prints even when the session dies mid-step
+        # (timeout, dropped connection, Ctrl-C): a crashed run still reports.
+        say(
+            f"totals: {decisions} decisions, {forced} forced, {unparsed} unparsed states, "
+            f"tokens {totals.prompt_tokens} prompt + {totals.completion_tokens} completion"
+            f"{_reasoning_note(totals)}"
+        )
     return 0
 
 
@@ -368,6 +402,13 @@ def main() -> None:
         help="wire format: auto (default; native messages for Anthropic backends, "
         "chat elsewhere), chat (works everywhere), responses (OpenAI reasoning "
         "models), anthropic (Claude native); env STS_BENCH_API",
+    )
+    parser.add_argument(
+        "--agent",
+        choices=tuple(AGENTS),
+        default="floor",
+        help="context scaffold: floor keeps one conversation per floor (default); "
+        "stepwise starts fresh at every decision (the stateless ablation baseline)",
     )
     parser.add_argument(
         "--reasoning-effort",

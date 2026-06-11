@@ -108,7 +108,7 @@ class AnthropicProvider(OpenAICompatProvider):
         payload: dict[str, Any] = {
             "model": self.model,
             "max_tokens": self._max_tokens,
-            "messages": native,
+            "messages": _merge_user_runs(native),
         }
         if system is not None:
             # Breakpoint on the system block caches tools+system -- the part
@@ -192,3 +192,30 @@ class AnthropicProvider(OpenAICompatProvider):
             ),
             reasoning=reasoning,
         )
+
+
+def _merge_user_runs(native: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Combine consecutive user-role messages into single alternating turns.
+
+    The Messages API wants user and assistant turns to alternate, and tool
+    results to open the user turn they belong to. A conversation that answers
+    several tool calls, or follows a tool result with a fresh state digest,
+    arrives here as a run of user-role messages -- fold each run into one
+    message, order preserved (tool results were emitted first, so they stay
+    in front of any text).
+    """
+    merged: list[dict[str, Any]] = []
+    for msg in native:
+        if merged and msg["role"] == "user" == merged[-1]["role"]:
+            merged[-1] = {
+                "role": "user",
+                "content": _blocks(merged[-1]["content"]) + _blocks(msg["content"]),
+            }
+        else:
+            merged.append(msg)
+    return merged
+
+
+def _blocks(content: Any) -> list[dict[str, Any]]:
+    return content if isinstance(content, list) else [{"type": "text", "text": content}]
+

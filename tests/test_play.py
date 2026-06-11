@@ -7,11 +7,13 @@ from sts_bench.actions import Choose, DiscardPotion, PlayCard, Proceed, ReturnBa
 from sts_bench.play import (
     LoopGuard,
     _auto_api,
+    _floor_summary,
     _model_traffic,
     _screen_label,
     _transition_notes,
     describe_action,
 )
+from sts_bench.providers import Usage
 from sts_bench.state import parse_message
 
 FIXTURES = Path(__file__).parent / "fixtures" / "states"
@@ -130,6 +132,13 @@ def test_auto_api_prefers_native_surface_per_backend(monkeypatch):
     # an explicit generic key means an unnamed compat backend
     monkeypatch.setenv("STS_BENCH_API_KEY", "sk-other")
     assert _auto_api(None) == "chat"
+
+
+def test_floor_summary_reports_spend_and_deltas():
+    entry = {"floor": 5, "current_hp": 80, "gold": 99}
+    exit_state = {"floor": 5, "current_hp": 72, "gold": 120}
+    line = _floor_summary(entry, exit_state, 7, Usage(prompt_tokens=1000, completion_tokens=200))
+    assert line == "floor 5 summary: 7 decisions, tokens 1000+200, HP 80->72, gold 99->120"
 
 
 def test_model_traffic_tags_directions_and_skips_system():

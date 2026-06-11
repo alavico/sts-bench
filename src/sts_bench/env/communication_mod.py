@@ -28,6 +28,10 @@ DEFAULT_STEP_TIMEOUT = 60.0
 # After a ready state arrives, briefly drain follow-up messages so we act on
 # the latest stable state rather than an intermediate one.
 SETTLE_SECONDS = 0.1
+# A combat's first snapshot can land before monster intents finish rolling
+# (they arrive as the game's DEBUG placeholder, observed on turn 1 of every
+# live combat). One bounded re-probe usually fetches the revealed intent.
+INTENT_PROBE_WINDOW = 1.0
 
 
 class CommunicationModEnv:
@@ -72,7 +76,13 @@ class CommunicationModEnv:
     # -- core loop -----------------------------------------------------------
 
     def step(self, command: str) -> StepResult:
-        """Send one command; block until the next decision point or a rejection."""
+        """Send one command; block until the next decision point or a rejection.
+
+        A step timeout is a result, not a crash: the game can absorb a click
+        without ever becoming ready again (observed live: taking a potion
+        reward onto a full belt), and the caller is the one who can try a
+        different command or end the run gracefully.
+        """
         self._require_state()
         self._send(command)
         try:
@@ -80,6 +90,8 @@ class CommunicationModEnv:
         except ProtocolErrorMessage as err:
             # Game unchanged; keep the previous state as current.
             return StepResult(state=self._require_state(), error=err.message)
+        except TimeoutError as err:
+            return StepResult(state=self._require_state(), error=str(err))
         return StepResult(state=self._state)
 
     def legal_actions(self) -> list[str]:
@@ -95,11 +107,14 @@ class CommunicationModEnv:
         self._log(">>", command)
         self._conn.send_line(command)
 
-    def _await_ready_state(self, timeout: float) -> RawState:
+    def _await_ready_state(self, timeout: float, probe_rolling_intent: bool = True) -> RawState:
         """Wait for a state with ready_for_command, then drain stragglers.
 
         Halfway through the timeout we nudge with `state` once -- it is safe at
-        any time and recovers from a missed or dropped message.
+        any time and recovers from a missed or dropped message. A ready state
+        whose monsters still show the rolling-intent placeholder gets one
+        bounded re-probe; if the game still hasn't rolled, the placeholder
+        state is returned and the serializer renders it honestly.
         """
         deadline = time.monotonic() + timeout
         nudged = False
@@ -118,7 +133,17 @@ class CommunicationModEnv:
             if "error" in message:
                 raise ProtocolErrorMessage(str(message["error"]))
             if message.get("ready_for_command"):
-                return self._drain(message)
+                latest = self._drain(message)
+                if probe_rolling_intent and _intent_rolling(latest):
+                    self._send("state")
+                    try:
+                        return self._await_ready_state(
+                            min(INTENT_PROBE_WINDOW, max(deadline - time.monotonic(), 0.1)),
+                            probe_rolling_intent=False,
+                        )
+                    except TimeoutError:
+                        return latest
+                return latest
 
     def _drain(self, latest: RawState) -> RawState:
         while True:
@@ -145,6 +170,15 @@ class CommunicationModEnv:
         if self._state is None:
             raise EnvError("no state yet: call handshake() first")
         return self._state
+
+
+def _intent_rolling(state: RawState) -> bool:
+    """True when any live monster still shows the DEBUG intent placeholder."""
+    combat = (state.get("game_state") or {}).get("combat_state") or {}
+    return any(
+        m.get("intent") == "DEBUG" and not m.get("is_gone")
+        for m in combat.get("monsters", [])
+    )
 
 
 class ProtocolErrorMessage(Exception):

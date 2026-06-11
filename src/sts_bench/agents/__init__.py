@@ -1,3 +1,5 @@
-from .zero_shot import Decision, ZeroShotAgent
+from .base import Decision
+from .floor import FloorAgent
+from .zero_shot import ZeroShotAgent
 
-__all__ = ["Decision", "ZeroShotAgent"]
+__all__ = ["Decision", "FloorAgent", "ZeroShotAgent"]

@@ -1,0 +1,1088 @@
+[
+{
+"id": "AKABEKO",
+"name": "Akabeko",
+"tier": "Common",
+"text": "Your first Attack each combat deals 8 additional damage."
+},
+{
+"id": "ANCHOR",
+"name": "Anchor",
+"tier": "Common",
+"text": "Start each combat with 10 Block."
+},
+{
+"id": "ANCIENT_TEA_SET",
+"name": "Ancient Tea Set",
+"tier": "Common",
+"text": "Whenever you enter a Rest Site, start the next combat with [Energy] [Energy]."
+},
+{
+"id": "ART_OF_WAR",
+"name": "Art of War",
+"tier": "Common",
+"text": "If you do not play any Attacks during your turn, gain an additional [Energy] next turn."
+},
+{
+"id": "ASTROLABE",
+"name": "Astrolabe",
+"tier": "Boss",
+"text": "Upon pickup, Transform 3 cards, then Upgrade them."
+},
+{
+"id": "BAG_OF_MARBLES",
+"name": "Bag of Marbles",
+"tier": "Common",
+"text": "At the start of each combat, apply 1 Vulnerable to ALL enemies."
+},
+{
+"id": "BAG_OF_PREPARATION",
+"name": "Bag of Preparation",
+"tier": "Common",
+"text": "At the start of each combat, draw 2 additional cards."
+},
+{
+"id": "BIRD_FACED_URN",
+"name": "Bird-Faced Urn",
+"tier": "Rare",
+"text": "Whenever you play a Power card, heal 2 HP."
+},
+{
+"id": "BLACK_BLOOD",
+"name": "Black Blood",
+"tier": "Boss",
+"text": "Replaces Burning Blood. At the end of combat, heal 12 HP."
+},
+{
+"id": "BLACK_STAR",
+"name": "Black Star",
+"tier": "Boss",
+"text": "Elites drop an additional relic when defeated."
+},
+{
+"id": "BLOODY_IDOL",
+"name": "Bloody Idol",
+"tier": "Special",
+"text": "Whenever you gain Gold, heal 5 HP."
+},
+{
+"id": "BLOOD_VIAL",
+"name": "Blood Vial",
+"tier": "Common",
+"text": "At the start of each combat, heal 2 HP."
+},
+{
+"id": "BLUE_CANDLE",
+"name": "Blue Candle",
+"tier": "Uncommon",
+"text": "Unplayable Curse cards can now be played. Whenever you play a Curse, lose 1 HP and Exhaust it."
+},
+{
+"id": "BOOT",
+"name": "The Boot",
+"tier": "Common",
+"text": "Whenever you would deal 4 or less unblocked attack damage, increase it to 5."
+},
+{
+"id": "BOTTLED_FLAME",
+"name": "Bottled Flame",
+"tier": "Uncommon",
+"text": "Upon pickup, choose an Attack. Start each combat with this card in your hand."
+},
+{
+"id": "BOTTLED_LIGHTNING",
+"name": "Bottled Lightning",
+"tier": "Uncommon",
+"text": "Upon pickup, choose a Skill. Start each combat with this card in your hand."
+},
+{
+"id": "BOTTLED_TORNADO",
+"name": "Bottled Tornado",
+"tier": "Uncommon",
+"text": "Upon pickup, choose a Power card. Start each combat with this card in your hand."
+},
+{
+"id": "BRIMSTONE",
+"name": "Brimstone",
+"tier": "Shop",
+"text": "At the start of your turn, gain 2 Strength and ALL enemies gain 1 Strength."
+},
+{
+"id": "BRONZE_SCALES",
+"name": "Bronze Scales",
+"tier": "Common",
+"text": "Start each combat with 3 Thorns."
+},
+{
+"id": "BURNING_BLOOD",
+"name": "Burning Blood",
+"tier": "Starter",
+"text": "At the end of combat, heal 6 HP."
+},
+{
+"id": "BUSTED_CROWN",
+"name": "Busted Crown",
+"tier": "Boss",
+"text": "Gain [Energy] at the start of your turn. Future card rewards have 2 less cards to choose from."
+},
+{
+"id": "CABLES",
+"name": "Gold-Plated Cables",
+"tier": "Uncommon",
+"text": "Your rightmost Orb triggers its passive an additional time."
+},
+{
+"id": "CALIPERS",
+"name": "Calipers",
+"tier": "Rare",
+"text": "At the start of your turn, lose 15 Block rather than all of your Block."
+},
+{
+"id": "CALLING_BELL",
+"name": "Calling Bell",
+"tier": "Boss",
+"text": "Upon pickup, obtain a unique Curse and 3 relics."
+},
+{
+"id": "CAPTAINSWHEEL",
+"name": "Captain's Wheel",
+"tier": "Rare",
+"text": "At the start of your 3rd turn, gain 18 Block."
+},
+{
+"id": "CAULDRON",
+"name": "Cauldron",
+"tier": "Shop",
+"text": "Upon pickup, brews 5 random potions."
+},
+{
+"id": "CENTENNIAL_PUZZLE",
+"name": "Centennial Puzzle",
+"tier": "Common",
+"text": "The first time you lose HP each combat, draw 3 cards."
+},
+{
+"id": "CERAMICFISH",
+"name": "Ceramic Fish",
+"tier": "Common",
+"text": "Whenever you add a card to your deck, gain 9 Gold."
+},
+{
+"id": "CHAMPION_BELT",
+"name": "Champion Belt",
+"tier": "Rare",
+"text": "Whenever you apply Vulnerable, apply 1 Weak."
+},
+{
+"id": "CHARON_S_ASHES",
+"name": "Charon's Ashes",
+"tier": "Rare",
+"text": "Whenever you Exhaust a card, deal 3 damage to ALL enemies."
+},
+{
+"id": "CHEMICAL_X",
+"name": "Chemical X",
+"tier": "Shop",
+"text": "The effects of your cost X cards are increased by 2"
+},
+{
+"id": "CIRCLET",
+"name": "Circlet",
+"tier": "Special",
+"text": "Collect as many as you can."
+},
+{
+"id": "CLOAKCLASP",
+"name": "Cloak Clasp",
+"tier": "Rare",
+"text": "At the end of your turn, gain 1 Block for each card in your hand."
+},
+{
+"id": "CLOCKWORKSOUVENIR",
+"name": "Clockwork Souvenir",
+"tier": "Shop",
+"text": "Start each combat with 1 Artifact."
+},
+{
+"id": "COFFEE_DRIPPER",
+"name": "Coffee Dripper",
+"tier": "Boss",
+"text": "Gain [Energy] at the start of your turn. You can no longer Rest at Rest Sites."
+},
+{
+"id": "CRACKED_CORE",
+"name": "Cracked Core",
+"tier": "Starter",
+"text": "At the start of each combat, Channel 1 Lightning."
+},
+{
+"id": "CULTISTMASK",
+"name": "Cultist Headpiece",
+"tier": "Special",
+"text": "You feel more talkative."
+},
+{
+"id": "CURSED_KEY",
+"name": "Cursed Key",
+"tier": "Boss",
+"text": "Gain [Energy] at the start of your turn. Whenever you open a non-boss chest, obtain a Curse."
+},
+{
+"id": "DAMARU",
+"name": "Damaru",
+"tier": "Common",
+"text": "At the start of your turn, gain 1 Mantra."
+},
+{
+"id": "DARKSTONE_PERIAPT",
+"name": "Darkstone Periapt",
+"tier": "Uncommon",
+"text": "Whenever you obtain a Curse, increase your Max HP by 6."
+},
+{
+"id": "DATADISK",
+"name": "Data Disk",
+"tier": "Common",
+"text": "Start each combat with 1 Focus."
+},
+{
+"id": "DEAD_BRANCH",
+"name": "Dead Branch",
+"tier": "Rare",
+"text": "Whenever you Exhaust a card, add a random card into your hand."
+},
+{
+"id": "DISCERNING_MONOCLE",
+"name": "Discerning Monocle",
+"tier": "Uncommon",
+"text": "Merchant prices are reduced by 20%"
+},
+{
+"id": "DOLLYSMIRROR",
+"name": "Dolly's Mirror",
+"tier": "Shop",
+"text": "Upon pickup, obtain an additional copy of a card in your deck."
+},
+{
+"id": "DREAM_CATCHER",
+"name": "Dream Catcher",
+"tier": "Common",
+"text": "Whenever you Rest, you may add a card into your deck."
+},
+{
+"id": "DU_VU_DOLL",
+"name": "Du-Vu Doll",
+"tier": "Rare",
+"text": "For each Curse in your deck, start each combat with 1 Strength."
+},
+{
+"id": "ECTOPLASM",
+"name": "Ectoplasm",
+"tier": "Boss",
+"text": "Gain [Energy] at the start of your turn. You can no longer gain Gold."
+},
+{
+"id": "EMOTION_CHIP",
+"name": "Emotion Chip",
+"tier": "Rare",
+"text": "If you lost HP during the previous turn, trigger the passive ability of all Orbs at the start of your turn."
+},
+{
+"id": "EMPTY_CAGE",
+"name": "Empty Cage",
+"tier": "Boss",
+"text": "Upon pickup, remove 2 cards from your deck."
+},
+{
+"id": "ENCHIRIDION",
+"name": "Enchiridion",
+"tier": "Special",
+"text": "At the start of each combat, add a random Power card into your hand. It costs 0 for that turn."
+},
+{
+"id": "ETERNAL_FEATHER",
+"name": "Eternal Feather",
+"tier": "Uncommon",
+"text": "For every 5 cards in your deck, heal 3 HP whenever you enter a Rest Site."
+},
+{
+"id": "FACEOFCLERIC",
+"name": "Face Of Cleric",
+"tier": "Special",
+"text": "At the end of combat, raise your Max HP by 1."
+},
+{
+"id": "FOSSILIZEDHELIX",
+"name": "Fossilized Helix",
+"tier": "Rare",
+"text": "Prevent the first time you would lose HP each combat."
+},
+{
+"id": "FROZENCORE",
+"name": "Frozen Core",
+"tier": "Boss",
+"text": "Replaces Cracked Core. If you end your turn with any empty Orb slots, Channel 1 Frost."
+},
+{
+"id": "FROZEN_EGG_2",
+"name": "Frozen Egg",
+"tier": "Uncommon",
+"text": "Whenever you add a Power card into your deck, Upgrade it."
+},
+{
+"id": "FROZEN_EYE",
+"name": "Frozen Eye",
+"tier": "Shop",
+"text": "When viewing your Draw Pile, the cards are now shown in order."
+},
+{
+"id": "FUSION_HAMMER",
+"name": "Fusion Hammer",
+"tier": "Boss",
+"text": "Gain [Energy] at the start of your turn. You can no longer Smith at Rest Sites."
+},
+{
+"id": "GAMBLING_CHIP",
+"name": "Gambling Chip",
+"tier": "Rare",
+"text": "At the start of each combat, discard any number of cards, then draw that many cards."
+},
+{
+"id": "GINGER",
+"name": "Ginger",
+"tier": "Rare",
+"text": "You can no longer become Weakened."
+},
+{
+"id": "GIRYA",
+"name": "Girya",
+"tier": "Rare",
+"text": "You can now gain Strength at Rest Sites (up to 3 times)."
+},
+{
+"id": "GOLDENEYE",
+"name": "Golden Eye",
+"tier": "Rare",
+"text": "Whenever you Scry, Scry 2 additional cards."
+},
+{
+"id": "GOLDEN_IDOL",
+"name": "Golden Idol",
+"tier": "Special",
+"text": "Enemies drop 25% more Gold."
+},
+{
+"id": "GREMLINMASK",
+"name": "Gremlin Visage",
+"tier": "Special",
+"text": "Start each combat with 1 Weak."
+},
+{
+"id": "GREMLIN_HORN",
+"name": "Gremlin Horn",
+"tier": "Uncommon",
+"text": "Whenever an enemy dies, gain [Energy] and draw 1 card."
+},
+{
+"id": "HANDDRILL",
+"name": "Hand Drill",
+"tier": "Shop",
+"text": "Whenever you break an enemy's Block, apply 2 Vulnerable."
+},
+{
+"id": "HAPPY_FLOWER",
+"name": "Happy Flower",
+"tier": "Common",
+"text": "Every 3 turns, gain [Energy]."
+},
+{
+"id": "HOLYWATER",
+"name": "Holy Water",
+"tier": "Boss",
+"text": "Replaces Pure Water. At the start of each combat, add 3 Miracles into your hand."
+},
+{
+"id": "HORNCLEAT",
+"name": "Horn Cleat",
+"tier": "Uncommon",
+"text": "At the start of your 2nd turn, gain 14 Block."
+},
+{
+"id": "HOVERINGKITE",
+"name": "Hovering Kite",
+"tier": "Boss",
+"text": "The first time you discard a card each turn, gain [Energy]."
+},
+{
+"id": "ICE_CREAM",
+"name": "Ice Cream",
+"tier": "Rare",
+"text": "Energy is now conserved between turns."
+},
+{
+"id": "INCENSE_BURNER",
+"name": "Incense Burner",
+"tier": "Rare",
+"text": "Every 6 turns, gain 1 Intangible."
+},
+{
+"id": "INKBOTTLE",
+"name": "Ink Bottle",
+"tier": "Uncommon",
+"text": "Whenever you play 10 cards, draw 1 card."
+},
+{
+"id": "INSERTER",
+"name": "Inserter",
+"tier": "Boss",
+"text": "Every 2 turns, gain 1 Orb slot."
+},
+{
+"id": "JUZU_BRACELET",
+"name": "Juzu Bracelet",
+"tier": "Common",
+"text": "Normal enemy combats are no longer encountered in ? rooms."
+},
+{
+"id": "KUNAI",
+"name": "Kunai",
+"tier": "Uncommon",
+"text": "Every time you play 3 Attacks in a single turn, gain 1 Dexterity."
+},
+{
+"id": "LANTERN",
+"name": "Lantern",
+"tier": "Common",
+"text": "Start each combat with an additional [Energy]"
+},
+{
+"id": "LEE_S_WAFFLE",
+"name": "Lee's Waffle",
+"tier": "Shop",
+"text": "Upon pickup, raise your Max HP by 7 and heal all of your HP."
+},
+{
+"id": "LETTER_OPENER",
+"name": "Letter Opener",
+"tier": "Uncommon",
+"text": "Every time you play 3 Skills in a single turn, deal 5 damage to ALL enemies."
+},
+{
+"id": "LIZARD_TAIL",
+"name": "Lizard Tail",
+"tier": "Rare",
+"text": "When you would die, heal to 50% of your Max HP instead (works once)."
+},
+{
+"id": "MAGIC_FLOWER",
+"name": "Magic Flower",
+"tier": "Rare",
+"text": "Healing is 50% more effective during combat."
+},
+{
+"id": "MANGO",
+"name": "Mango",
+"tier": "Rare",
+"text": "Upon pickup, raise your Max HP by 14."
+},
+{
+"id": "MARK_OF_PAIN",
+"name": "Mark of Pain",
+"tier": "Boss",
+"text": "Gain [R] at the start of your turn. At the start of combat, shuffle 2 Wounds into your draw pile."
+},
+{
+"id": "MARK_OF_THE_BLOOM",
+"name": "Mark of the Bloom",
+"tier": "Special",
+"text": "You can no longer heal."
+},
+{
+"id": "MATRYOSHKA",
+"name": "Matryoshka",
+"tier": "Uncommon",
+"text": "The next 2 non-Boss chests you open contain 2 Relics."
+},
+{
+"id": "MAWBANK",
+"name": "Maw Bank",
+"tier": "Common",
+"text": "Whenever you climb a floor, gain 12 Gold. No longer works when you spend any Gold at a shop."
+},
+{
+"id": "MEALTICKET",
+"name": "Meal Ticket",
+"tier": "Common",
+"text": "Whenever you enter a shop, heal 15 HP."
+},
+{
+"id": "MEAT_ON_THE_BONE",
+"name": "Meat on the Bone",
+"tier": "Uncommon",
+"text": "If your HP is at or below 50% at the end of combat, heal 12 HP."
+},
+{
+"id": "MEDICAL_KIT",
+"name": "Medical Kit",
+"tier": "Shop",
+"text": "Unplayable Status cards can now be played. Whenever you play a Status card, Exhaust it."
+},
+{
+"id": "MELANGE",
+"name": "Melange",
+"tier": "Shop",
+"text": "Whenever you shuffle your draw pile, Scry 3."
+},
+{
+"id": "MEMBERSHIP_CARD",
+"name": "Membership Card",
+"tier": "Shop",
+"text": "50% discount on all products!"
+},
+{
+"id": "MERCURY_HOURGLASS",
+"name": "Mercury Hourglass",
+"tier": "Uncommon",
+"text": "At the start of your turn, deal 3 damage to ALL enemies."
+},
+{
+"id": "MOLTEN_EGG_2",
+"name": "Molten Egg",
+"tier": "Uncommon",
+"text": "Whenever you add an Attack into your deck, Upgrade it."
+},
+{
+"id": "MUMMIFIED_HAND",
+"name": "Mummified Hand",
+"tier": "Uncommon",
+"text": "Whenever you play a Power card, a random card in your hand costs 0 that turn."
+},
+{
+"id": "MUTAGENICSTRENGTH",
+"name": "Mutagenic Strength",
+"tier": "Special",
+"text": "Start each combat with 3 Strength. At the end of your first turn, lose 3 Strength."
+},
+{
+"id": "NECRONOMICON",
+"name": "Necronomicon",
+"tier": "Special",
+"text": "The first Attack played each turn that costs 2 or more is played twice. Upon pickup, obtain a special Curse."
+},
+{
+"id": "NEOWSBLESSING",
+"name": "Neow's Lament",
+"tier": "Special",
+"text": "Enemies in your first 3 combats will have 1 HP."
+},
+{
+"id": "NILRY_S_CODEX",
+"name": "Nilry's Codex",
+"tier": "Special",
+"text": "At the end of your turn, you may shuffle 1 of 3 random cards into your draw pile."
+},
+{
+"id": "NINJA_SCROLL",
+"name": "Ninja Scroll",
+"tier": "Uncommon",
+"text": "At the start of each combat, add 3 Shivs into your hand."
+},
+{
+"id": "NLOTHSMASK",
+"name": "N'loth's Hungry Face",
+"tier": "Special",
+"text": "The next non-Boss chest you open is empty."
+},
+{
+"id": "NLOTH_S_GIFT",
+"name": "N'loth's Gift",
+"tier": "Special",
+"text": "Triple the chance of finding Rare cards from combat rewards."
+},
+{
+"id": "NUCLEAR_BATTERY",
+"name": "Nuclear Battery",
+"tier": "Boss",
+"text": "At the start of each combat, Channel 1 Plasma."
+},
+{
+"id": "NUNCHAKU",
+"name": "Nunchaku",
+"tier": "Common",
+"text": "Every time you play 10 Attacks, gain [Energy]."
+},
+{
+"id": "ODDLY_SMOOTH_STONE",
+"name": "Oddly Smooth Stone",
+"tier": "Common",
+"text": "Start each combat with 1 Dexterity."
+},
+{
+"id": "ODD_MUSHROOM",
+"name": "Odd Mushroom",
+"tier": "Special",
+"text": "When Vulnerable, take 25% more attack damage rather than 50%."
+},
+{
+"id": "OLD_COIN",
+"name": "Old Coin",
+"tier": "Rare",
+"text": "Upon pickup, gain 300 Gold."
+},
+{
+"id": "OMAMORI",
+"name": "Omamori",
+"tier": "Common",
+"text": "Negate the next 2 Curses you obtain."
+},
+{
+"id": "ORANGEPELLETS",
+"name": "Orange Pellets",
+"tier": "Shop",
+"text": "Whenever you play a Power, Attack, and Skill in the same turn, remove all of your debuffs."
+},
+{
+"id": "ORICHALCUM",
+"name": "Orichalcum",
+"tier": "Common",
+"text": "If you end your turn without Block, gain 6 Block."
+},
+{
+"id": "ORNAMENTAL_FAN",
+"name": "Ornamental Fan",
+"tier": "Uncommon",
+"text": "Every time you play 3 Attacks in a single turn, gain 4 Block."
+},
+{
+"id": "ORRERY",
+"name": "Orrery",
+"tier": "Shop",
+"text": "Upon pickup, choose and add 5 cards to your deck."
+},
+{
+"id": "PANDORA_S_BOX",
+"name": "Pandora's Box",
+"tier": "Boss",
+"text": "Upon pickup, Transform all Strike and Defend cards."
+},
+{
+"id": "PANTOGRAPH",
+"name": "Pantograph",
+"tier": "Uncommon",
+"text": "At the start of Boss combats, heal 25 HP."
+},
+{
+"id": "PAPER_CRANE",
+"name": "Paper Krane",
+"tier": "Uncommon",
+"text": "Enemies with Weak deal 40% less damage rather than 25%."
+},
+{
+"id": "PAPER_FROG",
+"name": "Paper Phrog",
+"tier": "Uncommon",
+"text": "Enemies with Vulnerable take 75% more damage rather than 50%."
+},
+{
+"id": "PEACE_PIPE",
+"name": "Peace Pipe",
+"tier": "Rare",
+"text": "You can now remove cards from your deck at Rest Sites."
+},
+{
+"id": "PEAR",
+"name": "Pear",
+"tier": "Uncommon",
+"text": "Upon pickup, raise your Max HP by 10."
+},
+{
+"id": "PEN_NIB",
+"name": "Pen Nib",
+"tier": "Common",
+"text": "Every 10th Attack you play deals double damage."
+},
+{
+"id": "PHILOSOPHER_S_STONE",
+"name": "Philosopher's Stone",
+"tier": "Boss",
+"text": "Gain [Energy] at the start of your turn. ALL enemies start combat with 1 Strength."
+},
+{
+"id": "POCKETWATCH",
+"name": "Pocketwatch",
+"tier": "Rare",
+"text": "Whenever you play 3 or less cards during your turn, draw 3 additional cards at the start of your next turn."
+},
+{
+"id": "POTION_BELT",
+"name": "Potion Belt",
+"tier": "Common",
+"text": "Upon pickup, gain 2 Potion slots."
+},
+{
+"id": "PRAYER_WHEEL",
+"name": "Prayer Wheel",
+"tier": "Rare",
+"text": "Normal enemies drop an additional card reward."
+},
+{
+"id": "PRESERVEDINSECT",
+"name": "Preserved Insect",
+"tier": "Common",
+"text": "Enemies in Elite combats have 25 % less HP."
+},
+{
+"id": "PRISMATICSHARD",
+"name": "Prismatic Shard",
+"tier": "Shop",
+"text": "Combat reward screens now contain Colorless cards and cards from other colors."
+},
+{
+"id": "PUREWATER",
+"name": "Pure Water",
+"tier": "Starter",
+"text": "At the start of each combat, add a Miracle into your hand."
+},
+{
+"id": "QUESTION_CARD",
+"name": "Question Card",
+"tier": "Uncommon",
+"text": "Future card rewards have 1 additional card to choose from."
+},
+{
+"id": "RED_CIRCLET",
+"name": "Red Circlet",
+"tier": "Special",
+"text": "Looks very pretty."
+},
+{
+"id": "RED_MASK",
+"name": "Red Mask",
+"tier": "Special",
+"text": "At the start of each combat, apply 1 Weak to ALL enemies."
+},
+{
+"id": "RED_SKULL",
+"name": "Red Skull",
+"tier": "Common",
+"text": "While your HP is at or below 50%, you have 3 additional Strength."
+},
+{
+"id": "REGAL_PILLOW",
+"name": "Regal Pillow",
+"tier": "Common",
+"text": "Whenever you Rest, heal an additional 15 HP."
+},
+{
+"id": "RING_OF_THE_SERPENT",
+"name": "Ring of the Serpent",
+"tier": "Boss",
+"text": "Replaces Ring of the Snake. At the start of your turn, draw 1 additional card."
+},
+{
+"id": "RING_OF_THE_SNAKE",
+"name": "Ring of the Snake",
+"tier": "Starter",
+"text": "At the start of each combat, draw 2 additional cards."
+},
+{
+"id": "RUNIC_CAPACITOR",
+"name": "Runic Capacitor",
+"tier": "Shop",
+"text": "Start each combat with 3 additional Orb slots."
+},
+{
+"id": "RUNIC_CUBE",
+"name": "Runic Cube",
+"tier": "Boss",
+"text": "Whenever you lose HP, draw 1 card."
+},
+{
+"id": "RUNIC_DOME",
+"name": "Runic Dome",
+"tier": "Boss",
+"text": "Gain [Energy] at the start of your turn. You can no longer see enemy Intents."
+},
+{
+"id": "RUNIC_PYRAMID",
+"name": "Runic Pyramid",
+"tier": "Boss",
+"text": "At the end of your turn, you no longer discard your hand."
+},
+{
+"id": "SACREDBARK",
+"name": "Sacred Bark",
+"tier": "Boss",
+"text": "Double the effectiveness of potions."
+},
+{
+"id": "SELF_FORMING_CLAY",
+"name": "Self-Forming Clay",
+"tier": "Uncommon",
+"text": "Whenever you lose HP, gain 3 Block next turn."
+},
+{
+"id": "SHOVEL",
+"name": "Shovel",
+"tier": "Rare",
+"text": "You can now Dig for relics at Rest Sites."
+},
+{
+"id": "SHURIKEN",
+"name": "Shuriken",
+"tier": "Uncommon",
+"text": "Every time you play 3 Attacks in a single turn, gain 1 Strength."
+},
+{
+"id": "SINGING_BOWL",
+"name": "Singing Bowl",
+"tier": "Uncommon",
+"text": "When adding cards into your deck, you may raise your Max HP by 2 instead."
+},
+{
+"id": "SLAVERSCOLLAR",
+"name": "Slaver's Collar",
+"tier": "Boss",
+"text": "Gain [Energy] at the start of your turn during Boss and Elite combats."
+},
+{
+"id": "SLING",
+"name": "Sling of Courage",
+"tier": "Shop",
+"text": "Start each Elite combat with 2 Strength."
+},
+{
+"id": "SMILING_MASK",
+"name": "Smiling Mask",
+"tier": "Common",
+"text": "The Merchant's card removal service now always costs 50 Gold."
+},
+{
+"id": "SNAKE_SKULL",
+"name": "Snecko Skull",
+"tier": "Common",
+"text": "Whenever you apply Poison, apply an additional 1 Poison."
+},
+{
+"id": "SNECKO_EYE",
+"name": "Snecko Eye",
+"tier": "Boss",
+"text": "At the start of your turn, draw 2 additional cards. Start each combat Confused."
+},
+{
+"id": "SOZU",
+"name": "Sozu",
+"tier": "Boss",
+"text": "Gain [Energy] at the start of your turn. You can no longer obtain Potions."
+},
+{
+"id": "SPIRIT_POOP",
+"name": "Spirit Poop",
+"tier": "Special",
+"text": "It's unpleasant."
+},
+{
+"id": "SSSERPENTHEAD",
+"name": "Ssserpent Head",
+"tier": "Special",
+"text": "Whenever you enter a ? room, gain 50 Gold."
+},
+{
+"id": "STONECALENDAR",
+"name": "Stone Calendar",
+"tier": "Rare",
+"text": "At the end of turn 7, deal 52 damage to ALL enemies."
+},
+{
+"id": "STRANGE_SPOON",
+"name": "Strange Spoon",
+"tier": "Shop",
+"text": "Cards which Exhaust when played will instead discard 50% of the time."
+},
+{
+"id": "STRAWBERRY",
+"name": "Strawberry",
+"tier": "Common",
+"text": "Upon pickup, raise your Max HP by 7."
+},
+{
+"id": "STRIKEDUMMY",
+"name": "Strike Dummy",
+"tier": "Uncommon",
+"text": "Cards containing Strike deal 3 additional damage."
+},
+{
+"id": "SUNDIAL",
+"name": "Sundial",
+"tier": "Uncommon",
+"text": "Every 3 times you shuffle your draw pile, gain [Energy] [Energy]."
+},
+{
+"id": "SYMBIOTIC_VIRUS",
+"name": "Symbiotic Virus",
+"tier": "Uncommon",
+"text": "At the start of each combat, Channel 1 Dark."
+},
+{
+"id": "TEARDROPLOCKET",
+"name": "Teardrop Locket",
+"tier": "Uncommon",
+"text": "Start each combat in Calm."
+},
+{
+"id": "THEABACUS",
+"name": "The Abacus",
+"tier": "Shop",
+"text": "Whenever you shuffle your draw pile, gain 6 Block."
+},
+{
+"id": "THE_COURIER",
+"name": "The Courier",
+"tier": "Uncommon",
+"text": "The Merchant restocks cards, relics, and potions. All prices are reduced by 20%."
+},
+{
+"id": "THE_SPECIMEN",
+"name": "The Specimen",
+"tier": "Rare",
+"text": "Whenever an enemy dies, transfer any Poison it has to a random enemy."
+},
+{
+"id": "THREAD_AND_NEEDLE",
+"name": "Thread and Needle",
+"tier": "Rare",
+"text": "Start each combat with 4 Plated Armor."
+},
+{
+"id": "TINGSHA",
+"name": "Tingsha",
+"tier": "Rare",
+"text": "Whenever you discard a card during your turn, deal 3 damage to a random enemy."
+},
+{
+"id": "TINY_CHEST",
+"name": "Tiny Chest",
+"tier": "Common",
+"text": "Every 4 th ? room is a Treasure room."
+},
+{
+"id": "TINY_HOUSE",
+"name": "Tiny House",
+"tier": "Boss",
+"text": "Upon pickup, obtain 1 potion. Gain 50 Gold. Raise your Max HP by 5. Obtain 1 card. Upgrade 1 random card."
+},
+{
+"id": "TOOLBOX",
+"name": "Toolbox",
+"tier": "Shop",
+"text": "At the start of each combat, choose 1 of 3 random Colorless cards and add the chosen card into your hand."
+},
+{
+"id": "TORII",
+"name": "Torii",
+"tier": "Rare",
+"text": "Whenever you would receive 5 or less unblocked attack damage, reduce it to 1."
+},
+{
+"id": "TOUGH_BANDAGES",
+"name": "Tough Bandages",
+"tier": "Rare",
+"text": "Whenever you discard a card during your turn, gain 3 Block."
+},
+{
+"id": "TOXIC_EGG_2",
+"name": "Toxic Egg",
+"tier": "Uncommon",
+"text": "Whenever you add a Skill into your deck, Upgrade it."
+},
+{
+"id": "TOY_ORNITHOPTER",
+"name": "Toy Ornithopter",
+"tier": "Common",
+"text": "Whenever you use a potion, heal 5 HP."
+},
+{
+"id": "TUNGSTENROD",
+"name": "Tungsten Rod",
+"tier": "Rare",
+"text": "Whenever you would lose HP, lose 1 less."
+},
+{
+"id": "TURNIP",
+"name": "Turnip",
+"tier": "Rare",
+"text": "You can no longer become Frail."
+},
+{
+"id": "TWISTEDFUNNEL",
+"name": "Twisted Funnel",
+"tier": "Shop",
+"text": "At the start of each combat, apply 4 Poison to ALL enemies."
+},
+{
+"id": "UNCEASING_TOP",
+"name": "Unceasing Top",
+"tier": "Rare",
+"text": "Whenever you have no cards in hand during your turn, draw a card."
+},
+{
+"id": "VAJRA",
+"name": "Vajra",
+"tier": "Common",
+"text": "Start each combat with 1 Strength."
+},
+{
+"id": "VELVET_CHOKER",
+"name": "Velvet Choker",
+"tier": "Boss",
+"text": "Gain [Energy] at the start of your turn. You cannot play more than 6 cards per turn."
+},
+{
+"id": "VIOLETLOTUS",
+"name": "Violet Lotus",
+"tier": "Boss",
+"text": "Whenever you exit Calm, gain an additional [Energy]."
+},
+{
+"id": "WARPEDTONGS",
+"name": "Warped Tongs",
+"tier": "Special",
+"text": "At the start of your turn, Upgrade a random card in your hand for the rest of combat."
+},
+{
+"id": "WAR_PAINT",
+"name": "War Paint",
+"tier": "Common",
+"text": "Upon pickup, Upgrade 2 random Skills."
+},
+{
+"id": "WHETSTONE",
+"name": "Whetstone",
+"tier": "Common",
+"text": "Upon pickup, Upgrade 2 random Attacks."
+},
+{
+"id": "WHITE_BEAST_STATUE",
+"name": "White Beast Statue",
+"tier": "Uncommon",
+"text": "Potions always appear in combat rewards."
+},
+{
+"id": "WINGEDGREAVES",
+"name": "Wing Boots",
+"tier": "Rare",
+"text": "You may ignore paths when choosing the next room to travel to 3 times."
+},
+{
+"id": "WRISTBLADE",
+"name": "Wrist Blade",
+"tier": "Boss",
+"text": "Attacks that cost 0 deal 4 additional damage."
+},
+{
+"id": "YANG",
+"name": "Duality",
+"tier": "Uncommon",
+"text": "Whenever you play an Attack, gain 1 temporary Dexterity."
+}
+]

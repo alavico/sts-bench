@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..state.schema import StateMessage
+from ..state.schema import CombatRewardScreen, ShopScreen, StateMessage
 from .schema import (
     Action,
     Choose,
@@ -91,10 +91,37 @@ def _validate_play(action: PlayCard, message: StateMessage, commands: set[str]) 
 def _validate_choose(action: Choose, message: StateMessage, commands: set[str]) -> Verdict:
     if "choose" not in commands:
         return Verdict.reject("cannot choose now: there is no choice list on this screen")
-    choices = message.game_state.choice_list if message.game_state else []
+    state = message.game_state
+    choices = state.choice_list if state else []
     if not 0 <= action.choice_index < len(choices):
         listing = ", ".join(f"[{i}] {c}" for i, c in enumerate(choices))
         return Verdict.reject(f"choice_index {action.choice_index} is out of range; choices are: {listing}")
+    return _validate_potion_capacity(action, state, choices)
+
+
+def _validate_potion_capacity(action: Choose, state, choices: list[str]) -> Verdict:
+    """A potion cannot be taken or bought onto a full belt. The game greys the
+    click out, and CommunicationMod hangs on it (observed live: the run died
+    on a 60s step timeout), so this must never reach the wire."""
+    if state is None or not state.potions_full:
+        return Verdict.accept()
+    slots = len(state.potions)
+    full = f"potion belt is full ({slots}/{slots})"
+
+    screen = state.screen
+    if isinstance(screen, CombatRewardScreen):
+        rewards = screen.rewards
+        if action.choice_index < len(rewards) and rewards[action.choice_index].reward_type == "POTION":
+            return Verdict.reject(
+                f"cannot take the potion: {full}; discard_potion to make room, "
+                "take another reward, or proceed"
+            )
+    if isinstance(screen, ShopScreen):
+        chosen = choices[action.choice_index]
+        if any(p.name.lower() == chosen for p in screen.potions):
+            return Verdict.reject(
+                f"cannot buy {chosen}: {full}; discard_potion to make room first"
+            )
     return Verdict.accept()
 
 

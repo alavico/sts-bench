@@ -66,14 +66,53 @@ def test_rejected_command_keeps_previous_state(link):
     assert env.state == before
 
 
-def test_step_timeout_nudges_with_state_then_raises(link):
+def test_step_timeout_nudges_then_returns_error_result(link):
+    # The game can absorb a click without ever becoming ready again; that is a
+    # result for the caller to react to, never a crash.
     conn, mod = link
     env = handshaken(conn, mod)
+    before = env.state
     env._step_timeout = 0.3
-    with pytest.raises(TimeoutError):
-        env.step("end")
+    result = env.step("end")
     assert mod.expect_line() == "end"
     assert mod.expect_line() == "state"  # the halfway nudge
+    assert not result.ok
+    assert "no ready state" in result.error
+    assert result.state == before
+
+
+def combat_with_intent(intent):
+    return {
+        "floor": 1,
+        "act": 1,
+        "screen_type": "NONE",
+        "combat_state": {"turn": 1, "monsters": [{"name": "Looter", "intent": intent, "is_gone": False}]},
+    }
+
+
+def test_rolling_intent_resolved_by_a_followup_state(link):
+    # The first combat snapshot can carry the DEBUG intent placeholder; a
+    # follow-up state with the rolled intent arrives moments later and wins.
+    conn, mod = link
+    env = handshaken(conn, mod)
+    mod.send_state(game_state=combat_with_intent("DEBUG"))
+    mod.send_state(game_state=combat_with_intent("ATTACK"))
+    result = env.step("proceed")
+    assert result.state["game_state"]["combat_state"]["monsters"][0]["intent"] == "ATTACK"
+
+
+def test_rolling_intent_probe_gives_up_gracefully(link):
+    # If the game never rolls within the probe window, the placeholder state
+    # is returned (the serializer renders it honestly) instead of stalling.
+    conn, mod = link
+    env = handshaken(conn, mod)
+    env._step_timeout = 0.6
+    mod.send_state(game_state=combat_with_intent("DEBUG"))
+    result = env.step("proceed")
+    assert result.ok
+    assert result.state["game_state"]["combat_state"]["monsters"][0]["intent"] == "DEBUG"
+    assert mod.expect_line() == "proceed"
+    assert mod.expect_line() == "state"  # the intent re-probe went out
 
 
 def test_reset_requires_out_of_game(link):

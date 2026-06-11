@@ -10,8 +10,7 @@ from __future__ import annotations
 
 from collections import Counter
 
-from ..state.schema import Card, MapNode, StateMessage
-from ..state.serialize import HIDDEN_COMMANDS
+from ..state.schema import HIDDEN_COMMANDS, Card, MapNode, StateMessage
 
 NOT_IN_RUN = "not in a run right now"
 MAP_LEGEND = "M monster, E elite, $ shop, R rest, T chest, ? event, B boss"

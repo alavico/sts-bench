@@ -1,0 +1,2882 @@
+[
+{
+"id": "ACCURACY",
+"name": "Accuracy",
+"color": "silent",
+"type": "Power",
+"text": "Shivs deal 4 additional damage.",
+"upgraded_text": "Shivs deal 6 additional damage."
+},
+{
+"id": "ACROBATICS",
+"name": "Acrobatics",
+"color": "silent",
+"type": "Skill",
+"text": "Draw 3 cards. Discard 1 card.",
+"upgraded_text": "Draw 4 cards. Discard 1 card."
+},
+{
+"id": "ADAPTATION",
+"name": "Rushdown",
+"color": "watcher",
+"type": "Power",
+"text": "Whenever you enter Wrath, draw 2 cards.",
+"upgraded_text": "Whenever you enter Wrath, draw 2 cards."
+},
+{
+"id": "ADRENALINE",
+"name": "Adrenaline",
+"color": "silent",
+"type": "Skill",
+"text": "Gain [G]. Draw 2 cards. Exhaust.",
+"upgraded_text": "Gain [G] [G]. Draw 2 cards. Exhaust."
+},
+{
+"id": "AFTER_IMAGE",
+"name": "After Image",
+"color": "silent",
+"type": "Power",
+"text": "Whenever you play a card, gain 1 Block.",
+"upgraded_text": "Innate. Whenever you play a card, gain 1 Block."
+},
+{
+"id": "AGGREGATE",
+"name": "Aggregate",
+"color": "defect",
+"type": "Skill",
+"text": "Gain [B] for every 4 cards in your draw pile.",
+"upgraded_text": "Gain [B] for every 3 cards in your draw pile."
+},
+{
+"id": "ALL_FOR_ONE",
+"name": "All for One",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 10 damage. Put all cost 0 cards from your discard pile into your hand.",
+"upgraded_text": "Deal 14 damage. Put all cost 0 cards from your discard pile into your hand."
+},
+{
+"id": "ALL_OUT_ATTACK",
+"name": "All-Out Attack",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 10 damage to ALL enemies. Discard 1 card at random.",
+"upgraded_text": "Deal 14 damage to ALL enemies. Discard 1 card at random."
+},
+{
+"id": "ALPHA",
+"name": "Alpha",
+"color": "watcher",
+"type": "Skill",
+"text": "Shuffle a Beta into your draw pile. Exhaust.",
+"upgraded_text": "Innate. Shuffle a Beta into your draw pile. Exhaust."
+},
+{
+"id": "AMPLIFY",
+"name": "Amplify",
+"color": "defect",
+"type": "Skill",
+"text": "This turn, your next Power card is played twice.",
+"upgraded_text": "This turn, your next 2 Power cards are played twice."
+},
+{
+"id": "ANGER",
+"name": "Anger",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 6 damage. Add a copy of this card into your discard pile.",
+"upgraded_text": "Deal 8 damage. Add a copy of this card into your discard pile."
+},
+{
+"id": "APOTHEOSIS",
+"name": "Apotheosis",
+"color": "colorless",
+"type": "Skill",
+"text": "Upgrade ALL your cards for the rest of combat. Exhaust.",
+"upgraded_text": "Upgrade ALL your cards for the rest of combat. Exhaust."
+},
+{
+"id": "ARMAMENTS",
+"name": "Armaments",
+"color": "ironclad",
+"type": "Skill",
+"text": "Gain 5 Block. Upgrade a card in your hand for the rest of combat.",
+"upgraded_text": "Gain 5 Block. Upgrade all cards in your hand for the rest of combat."
+},
+{
+"id": "ASCENDERSBANE",
+"name": "Ascender's Bane",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. Ethereal. Cannot be removed from your deck.",
+"upgraded_text": "Unplayable. Ethereal. Cannot be removed from your deck."
+},
+{
+"id": "AUTO_SHIELDS",
+"name": "Auto-Shields",
+"color": "defect",
+"type": "Skill",
+"text": "If you have no Block, gain 11 Block.",
+"upgraded_text": "If you have no Block, gain 15 Block."
+},
+{
+"id": "A_THOUSAND_CUTS",
+"name": "A Thousand Cuts",
+"color": "silent",
+"type": "Power",
+"text": "Whenever you play a card, deal 1 damage to ALL enemies.",
+"upgraded_text": "Whenever you play a card, deal 2 damage to ALL enemies."
+},
+{
+"id": "BACKFLIP",
+"name": "Backflip",
+"color": "silent",
+"type": "Skill",
+"text": "Gain 5 Block. Draw 2 cards.",
+"upgraded_text": "Gain 8 Block. Draw 2 cards."
+},
+{
+"id": "BACKSTAB",
+"name": "Backstab",
+"color": "silent",
+"type": "Attack",
+"text": "Innate. Deal 11 damage. Exhaust.",
+"upgraded_text": "Innate. Deal 15 damage. Exhaust."
+},
+{
+"id": "BALL_LIGHTNING",
+"name": "Ball Lightning",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 7 damage. Channel 1 Lightning.",
+"upgraded_text": "Deal 10 damage. Channel 1 Lightning."
+},
+{
+"id": "BANDAGE_UP",
+"name": "Bandage Up",
+"color": "colorless",
+"type": "Skill",
+"text": "Heal 4 HP. Exhaust.",
+"upgraded_text": "Heal 6 HP. Exhaust."
+},
+{
+"id": "BANE",
+"name": "Bane",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 7 damage. If the enemy has Poison, deal 7 damage again.",
+"upgraded_text": "Deal 10 damage. If the enemy has Poison, deal 7 damage again."
+},
+{
+"id": "BARRAGE",
+"name": "Barrage",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 4 damage for each Channeled Orb.",
+"upgraded_text": "Deal 6 damage for each Channeled Orb."
+},
+{
+"id": "BARRICADE",
+"name": "Barricade",
+"color": "ironclad",
+"type": "Power",
+"text": "Block is not removed at the start of your turn.",
+"upgraded_text": "Block is not removed at the start of your turn."
+},
+{
+"id": "BASH",
+"name": "Bash",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 8 damage. Apply 2 Vulnerable.",
+"upgraded_text": "Deal 10 damage. Apply 3 Vulnerable."
+},
+{
+"id": "BATTLEHYMN",
+"name": "Battle Hymn",
+"color": "watcher",
+"type": "Power",
+"text": "At the start of each turn, add a Smite into your hand.",
+"upgraded_text": "Innate. At the start of each turn, add a Smite into your hand."
+},
+{
+"id": "BATTLE_TRANCE",
+"name": "Battle Trance",
+"color": "ironclad",
+"type": "Skill",
+"text": "Draw 3 cards. You cannot draw additional cards this turn.",
+"upgraded_text": "Draw 4 cards. You cannot draw additional cards this turn."
+},
+{
+"id": "BEAM_CELL",
+"name": "Beam Cell",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 3 damage. Apply 1 Vulnerable.",
+"upgraded_text": "Deal 4 damage. Apply 2 Vulnerable."
+},
+{
+"id": "BERSERK",
+"name": "Berserk",
+"color": "ironclad",
+"type": "Power",
+"text": "Gain 2 Vulnerable. At the start of your turn, gain [R].",
+"upgraded_text": "Gain 1 Vulnerable. At the start of your turn, gain [R]."
+},
+{
+"id": "BIASED_COGNITION",
+"name": "Biased Cognition",
+"color": "defect",
+"type": "Power",
+"text": "Gain 4 Focus. At the start of your turn, lose 1 Focus.",
+"upgraded_text": "Gain 5 Focus. At the start of your turn, lose 1 Focus."
+},
+{
+"id": "BITE",
+"name": "Bite",
+"color": "colorless",
+"type": "Attack",
+"text": "Deal 7 damage. Heal 2 HP.",
+"upgraded_text": "Deal 8 damage. Heal 3 HP."
+},
+{
+"id": "BLADE_DANCE",
+"name": "Blade Dance",
+"color": "silent",
+"type": "Skill",
+"text": "Add 3 Shivs into your hand.",
+"upgraded_text": "Add 4 Shivs into your hand."
+},
+{
+"id": "BLASPHEMY",
+"name": "Blasphemy",
+"color": "watcher",
+"type": "Skill",
+"text": "Enter Divinity. Die next turn. Exhaust.",
+"upgraded_text": "Retain. Enter Divinity. Die next turn. Exhaust."
+},
+{
+"id": "BLIND",
+"name": "Blind",
+"color": "colorless",
+"type": "Skill",
+"text": "Apply 2 Weak.",
+"upgraded_text": "Apply 2 Weak to ALL enemies."
+},
+{
+"id": "BLIZZARD",
+"name": "Blizzard",
+"color": "defect",
+"type": "Attack",
+"text": "Deal damage equal to 2 times the number of Frost Channeled this combat to ALL enemies.",
+"upgraded_text": "Deal damage equal to 3 times the number of Frost Channeled this combat to ALL enemies."
+},
+{
+"id": "BLOODLETTING",
+"name": "Bloodletting",
+"color": "ironclad",
+"type": "Skill",
+"text": "Lose 3 HP. Gain [R] [R].",
+"upgraded_text": "Lose 3 HP. Gain [R] [R] [R]."
+},
+{
+"id": "BLOOD_FOR_BLOOD",
+"name": "Blood for Blood",
+"color": "ironclad",
+"type": "Attack",
+"text": "Costs 1 less [R] for each time you lose HP this combat. Deal 18 damage.",
+"upgraded_text": "Costs 1 less [R] for each time you lose HP this combat. Deal 22 damage."
+},
+{
+"id": "BLUDGEON",
+"name": "Bludgeon",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 32 damage.",
+"upgraded_text": "Deal 42 damage."
+},
+{
+"id": "BLUR",
+"name": "Blur",
+"color": "silent",
+"type": "Skill",
+"text": "Gain 5 Block. Block is not removed at the start of your next turn.",
+"upgraded_text": "Gain 8 Block. Block is not removed at the start of your next turn."
+},
+{
+"id": "BODY_SLAM",
+"name": "Body Slam",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal damage equal to your Block.",
+"upgraded_text": "(Deals 0 damage.)"
+},
+{
+"id": "BOOTSEQUENCE",
+"name": "Boot Sequence",
+"color": "defect",
+"type": "Skill",
+"text": "Innate. Gain 10 Block. Exhaust.",
+"upgraded_text": "Innate. Gain 13 Block. Exhaust."
+},
+{
+"id": "BOUNCING_FLASK",
+"name": "Bouncing Flask",
+"color": "silent",
+"type": "Skill",
+"text": "Apply 3 Poison to a random enemy 3 times.",
+"upgraded_text": "Apply 4 Poison to a random enemy 3 times."
+},
+{
+"id": "BOWLINGBASH",
+"name": "Bowling Bash",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 7 damage for each enemy in combat.",
+"upgraded_text": "Deal 10 damage for each enemy in combat."
+},
+{
+"id": "BRILLIANCE",
+"name": "Brilliance",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 12 damage. Deals additional damage equal to Mantra gained this combat.",
+"upgraded_text": "Deal 16 damage. Deals additional damage equal to Mantra gained this combat."
+},
+{
+"id": "BRUTALITY",
+"name": "Brutality",
+"color": "ironclad",
+"type": "Power",
+"text": "At the start of your turn, lose 1 HP and draw 1 card.",
+"upgraded_text": "Innate. At the start of your turn, lose 1 HP and draw 1 card."
+},
+{
+"id": "BUFFER",
+"name": "Buffer",
+"color": "defect",
+"type": "Power",
+"text": "Prevent the next time you would lose HP.",
+"upgraded_text": "Prevent the next 2 times you would lose HP."
+},
+{
+"id": "BULLET_TIME",
+"name": "Bullet Time",
+"color": "silent",
+"type": "Skill",
+"text": "You cannot draw additional cards this turn. Reduce the cost of all cards in your hand to 0 this turn.",
+"upgraded_text": "You cannot draw additional cards this turn. Reduce the cost of all cards in your hand to 0 this turn."
+},
+{
+"id": "BURN",
+"name": "Burn",
+"color": "colorless",
+"type": "Status",
+"text": "Unplayable. At the end of your turn, take 2 damage.",
+"upgraded_text": "Unplayable. At the end of your turn, take 4 damage."
+},
+{
+"id": "BURNING_PACT",
+"name": "Burning Pact",
+"color": "ironclad",
+"type": "Skill",
+"text": "Exhaust 1 card. Draw 2 cards.",
+"upgraded_text": "Exhaust 1 card. Draw 3 cards."
+},
+{
+"id": "BURST",
+"name": "Burst",
+"color": "silent",
+"type": "Skill",
+"text": "This turn, your next Skill is played twice.",
+"upgraded_text": "This turn, your next 2 Skills are played twice."
+},
+{
+"id": "CALCULATED_GAMBLE",
+"name": "Calculated Gamble",
+"color": "silent",
+"type": "Skill",
+"text": "Discard your hand, then draw that many cards. Exhaust.",
+"upgraded_text": "Discard your hand, then draw that many cards."
+},
+{
+"id": "CALTROPS",
+"name": "Caltrops",
+"color": "silent",
+"type": "Power",
+"text": "Whenever you are attacked, deal 3 damage back.",
+"upgraded_text": "Whenever you are attacked, deal 5 damage back."
+},
+{
+"id": "CAPACITOR",
+"name": "Capacitor",
+"color": "defect",
+"type": "Power",
+"text": "Gain 2 Orb slots.",
+"upgraded_text": "Gain 3 Orb slots."
+},
+{
+"id": "CARNAGE",
+"name": "Carnage",
+"color": "ironclad",
+"type": "Attack",
+"text": "Ethereal. Deal 20 damage.",
+"upgraded_text": "Ethereal. Deal 28 damage."
+},
+{
+"id": "CARVEREALITY",
+"name": "Carve Reality",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 6 damage. Add a Smite into your hand.",
+"upgraded_text": "Deal 10 damage. Add a Smite into your hand."
+},
+{
+"id": "CATALYST",
+"name": "Catalyst",
+"color": "silent",
+"type": "Skill",
+"text": "Double the enemy's Poison. Exhaust.",
+"upgraded_text": "Triple the enemy's Poison. Exhaust."
+},
+{
+"id": "CHAOS",
+"name": "Chaos",
+"color": "defect",
+"type": "Skill",
+"text": "Channel 1 random Orb.",
+"upgraded_text": "Channel 2 random Orbs."
+},
+{
+"id": "CHILL",
+"name": "Chill",
+"color": "defect",
+"type": "Skill",
+"text": "Channel 1 Frost for each enemy in combat. Exhaust.",
+"upgraded_text": "Innate. Channel 1 Frost for each enemy in combat. Exhaust."
+},
+{
+"id": "CHOKE",
+"name": "Choke",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 12 damage. Whenever you play a card this turn, the enemy loses 3 HP.",
+"upgraded_text": "Deal 12 damage. Whenever you play a card this turn, the enemy loses 5 HP."
+},
+{
+"id": "CHRYSALIS",
+"name": "Chrysalis",
+"color": "colorless",
+"type": "Skill",
+"text": "Shuffle 3 random Skills into your draw pile. They cost 0 this combat. Exhaust.",
+"upgraded_text": "Shuffle 5 random Skills into your draw pile. They cost 0 this combat. Exhaust."
+},
+{
+"id": "CLASH",
+"name": "Clash",
+"color": "ironclad",
+"type": "Attack",
+"text": "Can only be played if every card in your hand is an Attack. Deal 14 damage.",
+"upgraded_text": "Can only be played if every card in your hand is an Attack. Deal 18 damage."
+},
+{
+"id": "CLEARTHEMIND",
+"name": "Tranquility",
+"color": "watcher",
+"type": "Skill",
+"text": "Retain. Enter Calm. Exhaust.",
+"upgraded_text": "Retain. Enter Calm. Exhaust."
+},
+{
+"id": "CLEAVE",
+"name": "Cleave",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 8 damage to ALL enemies.",
+"upgraded_text": "Deal 11 damage to ALL enemies."
+},
+{
+"id": "CLOAK_AND_DAGGER",
+"name": "Cloak and Dagger",
+"color": "silent",
+"type": "Skill",
+"text": "Gain 6 Block. Add 1 Shiv into your hand.",
+"upgraded_text": "Gain 6 Block. Add 2 Shivs into your hand."
+},
+{
+"id": "CLOTHESLINE",
+"name": "Clothesline",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 12 damage. Apply 2 Weak.",
+"upgraded_text": "Deal 14 damage. Apply 3 Weak."
+},
+{
+"id": "CLUMSY",
+"name": "Clumsy",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. Ethereal.",
+"upgraded_text": "Unplayable. Ethereal."
+},
+{
+"id": "COLD_SNAP",
+"name": "Cold Snap",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 6 damage. Channel 1 Frost.",
+"upgraded_text": "Deal 9 damage. Channel 1 Frost."
+},
+{
+"id": "COLLECT",
+"name": "Collect",
+"color": "watcher",
+"type": "Skill",
+"text": "Put a Miracle+ into your hand at the start of your next X turns. Exhaust.",
+"upgraded_text": "Put a Miracle+ into your hand at the start of your next X+1 turns. Exhaust."
+},
+{
+"id": "COMBUST",
+"name": "Combust",
+"color": "ironclad",
+"type": "Power",
+"text": "At the end of your turn, lose 1 HP and deal 5 damage to ALL enemies.",
+"upgraded_text": "At the end of your turn, lose 1 HP and deal 7 damage to ALL enemies."
+},
+{
+"id": "COMPILE_DRIVER",
+"name": "Compile Driver",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 7 damage. Draw 1 card for each unique Orb you have.",
+"upgraded_text": "Deal 10 damage. Draw 1 card for each unique Orb you have."
+},
+{
+"id": "CONCENTRATE",
+"name": "Concentrate",
+"color": "silent",
+"type": "Skill",
+"text": "Discard 3 cards. Gain [G] [G].",
+"upgraded_text": "Discard 2 cards. Gain [G] [G]."
+},
+{
+"id": "CONCLUDE",
+"name": "Conclude",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 12 damage to ALL enemies. End your turn.",
+"upgraded_text": "Deal 16 damage to ALL enemies. End your turn."
+},
+{
+"id": "CONJUREBLADE",
+"name": "Conjure Blade",
+"color": "watcher",
+"type": "Skill",
+"text": "Shuffle an Expunger into your draw pile. Exhaust.",
+"upgraded_text": "Shuffle an Expunger with X+1 into your draw pile. Exhaust."
+},
+{
+"id": "CONSECRATE",
+"name": "Consecrate",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 5 damage to ALL enemies.",
+"upgraded_text": "Deal 8 damage to ALL enemies."
+},
+{
+"id": "CONSERVE_BATTERY",
+"name": "Charge Battery",
+"color": "defect",
+"type": "Skill",
+"text": "Gain 7 Block. Next turn, gain [B].",
+"upgraded_text": "Gain 10 Block. Next turn, gain [B]."
+},
+{
+"id": "CONSUME",
+"name": "Consume",
+"color": "defect",
+"type": "Skill",
+"text": "Gain 2 Focus. Lose 1 Orb slot.",
+"upgraded_text": "Gain 3 Focus. Lose 1 Orb slot."
+},
+{
+"id": "COOLHEADED",
+"name": "Coolheaded",
+"color": "defect",
+"type": "Skill",
+"text": "Channel 1 Frost. Draw 1 card.",
+"upgraded_text": "Channel 1 Frost. Draw 2 cards."
+},
+{
+"id": "CORE_SURGE",
+"name": "Core Surge",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 11 damage. Gain 1 Artifact. Exhaust.",
+"upgraded_text": "Deal 15 damage. Gain 1 Artifact. Exhaust."
+},
+{
+"id": "CORPSE_EXPLOSION",
+"name": "Corpse Explosion",
+"color": "silent",
+"type": "Skill",
+"text": "Apply 6 Poison. When the enemy dies, deal damage equal to its Max HP to ALL enemies.",
+"upgraded_text": "Apply 9 Poison. When the enemy dies, deal damage equal to its Max HP to ALL enemies."
+},
+{
+"id": "CORRUPTION",
+"name": "Corruption",
+"color": "ironclad",
+"type": "Power",
+"text": "Skills cost 0. Whenever you play a Skill, Exhaust it.",
+"upgraded_text": "Skills cost 0. Whenever you play a Skill, Exhaust it."
+},
+{
+"id": "CREATIVE_AI",
+"name": "Creative AI",
+"color": "defect",
+"type": "Power",
+"text": "At the start of your turn, add a random Power card into your hand.",
+"upgraded_text": "At the start of your turn, add a random Power card into your hand."
+},
+{
+"id": "CRESCENDO",
+"name": "Crescendo",
+"color": "watcher",
+"type": "Skill",
+"text": "Retain. Enter Wrath. Exhaust.",
+"upgraded_text": "Retain. Enter Wrath. Exhaust."
+},
+{
+"id": "CRIPPLING_POISON",
+"name": "Crippling Cloud",
+"color": "silent",
+"type": "Skill",
+"text": "Apply 4 Poison and 2 Weak to ALL enemies. Exhaust.",
+"upgraded_text": "Apply 7 Poison and 2 Weak to ALL enemies. Exhaust."
+},
+{
+"id": "CRUSHJOINTS",
+"name": "Crush Joints",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 8 damage. If the last card played this combat was a Skill, apply 1 Vulnerable.",
+"upgraded_text": "Deal 10 damage. If the last card played this combat was a Skill, apply 2 Vulnerable."
+},
+{
+"id": "CURSEOFTHEBELL",
+"name": "Curse of the Bell",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. Cannot be removed from your deck.",
+"upgraded_text": "Unplayable. Cannot be removed from your deck."
+},
+{
+"id": "CUTTHROUGHFATE",
+"name": "Cut Through Fate",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 7 damage. Scry 2. Draw 1 card.",
+"upgraded_text": "Deal 9 damage. Scry 3. Draw 1 card."
+},
+{
+"id": "DAGGER_SPRAY",
+"name": "Dagger Spray",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 4 damage to ALL enemies twice.",
+"upgraded_text": "Deal 6 damage to ALL enemies twice."
+},
+{
+"id": "DAGGER_THROW",
+"name": "Dagger Throw",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 9 damage. Draw 1 card. Discard 1 card.",
+"upgraded_text": "Deal 12 damage. Draw 1 card. Discard 1 card."
+},
+{
+"id": "DARKNESS",
+"name": "Darkness",
+"color": "defect",
+"type": "Skill",
+"text": "Channel 1 Dark.",
+"upgraded_text": "Channel 1 Dark. Trigger the passive ability of all Dark orbs."
+},
+{
+"id": "DARK_EMBRACE",
+"name": "Dark Embrace",
+"color": "ironclad",
+"type": "Power",
+"text": "Whenever a card is Exhausted, draw 1 card.",
+"upgraded_text": "Whenever a card is Exhausted, draw 1 card."
+},
+{
+"id": "DARK_SHACKLES",
+"name": "Dark Shackles",
+"color": "colorless",
+"type": "Skill",
+"text": "Enemy loses 9 Strength this turn. Exhaust.",
+"upgraded_text": "Enemy loses 15 Strength this turn. Exhaust."
+},
+{
+"id": "DASH",
+"name": "Dash",
+"color": "silent",
+"type": "Attack",
+"text": "Gain 10 Block. Deal 10 damage.",
+"upgraded_text": "Gain 13 Block. Deal 13 damage."
+},
+{
+"id": "DAZED",
+"name": "Dazed",
+"color": "colorless",
+"type": "Status",
+"text": "Unplayable. Ethereal.",
+"upgraded_text": "Unplayable. Ethereal."
+},
+{
+"id": "DEADLY_POISON",
+"name": "Deadly Poison",
+"color": "silent",
+"type": "Skill",
+"text": "Apply 5 Poison.",
+"upgraded_text": "Apply 7 Poison."
+},
+{
+"id": "DECAY",
+"name": "Decay",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. At the end of your turn, take 2 damage.",
+"upgraded_text": "Unplayable. At the end of your turn, take 2 damage."
+},
+{
+"id": "DECEIVEREALITY",
+"name": "Deceive Reality",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 4 Block. Add a Safety into your hand.",
+"upgraded_text": "Gain 7 Block. Add a Safety into your hand."
+},
+{
+"id": "DEEP_BREATH",
+"name": "Deep Breath",
+"color": "colorless",
+"type": "Skill",
+"text": "Shuffle your discard pile into your draw pile. Draw 1 card.",
+"upgraded_text": "Shuffle your discard pile into your draw pile. Draw 2 cards."
+},
+{
+"id": "DEFEND_B",
+"name": "Defend",
+"color": "defect",
+"type": "Skill",
+"text": "Gain 5 Block.",
+"upgraded_text": "Gain 8 Block."
+},
+{
+"id": "DEFEND_G",
+"name": "Defend",
+"color": "silent",
+"type": "Skill",
+"text": "Gain 5 Block.",
+"upgraded_text": "Gain 8 Block."
+},
+{
+"id": "DEFEND_P",
+"name": "Defend",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 5 Block.",
+"upgraded_text": "Gain 8 Block."
+},
+{
+"id": "DEFEND_R",
+"name": "Defend",
+"color": "ironclad",
+"type": "Skill",
+"text": "Gain 5 Block.",
+"upgraded_text": "Gain 8 Block."
+},
+{
+"id": "DEFLECT",
+"name": "Deflect",
+"color": "silent",
+"type": "Skill",
+"text": "Gain 4 Block.",
+"upgraded_text": "Gain 7 Block."
+},
+{
+"id": "DEFRAGMENT",
+"name": "Defragment",
+"color": "defect",
+"type": "Power",
+"text": "Gain 1 Focus.",
+"upgraded_text": "Gain 2 Focus."
+},
+{
+"id": "DEMON_FORM",
+"name": "Demon Form",
+"color": "ironclad",
+"type": "Power",
+"text": "At the start of your turn, gain 2 Strength.",
+"upgraded_text": "At the start of your turn, gain 3 Strength."
+},
+{
+"id": "DEUSEXMACHINA",
+"name": "Deus Ex Machina",
+"color": "watcher",
+"type": "Skill",
+"text": "Unplayable. When you draw this card, add 2 Miracles to your hand and Exhaust.",
+"upgraded_text": "Unplayable. When you draw this card, add 3 Miracles to your hand and Exhaust."
+},
+{
+"id": "DEVAFORM",
+"name": "Deva Form",
+"color": "watcher",
+"type": "Power",
+"text": "Ethereal. At the start of your turn, gain and increase this gain by 1.",
+"upgraded_text": "At the start of your turn, gain and increase this gain by 1."
+},
+{
+"id": "DEVOTION",
+"name": "Devotion",
+"color": "watcher",
+"type": "Power",
+"text": "At the start of your turn, gain 2 Mantra.",
+"upgraded_text": "At the start of your turn, gain 3 Mantra."
+},
+{
+"id": "DIE_DIE_DIE",
+"name": "Die Die Die",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 13 damage to ALL enemies. Exhaust.",
+"upgraded_text": "Deal 17 damage to ALL enemies. Exhaust."
+},
+{
+"id": "DISARM",
+"name": "Disarm",
+"color": "ironclad",
+"type": "Skill",
+"text": "Enemy loses 2 Strength. Exhaust.",
+"upgraded_text": "Enemy loses 3 Strength. Exhaust."
+},
+{
+"id": "DISCOVERY",
+"name": "Discovery",
+"color": "colorless",
+"type": "Skill",
+"text": "Choose 1 of 3 random cards to add into your hand. It costs 0 this turn. Exhaust.",
+"upgraded_text": "Choose 1 of 3 random cards to add into your hand. It costs 0 this turn."
+},
+{
+"id": "DISTRACTION",
+"name": "Distraction",
+"color": "silent",
+"type": "Skill",
+"text": "Add a random Skill into your hand. It costs 0 this turn. Exhaust.",
+"upgraded_text": "Add a random Skill into your hand. It costs 0 this turn. Exhaust."
+},
+{
+"id": "DODGE_AND_ROLL",
+"name": "Dodge and Roll",
+"color": "silent",
+"type": "Skill",
+"text": "Gain 4 Block. Next turn, gain 4 Block.",
+"upgraded_text": "Gain 6 Block. Next turn, gain 4 Block."
+},
+{
+"id": "DOOM_AND_GLOOM",
+"name": "Doom and Gloom",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 10 damage to ALL enemies. Channel 1 Dark.",
+"upgraded_text": "Deal 14 damage to ALL enemies. Channel 1 Dark."
+},
+{
+"id": "DOPPELGANGER",
+"name": "Doppelganger",
+"color": "silent",
+"type": "Skill",
+"text": "Next turn, draw X cards and gain X [G]. Exhaust.",
+"upgraded_text": "Next turn, draw X+1 cards and gain X+1 [G]. Exhaust."
+},
+{
+"id": "DOUBLE_ENERGY",
+"name": "Double Energy",
+"color": "defect",
+"type": "Skill",
+"text": "Double your Energy. Exhaust.",
+"upgraded_text": "Double your Energy. Exhaust."
+},
+{
+"id": "DOUBLE_TAP",
+"name": "Double Tap",
+"color": "ironclad",
+"type": "Skill",
+"text": "This turn, your next Attack is played twice.",
+"upgraded_text": "This turn, your next 2 Attacks are played twice."
+},
+{
+"id": "DOUBT",
+"name": "Doubt",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. At the end of your turn, gain 1 Weak.",
+"upgraded_text": "Unplayable. At the end of your turn, gain 1 Weak."
+},
+{
+"id": "DRAMATIC_ENTRANCE",
+"name": "Dramatic Entrance",
+"color": "colorless",
+"type": "Attack",
+"text": "Innate. Deal 8 damage to ALL enemies. Exhaust.",
+"upgraded_text": "Innate. Deal 12 damage to ALL enemies. Exhaust."
+},
+{
+"id": "DROPKICK",
+"name": "Dropkick",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 5 damage. If the enemy has Vulnerable, gain [R] and draw 1 card.",
+"upgraded_text": "Deal 8 damage. If the enemy has Vulnerable, gain [R] and draw 1 card."
+},
+{
+"id": "DUALCAST",
+"name": "Dualcast",
+"color": "defect",
+"type": "Skill",
+"text": "Evoke your next Orb twice.",
+"upgraded_text": "Evoke your next Orb twice."
+},
+{
+"id": "DUAL_WIELD",
+"name": "Dual Wield",
+"color": "ironclad",
+"type": "Skill",
+"text": "Choose an Attack or Power card. Add a copy of that card into your hand.",
+"upgraded_text": "Choose an Attack or Power card. Add 2 copies of that card into your hand."
+},
+{
+"id": "ECHO_FORM",
+"name": "Echo Form",
+"color": "defect",
+"type": "Power",
+"text": "Ethereal. The first card you play each turn is played twice.",
+"upgraded_text": "The first card you play each turn is played twice."
+},
+{
+"id": "ELECTRODYNAMICS",
+"name": "Electrodynamics",
+"color": "defect",
+"type": "Power",
+"text": "Lightning now hits ALL enemies. Channel 2 Lightning.",
+"upgraded_text": "Lightning now hits ALL enemies. Channel 3 Lightning."
+},
+{
+"id": "EMPTYBODY",
+"name": "Empty Body",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 7 Block. Exit your Stance.",
+"upgraded_text": "Gain 10 Block. Exit your Stance."
+},
+{
+"id": "EMPTYFIST",
+"name": "Empty Fist",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 9 damage. Exit your Stance.",
+"upgraded_text": "Deal 14 damage. Exit your Stance."
+},
+{
+"id": "EMPTYMIND",
+"name": "Empty Mind",
+"color": "watcher",
+"type": "Skill",
+"text": "Draw 2 cards. Exit your Stance.",
+"upgraded_text": "Draw 3 cards. Exit your Stance."
+},
+{
+"id": "ENDLESS_AGONY",
+"name": "Endless Agony",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 4 damage. Whenever you draw this card, add a copy of it into your hand. Exhaust.",
+"upgraded_text": "Deal 6 damage. Whenever you draw this card, add a copy of it into your hand. Exhaust."
+},
+{
+"id": "ENLIGHTENMENT",
+"name": "Enlightenment",
+"color": "colorless",
+"type": "Skill",
+"text": "Reduce the cost of all cards in your hand to 1 this turn.",
+"upgraded_text": "Reduce the cost of all cards in your hand to 1 this combat."
+},
+{
+"id": "ENTRENCH",
+"name": "Entrench",
+"color": "ironclad",
+"type": "Skill",
+"text": "Double your Block.",
+"upgraded_text": "Double your Block."
+},
+{
+"id": "ENVENOM",
+"name": "Envenom",
+"color": "silent",
+"type": "Power",
+"text": "Whenever an Attack deals unblocked damage, apply 1 Poison.",
+"upgraded_text": "Whenever an Attack deals unblocked damage, apply 1 Poison."
+},
+{
+"id": "ERUPTION",
+"name": "Eruption",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 9 damage. Enter Wrath.",
+"upgraded_text": "Deal 9 damage. Enter Wrath."
+},
+{
+"id": "ESCAPE_PLAN",
+"name": "Escape Plan",
+"color": "silent",
+"type": "Skill",
+"text": "Draw 1 card. If you draw a Skill, gain 3 Block.",
+"upgraded_text": "Draw 1 card. If you draw a Skill, gain 5 Block."
+},
+{
+"id": "ESTABLISHMENT",
+"name": "Establishment",
+"color": "watcher",
+"type": "Power",
+"text": "Whenever a card is Retained, reduce its cost by 1 this combat.",
+"upgraded_text": "Innate. Whenever a card is Retained, reduce its cost by 1 this combat."
+},
+{
+"id": "EVALUATE",
+"name": "Evaluate",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 6 Block. Shuffle an Insight into your draw pile.",
+"upgraded_text": "Gain 10 Block. Shuffle an Insight into your draw pile."
+},
+{
+"id": "EVISCERATE",
+"name": "Eviscerate",
+"color": "silent",
+"type": "Attack",
+"text": "Costs 1 less [G] for each card discarded this turn. Deal 7 damage 3 times.",
+"upgraded_text": "Costs 1 less [G] for each card discarded this turn. Deal 9 damage 3 times."
+},
+{
+"id": "EVOLVE",
+"name": "Evolve",
+"color": "ironclad",
+"type": "Power",
+"text": "Whenever you draw a Status card, draw 1 card.",
+"upgraded_text": "Whenever you draw a Status card, draw 2 cards."
+},
+{
+"id": "EXHUME",
+"name": "Exhume",
+"color": "ironclad",
+"type": "Skill",
+"text": "Put a card from your exhaust pile into your hand. Exhaust.",
+"upgraded_text": "Put a card from your exhaust pile into your hand. Exhaust."
+},
+{
+"id": "EXPERTISE",
+"name": "Expertise",
+"color": "silent",
+"type": "Skill",
+"text": "Draw cards until you have 6 in your hand.",
+"upgraded_text": "Draw cards until you have 7 in your hand."
+},
+{
+"id": "FASTING2",
+"name": "Fasting",
+"color": "watcher",
+"type": "Power",
+"text": "Gain 3 Strength. Gain 3 Dexterity. Gain 1 less at the start of each turn.",
+"upgraded_text": "Gain 4 Strength. Gain 3 Dexterity. Gain 1 less at the start of each turn."
+},
+{
+"id": "FEARNOEVIL",
+"name": "Fear No Evil",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 8 damage. If the enemy intends to Attack, enter Calm.",
+"upgraded_text": "Deal 11 damage. If the enemy intends to Attack, enter Calm."
+},
+{
+"id": "FEED",
+"name": "Feed",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 10 damage. If Fatal, raise your Max HP by 3. Exhaust.",
+"upgraded_text": "Deal 12 damage. If Fatal, raise your Max HP by 4. Exhaust."
+},
+{
+"id": "FEEL_NO_PAIN",
+"name": "Feel No Pain",
+"color": "ironclad",
+"type": "Power",
+"text": "Whenever a card is Exhausted, gain 3 Block.",
+"upgraded_text": "Whenever a card is Exhausted, gain 4 Block."
+},
+{
+"id": "FIEND_FIRE",
+"name": "Fiend Fire",
+"color": "ironclad",
+"type": "Attack",
+"text": "Exhaust your hand. Deal 7 damage for each card Exhausted. Exhaust.",
+"upgraded_text": "Exhaust your hand. Deal 10 damage for each card Exhausted. Exhaust."
+},
+{
+"id": "FINESSE",
+"name": "Finesse",
+"color": "colorless",
+"type": "Skill",
+"text": "Gain 2 Block. Draw 1 card.",
+"upgraded_text": "Gain 4 Block. Draw 1 card."
+},
+{
+"id": "FINISHER",
+"name": "Finisher",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 6 damage for each Attack played this turn.",
+"upgraded_text": "Deal 8 damage for each Attack played this turn."
+},
+{
+"id": "FIRE_BREATHING",
+"name": "Fire Breathing",
+"color": "ironclad",
+"type": "Power",
+"text": "Whenever you draw a Status or Curse card, deal 6 damage to ALL enemies.",
+"upgraded_text": "Whenever you draw a Status or Curse card, deal 10 damage to ALL enemies."
+},
+{
+"id": "FISSION",
+"name": "Fission",
+"color": "defect",
+"type": "Skill",
+"text": "Remove all your Orbs. Gain [B] and draw 1 card for each Orb removed. Exhaust.",
+"upgraded_text": "Evoke all your Orbs. Gain [B] and draw 1 card for each Orb Evoked. Exhaust."
+},
+{
+"id": "FLAME_BARRIER",
+"name": "Flame Barrier",
+"color": "ironclad",
+"type": "Skill",
+"text": "Gain 12 Block. Whenever you are attacked this turn, deal 4 damage back.",
+"upgraded_text": "Gain 16 Block. Whenever you are attacked this turn, deal 6 damage back."
+},
+{
+"id": "FLASH_OF_STEEL",
+"name": "Flash of Steel",
+"color": "colorless",
+"type": "Attack",
+"text": "Deal 3 damage. Draw 1 card.",
+"upgraded_text": "Deal 6 damage. Draw 1 card."
+},
+{
+"id": "FLECHETTES",
+"name": "Flechettes",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 4 damage for each Skill in your hand.",
+"upgraded_text": "Deal 6 damage for each Skill in your hand."
+},
+{
+"id": "FLEX",
+"name": "Flex",
+"color": "ironclad",
+"type": "Skill",
+"text": "Gain 2 Strength. At the end of this turn, lose 2 Strength.",
+"upgraded_text": "Gain 4 Strength. At the end of this turn, lose 2 Strength."
+},
+{
+"id": "FLURRYOFBLOWS",
+"name": "Flurry of Blows",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 4 damage. Whenever you change Stances, return this from the discard pile to your hand.",
+"upgraded_text": "Deal 6 damage. Whenever you change Stances, return this from the discard pile to your hand."
+},
+{
+"id": "FLYINGSLEEVES",
+"name": "Flying Sleeves",
+"color": "watcher",
+"type": "Attack",
+"text": "Retain. Deal 4 damage twice.",
+"upgraded_text": "Retain. Deal 6 damage twice."
+},
+{
+"id": "FLYING_KNEE",
+"name": "Flying Knee",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 8 damage. Next turn, gain [G].",
+"upgraded_text": "Deal 11 damage. Next turn, gain [G]."
+},
+{
+"id": "FOLLOWUP",
+"name": "Follow-Up",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 7 damage. If the last card played this combat was an Attack, gain .",
+"upgraded_text": "Deal 11 damage. If the last card played this combat was an Attack, gain ."
+},
+{
+"id": "FOOTWORK",
+"name": "Footwork",
+"color": "silent",
+"type": "Power",
+"text": "Gain 2 Dexterity.",
+"upgraded_text": "Gain 3 Dexterity."
+},
+{
+"id": "FORCE_FIELD",
+"name": "Force Field",
+"color": "defect",
+"type": "Skill",
+"text": "Costs 1 less [B] for each Power card played this combat. Gain 12 Block.",
+"upgraded_text": "Costs 1 less [B] for each Power card played this combat. Gain 16 Block."
+},
+{
+"id": "FOREIGNINFLUENCE",
+"name": "Foreign Influence",
+"color": "watcher",
+"type": "Skill",
+"text": "Choose 1 of 3 Attacks of any color to add into your hand. Exhaust.",
+"upgraded_text": "Choose 1 of 3 Attacks of any color to add into your hand. It costs 0 this turn. Exhaust."
+},
+{
+"id": "FORETHOUGHT",
+"name": "Forethought",
+"color": "colorless",
+"type": "Skill",
+"text": "Put a card from your hand to the bottom of your draw pile. It costs 0 until played.",
+"upgraded_text": "Put any number of cards from your hand to the bottom of your draw pile. They cost 0 until played."
+},
+{
+"id": "FTL",
+"name": "FTL",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 5 damage. If you have played less than 3 cards this turn, draw 1 card.",
+"upgraded_text": "Deal 6 damage. If you have played less than 4 cards this turn, draw 1 card."
+},
+{
+"id": "FUSION",
+"name": "Fusion",
+"color": "defect",
+"type": "Skill",
+"text": "Channel 1 Plasma.",
+"upgraded_text": "Channel 1 Plasma."
+},
+{
+"id": "GASH",
+"name": "Claw",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 3 damage. Increase the damage of ALL Claw cards by 2 this combat.",
+"upgraded_text": "Deal 5 damage. Increase the damage of ALL Claw cards by 2 this combat."
+},
+{
+"id": "GENETIC_ALGORITHM",
+"name": "Genetic Algorithm",
+"color": "defect",
+"type": "Skill",
+"text": "Gain Block. Permanently increase this card's Block by 2. Exhaust.",
+"upgraded_text": "Gain Block. Permanently increase this card's Block by 3. Exhaust."
+},
+{
+"id": "GHOSTLY",
+"name": "Apparition",
+"color": "colorless",
+"type": "Skill",
+"text": "Ethereal. Gain 1 Intangible. Exhaust.",
+"upgraded_text": "Gain 1 Intangible. Exhaust."
+},
+{
+"id": "GHOSTLY_ARMOR",
+"name": "Ghostly Armor",
+"color": "ironclad",
+"type": "Skill",
+"text": "Ethereal. Gain 10 Block.",
+"upgraded_text": "Ethereal. Gain 13 Block."
+},
+{
+"id": "GLACIER",
+"name": "Glacier",
+"color": "defect",
+"type": "Skill",
+"text": "Gain 7 Block. Channel 2 Frost.",
+"upgraded_text": "Gain 10 Block. Channel 2 Frost."
+},
+{
+"id": "GLASS_KNIFE",
+"name": "Glass Knife",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 8 damage twice. Decrease the damage of this card by 2 this combat.",
+"upgraded_text": "Deal 12 damage twice. Decrease the damage of this card by 2 this combat."
+},
+{
+"id": "GOOD_INSTINCTS",
+"name": "Good Instincts",
+"color": "colorless",
+"type": "Skill",
+"text": "Gain 6 Block.",
+"upgraded_text": "Gain 9 Block."
+},
+{
+"id": "GO_FOR_THE_EYES",
+"name": "Go for the Eyes",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 3 damage. If the enemy intends to attack, apply 1 Weak.",
+"upgraded_text": "Deal 4 damage. If the enemy intends to attack, apply 2 Weak."
+},
+{
+"id": "GRAND_FINALE",
+"name": "Grand Finale",
+"color": "silent",
+"type": "Attack",
+"text": "Can only be played if there are no cards in your draw pile. Deal 50 damage to ALL enemies.",
+"upgraded_text": "My draw pile must be Empty."
+},
+{
+"id": "HALT",
+"name": "Halt",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 3 Block. If you are in Wrath, gain 9 additional Block.",
+"upgraded_text": "Gain 4 Block. If you are in Wrath, gain 9 additional Block."
+},
+{
+"id": "HANDOFGREED",
+"name": "Hand of Greed",
+"color": "colorless",
+"type": "Attack",
+"text": "Deal 20 damage. If Fatal, gain 20 Gold.",
+"upgraded_text": "Deal 25 damage. If Fatal, gain 25 Gold."
+},
+{
+"id": "HAVOC",
+"name": "Havoc",
+"color": "ironclad",
+"type": "Skill",
+"text": "Play the top card of your draw pile and Exhaust it.",
+"upgraded_text": "Play the top card of your draw pile and Exhaust it."
+},
+{
+"id": "HEADBUTT",
+"name": "Headbutt",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 9 damage. Put a card from your discard pile on top of your draw pile.",
+"upgraded_text": "Deal 12 damage. Put a card from your discard pile on top of your draw pile."
+},
+{
+"id": "HEATSINKS",
+"name": "Heatsinks",
+"color": "defect",
+"type": "Power",
+"text": "Whenever you play a Power card, draw 1 card.",
+"upgraded_text": "Whenever you play a Power card, draw 2 cards."
+},
+{
+"id": "HEAVY_BLADE",
+"name": "Heavy Blade",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 14 damage. Strength affects this card 3 times.",
+"upgraded_text": "Deal 14 damage. Strength affects this card 5 times."
+},
+{
+"id": "HEEL_HOOK",
+"name": "Heel Hook",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 5 damage. If the enemy has Weak, gain [G] and draw 1 card.",
+"upgraded_text": "Deal 8 damage. If the enemy has Weak, gain [G] and draw 1 card."
+},
+{
+"id": "HELLO_WORLD",
+"name": "Hello World",
+"color": "defect",
+"type": "Power",
+"text": "At the start of your turn, add a random Common card into your hand.",
+"upgraded_text": "Innate. At the start of your turn, add a random Common card into your hand."
+},
+{
+"id": "HEMOKINESIS",
+"name": "Hemokinesis",
+"color": "ironclad",
+"type": "Attack",
+"text": "Lose 2 HP. Deal 15 damage.",
+"upgraded_text": "Lose 2 HP. Deal 20 damage."
+},
+{
+"id": "HOLOGRAM",
+"name": "Hologram",
+"color": "defect",
+"type": "Skill",
+"text": "Gain 3 Block. Put a card from your discard pile into your hand. Exhaust.",
+"upgraded_text": "Gain 5 Block. Put a card from your discard pile into your hand."
+},
+{
+"id": "HYPERBEAM",
+"name": "Hyperbeam",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 26 damage to ALL enemies. Lose 3 Focus.",
+"upgraded_text": "Deal 34 damage to ALL enemies. Lose 3 Focus."
+},
+{
+"id": "IMMOLATE",
+"name": "Immolate",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 21 damage to ALL enemies. Add a Burn into your discard pile.",
+"upgraded_text": "Deal 28 damage to ALL enemies. Add a Burn into your discard pile."
+},
+{
+"id": "IMPATIENCE",
+"name": "Impatience",
+"color": "colorless",
+"type": "Skill",
+"text": "If you have no Attacks in your hand, draw 2 cards.",
+"upgraded_text": "If you have no Attacks in your hand, draw 3 cards."
+},
+{
+"id": "IMPERVIOUS",
+"name": "Impervious",
+"color": "ironclad",
+"type": "Skill",
+"text": "Gain 30 Block. Exhaust.",
+"upgraded_text": "Gain 40 Block. Exhaust."
+},
+{
+"id": "IMPULSE",
+"name": "Impulse",
+"color": "defect",
+"type": "Skill",
+"text": null,
+"upgraded_text": null
+},
+{
+"id": "INDIGNATION",
+"name": "Indignation",
+"color": "watcher",
+"type": "Skill",
+"text": "If you are in Wrath, apply 3 Vulnerable to ALL enemies, otherwise enter Wrath.",
+"upgraded_text": "If you are in Wrath, apply 5 Vulnerable to ALL enemies, otherwise enter Wrath."
+},
+{
+"id": "INFERNAL_BLADE",
+"name": "Infernal Blade",
+"color": "ironclad",
+"type": "Skill",
+"text": "Add a random Attack into your hand. It costs 0 this turn. Exhaust.",
+"upgraded_text": "Add a random Attack into your hand. It costs 0 this turn. Exhaust."
+},
+{
+"id": "INFINITE_BLADES",
+"name": "Infinite Blades",
+"color": "silent",
+"type": "Power",
+"text": "At the start of your turn, add a Shiv into your hand.",
+"upgraded_text": "Innate. At the start of your turn, add a Shiv into your hand."
+},
+{
+"id": "INFLAME",
+"name": "Inflame",
+"color": "ironclad",
+"type": "Power",
+"text": "Gain 2 Strength.",
+"upgraded_text": "Gain 3 Strength."
+},
+{
+"id": "INJURY",
+"name": "Injury",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable.",
+"upgraded_text": "Unplayable."
+},
+{
+"id": "INNERPEACE",
+"name": "Inner Peace",
+"color": "watcher",
+"type": "Skill",
+"text": "If you are in Calm, draw 3 cards, otherwise enter Calm.",
+"upgraded_text": "If you are in Calm, draw 4 cards, otherwise enter Calm."
+},
+{
+"id": "INTIMIDATE",
+"name": "Intimidate",
+"color": "ironclad",
+"type": "Skill",
+"text": "Apply 1 Weak to ALL enemies. Exhaust.",
+"upgraded_text": "Apply 2 Weak to ALL enemies. Exhaust."
+},
+{
+"id": "IRON_WAVE",
+"name": "Iron Wave",
+"color": "ironclad",
+"type": "Attack",
+"text": "Gain 5 Block. Deal 5 damage.",
+"upgraded_text": "Gain 7 Block. Deal 7 damage."
+},
+{
+"id": "JACK_OF_ALL_TRADES",
+"name": "Jack of All Trades",
+"color": "colorless",
+"type": "Skill",
+"text": "Add 1 random Colorless card into your hand. Exhaust.",
+"upgraded_text": "Add 2 random Colorless cards into your hand. Exhaust."
+},
+{
+"id": "JUDGEMENT",
+"name": "Judgment",
+"color": "watcher",
+"type": "Skill",
+"text": "If the enemy has 30 or less HP, set their HP to 0.",
+"upgraded_text": "If the enemy has 40 or less HP, set their HP to 0."
+},
+{
+"id": "JUGGERNAUT",
+"name": "Juggernaut",
+"color": "ironclad",
+"type": "Power",
+"text": "Whenever you gain Block, deal 5 damage to a random enemy.",
+"upgraded_text": "Whenever you gain Block, deal 7 damage to a random enemy."
+},
+{
+"id": "JUSTLUCKY",
+"name": "Just Lucky",
+"color": "watcher",
+"type": "Attack",
+"text": "Scry 1. Gain 2 Block. Deal 3 damage.",
+"upgraded_text": "Scry 2. Gain 3 Block. Deal 4 damage."
+},
+{
+"id": "J_A_X",
+"name": "J.A.X.",
+"color": "colorless",
+"type": "Skill",
+"text": "Lose 3 HP. Gain 2 Strength.",
+"upgraded_text": "Lose 3 HP. Gain 3 Strength."
+},
+{
+"id": "LEAP",
+"name": "Leap",
+"color": "defect",
+"type": "Skill",
+"text": "Gain 9 Block.",
+"upgraded_text": "Gain 12 Block."
+},
+{
+"id": "LEG_SWEEP",
+"name": "Leg Sweep",
+"color": "silent",
+"type": "Skill",
+"text": "Apply 2 Weak. Gain 11 Block.",
+"upgraded_text": "Apply 3 Weak. Gain 14 Block."
+},
+{
+"id": "LESSONLEARNED",
+"name": "Lesson Learned",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 10 damage. If Fatal, Upgrade a random card in your deck. Exhaust.",
+"upgraded_text": "Deal 13 damage. If Fatal, Upgrade a random card in your deck. Exhaust."
+},
+{
+"id": "LIKEWATER",
+"name": "Like Water",
+"color": "watcher",
+"type": "Power",
+"text": "At the end of your turn, if you are in Calm, gain 5 Block.",
+"upgraded_text": "At the end of your turn, if you are in Calm, gain 7 Block."
+},
+{
+"id": "LIMIT_BREAK",
+"name": "Limit Break",
+"color": "ironclad",
+"type": "Skill",
+"text": "Double your Strength. Exhaust.",
+"upgraded_text": "Double your Strength."
+},
+{
+"id": "LOCKON",
+"name": "Bullseye",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 8 damage. Apply 2 Lock-On.",
+"upgraded_text": "Deal 11 damage. Apply 3 Lock-On."
+},
+{
+"id": "LOOP",
+"name": "Loop",
+"color": "defect",
+"type": "Power",
+"text": "At the start of your turn, trigger the passive ability of your next Orb.",
+"upgraded_text": "At the start of your turn, trigger the passive ability of your next Orb 2 times."
+},
+{
+"id": "MACHINE_LEARNING",
+"name": "Machine Learning",
+"color": "defect",
+"type": "Power",
+"text": "At the start of your turn, draw 1 additional card.",
+"upgraded_text": "Innate. At the start of your turn, draw 1 additional card."
+},
+{
+"id": "MADNESS",
+"name": "Madness",
+"color": "colorless",
+"type": "Skill",
+"text": "Reduce the cost of a random card in your hand to 0 this combat. Exhaust.",
+"upgraded_text": "Reduce the cost of a random card in your hand to 0 this combat. Exhaust."
+},
+{
+"id": "MAGNETISM",
+"name": "Magnetism",
+"color": "colorless",
+"type": "Power",
+"text": "At the start of your turn, add a random Colorless card into your hand.",
+"upgraded_text": "At the start of your turn, add a random Colorless card into your hand."
+},
+{
+"id": "MALAISE",
+"name": "Malaise",
+"color": "silent",
+"type": "Skill",
+"text": "Enemy loses X Strength. Apply X Weak. Exhaust.",
+"upgraded_text": "Enemy loses X+1 Strength. Apply X+1 Weak. Exhaust."
+},
+{
+"id": "MASTERFUL_STAB",
+"name": "Masterful Stab",
+"color": "silent",
+"type": "Attack",
+"text": "Costs 1 additional [G] for each time you lose HP this combat. Deal 12 damage.",
+"upgraded_text": "Costs 1 additional [G] for each time you lose HP this combat. Deal 16 damage."
+},
+{
+"id": "MASTERREALITY",
+"name": "Master Reality",
+"color": "watcher",
+"type": "Power",
+"text": "Whenever a card is created during combat, Upgrade it.",
+"upgraded_text": "Whenever a card is created during combat, Upgrade it."
+},
+{
+"id": "MASTER_OF_STRATEGY",
+"name": "Master of Strategy",
+"color": "colorless",
+"type": "Skill",
+"text": "Draw 3 cards. Exhaust.",
+"upgraded_text": "Draw 4 cards. Exhaust."
+},
+{
+"id": "MAYHEM",
+"name": "Mayhem",
+"color": "colorless",
+"type": "Power",
+"text": "At the start of your turn, play the top card of your draw pile.",
+"upgraded_text": "At the start of your turn, play the top card of your draw pile."
+},
+{
+"id": "MEDITATE",
+"name": "Meditate",
+"color": "watcher",
+"type": "Skill",
+"text": "Put a card from your discard pile into your hand and Retain it. Enter Calm. End your turn.",
+"upgraded_text": "Put 2 cards from your discard pile into your hand and Retain them. Enter Calm. End your turn."
+},
+{
+"id": "MELTER",
+"name": "Melter",
+"color": "defect",
+"type": "Attack",
+"text": "Remove all Block from the enemy. Deal 10 damage.",
+"upgraded_text": "Remove all Block from the enemy. Deal 14 damage."
+},
+{
+"id": "MENTALFORTRESS",
+"name": "Mental Fortress",
+"color": "watcher",
+"type": "Power",
+"text": "Whenever you change Stances, gain 4 Block.",
+"upgraded_text": "Whenever you change Stances, gain 6 Block."
+},
+{
+"id": "METALLICIZE",
+"name": "Metallicize",
+"color": "ironclad",
+"type": "Power",
+"text": "At the end of your turn, gain 3 Block.",
+"upgraded_text": "At the end of your turn, gain 4 Block."
+},
+{
+"id": "METAMORPHOSIS",
+"name": "Metamorphosis",
+"color": "colorless",
+"type": "Skill",
+"text": "Shuffle 3 random Attacks into your draw pile. They cost 0 this combat. Exhaust.",
+"upgraded_text": "Shuffle 5 random Attacks into your draw pile. They cost 0 this combat. Exhaust."
+},
+{
+"id": "METEOR_STRIKE",
+"name": "Meteor Strike",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 24 damage. Channel 3 Plasma.",
+"upgraded_text": "Deal 30 damage. Channel 3 Plasma."
+},
+{
+"id": "MIND_BLAST",
+"name": "Mind Blast",
+"color": "colorless",
+"type": "Attack",
+"text": "Innate. Deal damage equal to the number of cards in your draw pile.",
+"upgraded_text": "Innate. Deal damage equal to the number of cards in your draw pile."
+},
+{
+"id": "MULTI_CAST",
+"name": "Multi-Cast",
+"color": "defect",
+"type": "Skill",
+"text": "Evoke your next Orb X times.",
+"upgraded_text": "Evoke your next Orb X+1 times."
+},
+{
+"id": "NECRONOMICURSE",
+"name": "Necronomicurse",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. There is no escape from this Curse.",
+"upgraded_text": "Unplayable. There is no escape from this Curse."
+},
+{
+"id": "NEUTRALIZE",
+"name": "Neutralize",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 3 damage. Apply 1 Weak.",
+"upgraded_text": "Deal 4 damage. Apply 2 Weak."
+},
+{
+"id": "NIGHT_TERROR",
+"name": "Nightmare",
+"color": "silent",
+"type": "Skill",
+"text": "Choose a card. Next turn, add 3 copies of that card into your hand. Exhaust.",
+"upgraded_text": "Choose a card. Next turn, add 3 copies of that card into your hand. Exhaust."
+},
+{
+"id": "NIRVANA",
+"name": "Nirvana",
+"color": "watcher",
+"type": "Power",
+"text": "Whenever you Scry, gain 3 Block.",
+"upgraded_text": "Whenever you Scry, gain 4 Block."
+},
+{
+"id": "NORMALITY",
+"name": "Normality",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. While in hand, you cannot play more than 3 cards this turn.",
+"upgraded_text": "Unplayable. While in hand, you cannot play more than 3 cards this turn."
+},
+{
+"id": "NOXIOUS_FUMES",
+"name": "Noxious Fumes",
+"color": "silent",
+"type": "Power",
+"text": "At the start of your turn, apply 2 Poison to ALL enemies.",
+"upgraded_text": "At the start of your turn, apply 3 Poison to ALL enemies."
+},
+{
+"id": "OFFERING",
+"name": "Offering",
+"color": "ironclad",
+"type": "Skill",
+"text": "Lose 6 HP. Gain [R] [R]. Draw 3 cards. Exhaust.",
+"upgraded_text": "Lose 6 HP. Gain [R] [R]. Draw 5 cards. Exhaust."
+},
+{
+"id": "OMNISCIENCE",
+"name": "Omniscience",
+"color": "watcher",
+"type": "Skill",
+"text": "Choose a card in your draw pile. Play the chosen card twice and exhaust it. Exhaust.",
+"upgraded_text": "Choose a card in your draw pile. Play the chosen card twice and exhaust it. Exhaust."
+},
+{
+"id": "OUTMANEUVER",
+"name": "Outmaneuver",
+"color": "silent",
+"type": "Skill",
+"text": "Next turn, gain [G] [G].",
+"upgraded_text": "Next turn, gain [G] [G] [G]."
+},
+{
+"id": "PAIN",
+"name": "Pain",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. While in hand, lose 1 HP whenever you play another card.",
+"upgraded_text": "Unplayable. While in hand, lose 1 HP whenever you play another card."
+},
+{
+"id": "PANACEA",
+"name": "Panacea",
+"color": "colorless",
+"type": "Skill",
+"text": "Gain 1 Artifact. Exhaust.",
+"upgraded_text": "Gain 2 Artifact. Exhaust."
+},
+{
+"id": "PANACHE",
+"name": "Panache",
+"color": "colorless",
+"type": "Power",
+"text": "Every time you play 5 cards in a single turn, deal 10 damage to ALL enemies.",
+"upgraded_text": "Every time you play 5 cards in a single turn, deal 14 damage to ALL enemies."
+},
+{
+"id": "PANICBUTTON",
+"name": "Panic Button",
+"color": "colorless",
+"type": "Skill",
+"text": "Gain 30 Block. You cannot gain Block from cards for 2 turns. Exhaust.",
+"upgraded_text": "Gain 40 Block. You cannot gain Block from cards for 2 turns. Exhaust."
+},
+{
+"id": "PARASITE",
+"name": "Parasite",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. If transformed or removed from your deck, lose 3 Max HP.",
+"upgraded_text": "Unplayable. If transformed or removed from your deck, lose 3 Max HP."
+},
+{
+"id": "PATHTOVICTORY",
+"name": "Pressure Points",
+"color": "watcher",
+"type": "Skill",
+"text": "Apply 8 Mark. ALL enemies lose HP equal to their Mark.",
+"upgraded_text": "Apply 11 Mark. ALL enemies lose HP equal to their Mark."
+},
+{
+"id": "PERFECTED_STRIKE",
+"name": "Perfected Strike",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 6 damage. Deals 2 additional damage for ALL your cards containing \"Strike\".",
+"upgraded_text": "Deal 6 damage. Deals 3 additional damage for ALL your cards containing \"Strike\"."
+},
+{
+"id": "PERSEVERANCE",
+"name": "Perseverance",
+"color": "watcher",
+"type": "Skill",
+"text": "Retain. Gain 5 Block. When Retained, increase its Block by 2 this combat.",
+"upgraded_text": "Retain. Gain 7 Block. When Retained, increase its Block by 3 this combat."
+},
+{
+"id": "PHANTASMAL_KILLER",
+"name": "Phantasmal Killer",
+"color": "silent",
+"type": "Skill",
+"text": "Next turn, your Attacks deal double damage.",
+"upgraded_text": "Next turn, your Attacks deal double damage."
+},
+{
+"id": "PIERCINGWAIL",
+"name": "Piercing Wail",
+"color": "silent",
+"type": "Skill",
+"text": "ALL enemies lose 6 Strength this turn. Exhaust.",
+"upgraded_text": "ALL enemies lose 8 Strength this turn. Exhaust."
+},
+{
+"id": "POISONED_STAB",
+"name": "Poisoned Stab",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 6 damage. Apply 3 Poison.",
+"upgraded_text": "Deal 8 damage. Apply 4 Poison."
+},
+{
+"id": "POMMEL_STRIKE",
+"name": "Pommel Strike",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 9 damage. Draw 1 card.",
+"upgraded_text": "Deal 10 damage. Draw 2 cards."
+},
+{
+"id": "POWER_THROUGH",
+"name": "Power Through",
+"color": "ironclad",
+"type": "Skill",
+"text": "Add 2 Wounds into your hand. Gain 15 Block.",
+"upgraded_text": "Add 2 Wounds into your hand. Gain 20 Block."
+},
+{
+"id": "PRAY",
+"name": "Pray",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 3 Mantra. Shuffle an Insight into your draw pile.",
+"upgraded_text": "Gain 4 Mantra. Shuffle an Insight into your draw pile."
+},
+{
+"id": "PREDATOR",
+"name": "Predator",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 15 damage. Next turn, draw 2 additional cards.",
+"upgraded_text": "Deal 20 damage. Next turn, draw 2 additional cards."
+},
+{
+"id": "PREPARED",
+"name": "Prepared",
+"color": "silent",
+"type": "Skill",
+"text": "Draw 1 card. Discard 1 card.",
+"upgraded_text": "Draw 2 cards. Discard 2 cards."
+},
+{
+"id": "PRIDE",
+"name": "Pride",
+"color": "curse",
+"type": "Curse",
+"text": "Innate. At the end of your turn, put a copy of this card on top of your draw pile. Exhaust.",
+"upgraded_text": "Innate. At the end of your turn, put a copy of this card on top of your draw pile. Exhaust."
+},
+{
+"id": "PROSTRATE",
+"name": "Prostrate",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 2 Mantra. Gain 4 Block.",
+"upgraded_text": "Gain 3 Mantra. Gain 4 Block."
+},
+{
+"id": "PROTECT",
+"name": "Protect",
+"color": "watcher",
+"type": "Skill",
+"text": "Retain. Gain 12 Block.",
+"upgraded_text": "Retain. Gain 16 Block."
+},
+{
+"id": "PUMMEL",
+"name": "Pummel",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 2 damage 4 times. Exhaust.",
+"upgraded_text": "Deal 2 damage 5 times. Exhaust."
+},
+{
+"id": "PURITY",
+"name": "Purity",
+"color": "colorless",
+"type": "Skill",
+"text": "Exhaust up to 3 cards in your hand. Exhaust.",
+"upgraded_text": "Exhaust up to 5 cards in your hand. Exhaust."
+},
+{
+"id": "QUICK_SLASH",
+"name": "Quick Slash",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 8 damage. Draw 1 card.",
+"upgraded_text": "Deal 12 damage. Draw 1 card."
+},
+{
+"id": "RAGE",
+"name": "Rage",
+"color": "ironclad",
+"type": "Skill",
+"text": "Whenever you play an Attack this turn, gain 3 Block.",
+"upgraded_text": "Whenever you play an Attack this turn, gain 5 Block."
+},
+{
+"id": "RAGNAROK",
+"name": "Ragnarok",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 5 damage to a random enemy 5 times.",
+"upgraded_text": "Deal 6 damage to a random enemy 6 times."
+},
+{
+"id": "RAINBOW",
+"name": "Rainbow",
+"color": "defect",
+"type": "Skill",
+"text": "Channel 1 Lightning. Channel 1 Frost. Channel 1 Dark. Exhaust.",
+"upgraded_text": "Channel 1 Lightning. Channel 1 Frost. Channel 1 Dark."
+},
+{
+"id": "RAMPAGE",
+"name": "Rampage",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 8 damage. Increase this card's damage by 5 this combat.",
+"upgraded_text": "Deal 8 damage. Increase this card's damage by 8 this combat."
+},
+{
+"id": "REACHHEAVEN",
+"name": "Reach Heaven",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 10 damage. Shuffle a Through Violence into your draw pile.",
+"upgraded_text": "Deal 15 damage. Shuffle a Through Violence into your draw pile."
+},
+{
+"id": "REAPER",
+"name": "Reaper",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 4 damage to ALL enemies. Heal HP equal to unblocked damage. Exhaust.",
+"upgraded_text": "Deal 5 damage to ALL enemies. Heal HP equal to unblocked damage. Exhaust."
+},
+{
+"id": "REBOOT",
+"name": "Reboot",
+"color": "defect",
+"type": "Skill",
+"text": "Shuffle ALL your cards into your draw pile. Draw 4 cards. Exhaust.",
+"upgraded_text": "Shuffle ALL your cards into your draw pile. Draw 6 cards. Exhaust."
+},
+{
+"id": "REBOUND",
+"name": "Rebound",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 9 damage. Put the next card you play this turn on top of your draw pile.",
+"upgraded_text": "Deal 12 damage. Put the next card you play this turn on top of your draw pile."
+},
+{
+"id": "RECKLESS_CHARGE",
+"name": "Reckless Charge",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 7 damage. Shuffle a Dazed into your draw pile.",
+"upgraded_text": "Deal 10 damage. Shuffle a Dazed into your draw pile."
+},
+{
+"id": "RECYCLE",
+"name": "Recycle",
+"color": "defect",
+"type": "Skill",
+"text": "Exhaust a card. Gain [B] equal to its cost.",
+"upgraded_text": "Exhaust a card. Gain [B] equal to its cost."
+},
+{
+"id": "REDO",
+"name": "Recursion",
+"color": "defect",
+"type": "Skill",
+"text": "Evoke your next Orb. Channel the Orb that was just Evoked.",
+"upgraded_text": "Evoke your next Orb. Channel the Orb that was just Evoked."
+},
+{
+"id": "REFLEX",
+"name": "Reflex",
+"color": "silent",
+"type": "Skill",
+"text": "Unplayable. If this card is discarded from your hand, draw 2 cards.",
+"upgraded_text": "Unplayable. If this card is discarded from your hand, draw 3 cards."
+},
+{
+"id": "REGRET",
+"name": "Regret",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. At the end of your turn, lose HP equal to the number of cards in your hand.",
+"upgraded_text": "Unplayable. At the end of your turn, lose HP equal to the number of cards in your hand."
+},
+{
+"id": "REINFORCED_BODY",
+"name": "Reinforced Body",
+"color": "defect",
+"type": "Skill",
+"text": "Gain 7 Block X times.",
+"upgraded_text": "Gain 9 Block X times."
+},
+{
+"id": "REPROGRAM",
+"name": "Reprogram",
+"color": "defect",
+"type": "Skill",
+"text": "Lose 1 Focus. Gain 1 Strength. Gain 1 Dexterity.",
+"upgraded_text": "Lose 2 Focus. Gain 1 Strength. Gain 1 Dexterity."
+},
+{
+"id": "RIDDLE_WITH_HOLES",
+"name": "Riddle with Holes",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 3 damage 5 times.",
+"upgraded_text": "Deal 4 damage 5 times."
+},
+{
+"id": "RIP_AND_TEAR",
+"name": "Rip and Tear",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 7 damage to a random enemy twice.",
+"upgraded_text": "Deal 9 damage to a random enemy twice."
+},
+{
+"id": "RITUALDAGGER",
+"name": "Ritual Dagger",
+"color": "colorless",
+"type": "Attack",
+"text": "Deal damage. If Fatal, permanently increase this card's damage by 3. Exhaust.",
+"upgraded_text": "Deal damage. If Fatal, permanently increase this card's damage by 5. Exhaust."
+},
+{
+"id": "RUPTURE",
+"name": "Rupture",
+"color": "ironclad",
+"type": "Power",
+"text": "Whenever you lose HP from a card, gain 1 Strength.",
+"upgraded_text": "Whenever you lose HP from a card, gain 2 Strength."
+},
+{
+"id": "SADISTIC_NATURE",
+"name": "Sadistic Nature",
+"color": "colorless",
+"type": "Power",
+"text": "Whenever you apply a debuff to an enemy, they take 5 damage.",
+"upgraded_text": "Whenever you apply a debuff to an enemy, they take 7 damage."
+},
+{
+"id": "SANCTITY",
+"name": "Sanctity",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 6 Block. If the last card played this combat was a Skill, draw 2 cards.",
+"upgraded_text": "Gain 9 Block. If the last card played this combat was a Skill, draw 2 cards."
+},
+{
+"id": "SANDSOFTIME",
+"name": "Sands of Time",
+"color": "watcher",
+"type": "Attack",
+"text": "Retain. Deal 20 damage. When Retained, lower its cost by 1 this combat.",
+"upgraded_text": "Retain. Deal 26 damage. When Retained, lower its cost by 1 this combat."
+},
+{
+"id": "SASHWHIP",
+"name": "Sash Whip",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 8 damage. If the last card played this combat was an Attack, apply 1 Weak.",
+"upgraded_text": "Deal 10 damage. If the last card played this combat was an Attack, apply 2 Weak."
+},
+{
+"id": "SCRAPE",
+"name": "Scrape",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 7 damage. Draw 4 cards. Discard all cards drawn this way that do not cost 0.",
+"upgraded_text": "Deal 10 damage. Draw 5 cards. Discard all cards drawn this way that do not cost 0."
+},
+{
+"id": "SCRAWL",
+"name": "Scrawl",
+"color": "watcher",
+"type": "Skill",
+"text": "Draw cards until your hand is full. Exhaust.",
+"upgraded_text": "Draw cards until your hand is full. Exhaust."
+},
+{
+"id": "SEARING_BLOW",
+"name": "Searing Blow",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 12 damage. Can be Upgraded any number of times.",
+"upgraded_text": "Deal 12 damage. Can be Upgraded any number of times."
+},
+{
+"id": "SECOND_WIND",
+"name": "Second Wind",
+"color": "ironclad",
+"type": "Skill",
+"text": "Exhaust all non-Attack cards in your hand. Gain 5 Block for each card Exhausted.",
+"upgraded_text": "Exhaust all non-Attack cards in your hand. Gain 7 Block for each card Exhausted."
+},
+{
+"id": "SECRET_TECHNIQUE",
+"name": "Secret Technique",
+"color": "colorless",
+"type": "Skill",
+"text": "Put a Skill from your draw pile into your hand. Exhaust.",
+"upgraded_text": "Put a Skill from your draw pile into your hand."
+},
+{
+"id": "SECRET_WEAPON",
+"name": "Secret Weapon",
+"color": "colorless",
+"type": "Skill",
+"text": "Put an Attack from your draw pile into your hand. Exhaust.",
+"upgraded_text": "Put an Attack from your draw pile into your hand."
+},
+{
+"id": "SEEING_RED",
+"name": "Seeing Red",
+"color": "ironclad",
+"type": "Skill",
+"text": "Gain [R] [R]. Exhaust.",
+"upgraded_text": "Gain [R] [R]. Exhaust."
+},
+{
+"id": "SEEK",
+"name": "Seek",
+"color": "defect",
+"type": "Skill",
+"text": "Put 1 card from your draw pile into your hand. Exhaust.",
+"upgraded_text": "Put 2 cards from your draw pile into your hand. Exhaust."
+},
+{
+"id": "SELF_REPAIR",
+"name": "Self Repair",
+"color": "defect",
+"type": "Power",
+"text": "At the end of combat, heal 7 HP.",
+"upgraded_text": "At the end of combat, heal 10 HP."
+},
+{
+"id": "SENTINEL",
+"name": "Sentinel",
+"color": "ironclad",
+"type": "Skill",
+"text": "Gain 5 Block. If this card is Exhausted, gain [R] [R].",
+"upgraded_text": "Gain 8 Block. If this card is Exhausted, gain [R] [R] [R]."
+},
+{
+"id": "SETUP",
+"name": "Setup",
+"color": "silent",
+"type": "Skill",
+"text": "Put a card from your hand on top of your draw pile. It costs 0 until played.",
+"upgraded_text": "Put a card from your hand on top of your draw pile. It costs 0 until played."
+},
+{
+"id": "SEVER_SOUL",
+"name": "Sever Soul",
+"color": "ironclad",
+"type": "Attack",
+"text": "Exhaust all non-Attack cards in your hand. Deal 16 damage.",
+"upgraded_text": "Exhaust all non-Attack cards in your hand. Deal 22 damage."
+},
+{
+"id": "SHAME",
+"name": "Shame",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. At the end of your turn, gain 1 Frail.",
+"upgraded_text": "Unplayable. At the end of your turn, gain 1 Frail."
+},
+{
+"id": "SHOCKWAVE",
+"name": "Shockwave",
+"color": "ironclad",
+"type": "Skill",
+"text": "Apply 3 Weak and Vulnerable to ALL enemies. Exhaust.",
+"upgraded_text": "Apply 5 Weak and Vulnerable to ALL enemies. Exhaust."
+},
+{
+"id": "SHRUG_IT_OFF",
+"name": "Shrug It Off",
+"color": "ironclad",
+"type": "Skill",
+"text": "Gain 8 Block. Draw 1 card.",
+"upgraded_text": "Gain 11 Block. Draw 1 card."
+},
+{
+"id": "SIGNATUREMOVE",
+"name": "Signature Move",
+"color": "watcher",
+"type": "Attack",
+"text": "Can only be played if this is the only Attack in your hand. Deal 30 damage.",
+"upgraded_text": "Can only be played if this is the only Attack in your hand. Deal 40 damage."
+},
+{
+"id": "SKEWER",
+"name": "Skewer",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 7 damage X times.",
+"upgraded_text": "Deal 10 damage X times."
+},
+{
+"id": "SKIM",
+"name": "Skim",
+"color": "defect",
+"type": "Skill",
+"text": "Draw 3 cards.",
+"upgraded_text": "Draw 4 cards."
+},
+{
+"id": "SLICE",
+"name": "Slice",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 6 damage.",
+"upgraded_text": "Deal 9 damage."
+},
+{
+"id": "SLIMED",
+"name": "Slimed",
+"color": "colorless",
+"type": "Status",
+"text": "Exhaust.",
+"upgraded_text": "Exhaust."
+},
+{
+"id": "SPIRITSHIELD",
+"name": "Spirit Shield",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 3 Block for each card in your hand.",
+"upgraded_text": "Gain 4 Block for each card in your hand."
+},
+{
+"id": "SPOT_WEAKNESS",
+"name": "Spot Weakness",
+"color": "ironclad",
+"type": "Skill",
+"text": "If the enemy intends to attack, gain 3 Strength.",
+"upgraded_text": "If the enemy intends to attack, gain 4 Strength."
+},
+{
+"id": "STACK",
+"name": "Stack",
+"color": "defect",
+"type": "Skill",
+"text": "Gain Block equal to the number of cards in your discard pile.",
+"upgraded_text": "Gain Block equal to the number of cards in your discard pile +3."
+},
+{
+"id": "STATIC_DISCHARGE",
+"name": "Static Discharge",
+"color": "defect",
+"type": "Power",
+"text": "Whenever you receive unblocked attack damage, Channel 1 Lightning.",
+"upgraded_text": "Whenever you receive unblocked attack damage, Channel 2 Lightning."
+},
+{
+"id": "STEAM",
+"name": "Steam Barrier",
+"color": "defect",
+"type": "Skill",
+"text": "Gain 6 Block. Decrease this card's Block by 1 this combat.",
+"upgraded_text": "Gain 8 Block. Decrease this card's Block by 1 this combat."
+},
+{
+"id": "STEAM_POWER",
+"name": "Overclock",
+"color": "defect",
+"type": "Skill",
+"text": "Draw 2 cards. Add a Burn into your discard pile.",
+"upgraded_text": "Draw 3 cards. Add a Burn into your discard pile."
+},
+{
+"id": "STORM",
+"name": "Storm",
+"color": "defect",
+"type": "Power",
+"text": "Whenever you play a Power card, Channel 1 Lightning.",
+"upgraded_text": "Innate. Whenever you play a Power card, Channel 1 Lightning."
+},
+{
+"id": "STORM_OF_STEEL",
+"name": "Storm of Steel",
+"color": "silent",
+"type": "Skill",
+"text": "Discard your hand. Add 1 Shiv into your hand for each card discarded.",
+"upgraded_text": "Discard your hand. Add 1 Shiv+ into your hand for each card discarded."
+},
+{
+"id": "STREAMLINE",
+"name": "Streamline",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 15 damage. Reduce this card's cost by 1 this combat.",
+"upgraded_text": "Deal 20 damage. Reduce this card's cost by 1 this combat."
+},
+{
+"id": "STRIKE_B",
+"name": "Strike",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 6 damage.",
+"upgraded_text": "Deal 9 damage."
+},
+{
+"id": "STRIKE_G",
+"name": "Strike",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 6 damage.",
+"upgraded_text": "Deal 9 damage."
+},
+{
+"id": "STRIKE_P",
+"name": "Strike",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 6 damage.",
+"upgraded_text": "Deal 9 damage."
+},
+{
+"id": "STRIKE_R",
+"name": "Strike",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 6 damage.",
+"upgraded_text": "Deal 9 damage."
+},
+{
+"id": "STUDY",
+"name": "Study",
+"color": "watcher",
+"type": "Power",
+"text": "At the end of your turn, shuffle an Insight into your draw pile.",
+"upgraded_text": "At the end of your turn, shuffle an Insight into your draw pile."
+},
+{
+"id": "SUCKER_PUNCH",
+"name": "Sucker Punch",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 7 damage. Apply 1 Weak.",
+"upgraded_text": "Deal 9 damage. Apply 2 Weak."
+},
+{
+"id": "SUNDER",
+"name": "Sunder",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 24 damage. If this kills an enemy, gain [B] [B] [B].",
+"upgraded_text": "Deal 32 damage. If this kills an enemy, gain [B] [B] [B]."
+},
+{
+"id": "SURVIVOR",
+"name": "Survivor",
+"color": "silent",
+"type": "Skill",
+"text": "Gain 8 Block. Discard 1 card.",
+"upgraded_text": "Gain 11 Block. Discard 1 card."
+},
+{
+"id": "SWEEPING_BEAM",
+"name": "Sweeping Beam",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 6 damage to ALL enemies. Draw 1 card.",
+"upgraded_text": "Deal 9 damage to ALL enemies. Draw 1 card."
+},
+{
+"id": "SWIFT_STRIKE",
+"name": "Swift Strike",
+"color": "colorless",
+"type": "Attack",
+"text": "Deal 7 damage.",
+"upgraded_text": "Deal 10 damage."
+},
+{
+"id": "SWIVEL",
+"name": "Swivel",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 8 Block. The next Attack you play costs 0.",
+"upgraded_text": "Gain 11 Block. The next Attack you play costs 0."
+},
+{
+"id": "SWORD_BOOMERANG",
+"name": "Sword Boomerang",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 3 damage to a random enemy 3 times.",
+"upgraded_text": "Deal 4 damage to a random enemy 3 times."
+},
+{
+"id": "TACTICIAN",
+"name": "Tactician",
+"color": "silent",
+"type": "Skill",
+"text": "Unplayable. If this card is discarded from your hand, gain [G].",
+"upgraded_text": "Unplayable. If this card is discarded from your hand, gain [G] [G]."
+},
+{
+"id": "TALKTOTHEHAND",
+"name": "Talk to the Hand",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 5 damage. Whenever you attack this enemy, gain 2 Block. Exhaust.",
+"upgraded_text": "Deal 7 damage. Whenever you attack this enemy, gain 3 Block. Exhaust."
+},
+{
+"id": "TANTRUM",
+"name": "Tantrum",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 3 damage 3 times. Enter Wrath. Shuffle this card into your draw pile.",
+"upgraded_text": "Deal 4 damage 3 times. Enter Wrath. Shuffle this card into your draw pile."
+},
+{
+"id": "TEMPEST",
+"name": "Tempest",
+"color": "defect",
+"type": "Skill",
+"text": "Channel X Lightning. Exhaust.",
+"upgraded_text": "Channel X+1 Lightning. Exhaust."
+},
+{
+"id": "TERROR",
+"name": "Terror",
+"color": "silent",
+"type": "Skill",
+"text": "Apply 99 Vulnerable. Exhaust.",
+"upgraded_text": "Apply 99 Vulnerable. Exhaust."
+},
+{
+"id": "THE_BOMB",
+"name": "The Bomb",
+"color": "colorless",
+"type": "Skill",
+"text": "At the end of 3 turns, deal 40 damage to ALL enemies.",
+"upgraded_text": "At the end of 3 turns, deal 50 damage to ALL enemies."
+},
+{
+"id": "THINKING_AHEAD",
+"name": "Thinking Ahead",
+"color": "colorless",
+"type": "Skill",
+"text": "Draw 2 cards. Put a card from your hand on top of your draw pile. Exhaust.",
+"upgraded_text": "Draw 2 cards. Put a card from your hand on top of your draw pile."
+},
+{
+"id": "THIRDEYE",
+"name": "Third Eye",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 7 Block. Scry 3.",
+"upgraded_text": "Gain 9 Block. Scry 5."
+},
+{
+"id": "THUNDERCLAP",
+"name": "Thunderclap",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 4 damage and apply 1 Vulnerable to ALL enemies.",
+"upgraded_text": "Deal 7 damage and apply 1 Vulnerable to ALL enemies."
+},
+{
+"id": "THUNDER_STRIKE",
+"name": "Thunder Strike",
+"color": "defect",
+"type": "Attack",
+"text": "Deal 7 damage to a random enemy for each Lightning Channeled this combat.",
+"upgraded_text": "Deal 9 damage to a random enemy for each Lightning Channeled this combat."
+},
+{
+"id": "TOOLS_OF_THE_TRADE",
+"name": "Tools of the Trade",
+"color": "silent",
+"type": "Power",
+"text": "At the start of your turn, draw 1 card and discard 1 card.",
+"upgraded_text": "At the start of your turn, draw 1 card and discard 1 card."
+},
+{
+"id": "TRANSMUTATION",
+"name": "Transmutation",
+"color": "colorless",
+"type": "Skill",
+"text": "Add X random Colorless cards into your hand. They cost 0 this turn. Exhaust.",
+"upgraded_text": "Add X random Upgraded Colorless cards into your hand. They cost 0 this turn. Exhaust."
+},
+{
+"id": "TRIP",
+"name": "Trip",
+"color": "colorless",
+"type": "Skill",
+"text": "Apply 2 Vulnerable.",
+"upgraded_text": "Apply 2 Vulnerable to ALL enemies."
+},
+{
+"id": "TRUE_GRIT",
+"name": "True Grit",
+"color": "ironclad",
+"type": "Skill",
+"text": "Gain 7 Block. Exhaust 1 card at random.",
+"upgraded_text": "Gain 9 Block. Exhaust 1 card."
+},
+{
+"id": "TURBO",
+"name": "TURBO",
+"color": "defect",
+"type": "Skill",
+"text": "Gain [B] [B]. Add a Void into your discard pile.",
+"upgraded_text": "Gain [B] [B] [B]. Add a Void into your discard pile."
+},
+{
+"id": "TWIN_STRIKE",
+"name": "Twin Strike",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 5 damage twice.",
+"upgraded_text": "Deal 7 damage twice."
+},
+{
+"id": "UNDERHANDED_STRIKE",
+"name": "Sneaky Strike",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 12 damage. If you have discarded a card this turn, gain [G] [G].",
+"upgraded_text": "Deal 16 damage. If you have discarded a card this turn, gain [G] [G]."
+},
+{
+"id": "UNDO",
+"name": "Equilibrium",
+"color": "defect",
+"type": "Skill",
+"text": "Gain 13 Block. Retain your hand this turn.",
+"upgraded_text": "Gain 16 Block. Retain your hand this turn."
+},
+{
+"id": "UNLOAD",
+"name": "Unload",
+"color": "silent",
+"type": "Attack",
+"text": "Deal 14 damage. Discard all non-Attack cards in your hand.",
+"upgraded_text": "Deal 18 damage. Discard all non-Attack cards in your hand."
+},
+{
+"id": "UNRAVELING",
+"name": "Unraveling",
+"color": "watcher",
+"type": "Skill",
+"text": "Play all of your cards from left to right. Targets are chosen randomly. Exhaust.",
+"upgraded_text": "Play all of your cards from left to right. Targets are chosen randomly. Exhaust."
+},
+{
+"id": "UPPERCUT",
+"name": "Uppercut",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 13 damage. Apply 1 Weak. Apply 1 Vulnerable.",
+"upgraded_text": "Deal 13 damage. Apply 2 Weak. Apply 1 Vulnerable."
+},
+{
+"id": "VAULT",
+"name": "Vault",
+"color": "watcher",
+"type": "Skill",
+"text": "Take an extra turn after this one. End your turn. Exhaust.",
+"upgraded_text": "Take an extra turn after this one. End your turn. Exhaust."
+},
+{
+"id": "VENGEANCE",
+"name": "Simmering Fury",
+"color": "watcher",
+"type": "Skill",
+"text": "At the start of your next turn, enter Wrath and draw 2 cards.",
+"upgraded_text": "At the start of your next turn, enter Wrath and draw 3 cards."
+},
+{
+"id": "VENOMOLOGY",
+"name": "Alchemize",
+"color": "silent",
+"type": "Skill",
+"text": "Obtain a random potion. Exhaust.",
+"upgraded_text": "Obtain a random potion. Exhaust."
+},
+{
+"id": "VIGILANCE",
+"name": "Vigilance",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 8 Block. Enter Calm.",
+"upgraded_text": "Gain 12 Block. Enter Calm."
+},
+{
+"id": "VIOLENCE",
+"name": "Violence",
+"color": "colorless",
+"type": "Skill",
+"text": "Put 3 random Attacks from your draw pile into your hand. Exhaust.",
+"upgraded_text": "Put 4 random Attacks from your draw pile into your hand. Exhaust."
+},
+{
+"id": "VOID",
+"name": "Void",
+"color": "colorless",
+"type": "Status",
+"text": "Unplayable. Ethereal. Whenever this card is drawn, lose 1 Energy.",
+"upgraded_text": "Unplayable. Ethereal. Whenever this card is drawn, lose 1 Energy."
+},
+{
+"id": "WALLOP",
+"name": "Wallop",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 9 damage. Gain Block equal to unblocked damage dealt.",
+"upgraded_text": "Deal 12 damage. Gain Block equal to unblocked damage dealt."
+},
+{
+"id": "WARCRY",
+"name": "Warcry",
+"color": "ironclad",
+"type": "Skill",
+"text": "Draw 1 card. Put a card from your hand onto the top of your draw pile. Exhaust.",
+"upgraded_text": "Draw 2 cards. Put a card from your hand onto the top of your draw pile. Exhaust."
+},
+{
+"id": "WAVEOFTHEHAND",
+"name": "Wave of the Hand",
+"color": "watcher",
+"type": "Skill",
+"text": "Whenever you gain Block this turn, apply 1 Weak to ALL enemies.",
+"upgraded_text": "Whenever you gain Block this turn, apply 2 Weak to ALL enemies."
+},
+{
+"id": "WEAVE",
+"name": "Weave",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 4 damage. Whenever you Scry, return this from the discard pile to your Hand.",
+"upgraded_text": "Deal 6 damage. Whenever you Scry, return this from the discard pile to your Hand."
+},
+{
+"id": "WELL_LAID_PLANS",
+"name": "Well-Laid Plans",
+"color": "silent",
+"type": "Power",
+"text": "At the end of your turn, Retain up to 1 card.",
+"upgraded_text": "At the end of your turn, Retain up to 2 cards."
+},
+{
+"id": "WHEELKICK",
+"name": "Wheel Kick",
+"color": "watcher",
+"type": "Attack",
+"text": "Deal 15 damage. Draw 2 cards.",
+"upgraded_text": "Deal 20 damage. Draw 2 cards."
+},
+{
+"id": "WHIRLWIND",
+"name": "Whirlwind",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 5 damage to ALL enemies X times.",
+"upgraded_text": "Deal 8 damage to ALL enemies X times."
+},
+{
+"id": "WHITE_NOISE",
+"name": "White Noise",
+"color": "defect",
+"type": "Skill",
+"text": "Add a random Power card into your hand. It costs 0 this turn. Exhaust.",
+"upgraded_text": "Add a random Power card into your hand. It costs 0 this turn. Exhaust."
+},
+{
+"id": "WILD_STRIKE",
+"name": "Wild Strike",
+"color": "ironclad",
+"type": "Attack",
+"text": "Deal 12 damage. Shuffle a Wound into your draw pile.",
+"upgraded_text": "Deal 17 damage. Shuffle a Wound into your draw pile."
+},
+{
+"id": "WINDMILLSTRIKE",
+"name": "Windmill Strike",
+"color": "watcher",
+"type": "Attack",
+"text": "Retain. Deal 7 damage. When Retained, increase its damage by 4 this combat.",
+"upgraded_text": "Retain. Deal 10 damage. When Retained, increase its damage by 5 this combat."
+},
+{
+"id": "WIREHEADING",
+"name": "Foresight",
+"color": "watcher",
+"type": "Power",
+"text": "At the start of your turn, Scry 3.",
+"upgraded_text": "At the start of your turn, Scry 4."
+},
+{
+"id": "WISH",
+"name": "Wish",
+"color": "watcher",
+"type": "Skill",
+"text": "Choose one: Gain 6 Plated Armor, 3 Strength, or 25 Gold. Exhaust.",
+"upgraded_text": "Choose one: Gain 8 Plated Armor, 4 Strength, or 30 Gold. Exhaust."
+},
+{
+"id": "WORSHIP",
+"name": "Worship",
+"color": "watcher",
+"type": "Skill",
+"text": "Gain 5 Mantra.",
+"upgraded_text": "Retain. Gain 5 Mantra."
+},
+{
+"id": "WOUND",
+"name": "Wound",
+"color": "colorless",
+"type": "Status",
+"text": "Unplayable.",
+"upgraded_text": "Unplayable."
+},
+{
+"id": "WRAITH_FORM_V2",
+"name": "Wraith Form",
+"color": "silent",
+"type": "Power",
+"text": "Gain 2 Intangible. At the end of your turn, lose 1 Dexterity.",
+"upgraded_text": "Gain 3 Intangible. At the end of your turn, lose 1 Dexterity."
+},
+{
+"id": "WREATHOFFLAME",
+"name": "Wreath of Flame",
+"color": "watcher",
+"type": "Skill",
+"text": "Your next Attack deals 5 additional damage.",
+"upgraded_text": "Your next Attack deals 8 additional damage."
+},
+{
+"id": "WRITHE",
+"name": "Writhe",
+"color": "curse",
+"type": "Curse",
+"text": "Unplayable. Innate.",
+"upgraded_text": "Unplayable. Innate."
+},
+{
+"id": "ZAP",
+"name": "Zap",
+"color": "defect",
+"type": "Skill",
+"text": "Channel 1 Lightning.",
+"upgraded_text": "Channel 1 Lightning."
+}
+]

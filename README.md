@@ -19,6 +19,8 @@ Start the harness first, then trigger CommunicationMod's external process in-gam
 uv run python -m sts_bench.play --seed STSBENCH1
 ```
 
+The default scaffold keeps one conversation per floor, so the model sees its earlier turns on the floor and each action's outcome in context; `--agent stepwise` switches to the stateless per-decision baseline.
+
 ## Choosing the backend
 
 `--api` selects the wire format; `--model` the model. Each flagship provider runs through its native API surface — never a compat shim.

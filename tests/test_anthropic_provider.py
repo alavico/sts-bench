@@ -119,6 +119,31 @@ def test_next_round_echoes_blocks_and_translates_tool_results():
     assert all(BLOCKS_KEY not in m for m in second)
 
 
+def test_tool_result_and_followup_digest_share_one_user_turn():
+    # A floor conversation closes the previous action's call and then sends a
+    # fresh digest -- two chat messages that must land as one alternating user
+    # turn, tool results first.
+    seen = {}
+
+    def transport(payload):
+        seen.update(payload)
+        return response(text_block("ok"))
+
+    make_provider(transport).complete(
+        [
+            {"role": "user", "content": "state"},
+            {"role": "assistant", "content": None, BLOCKS_KEY: [tool_use_block("toolu_1", "play_card", {})]},
+            {"role": "tool", "tool_call_id": "toolu_1", "content": "executed"},
+            {"role": "user", "content": "<run>floor 2</run>"},
+        ]
+    )
+    assert [m["role"] for m in seen["messages"]] == ["user", "assistant", "user"]
+    assert seen["messages"][2]["content"] == [
+        {"type": "tool_result", "tool_use_id": "toolu_1", "content": "executed"},
+        {"type": "text", "text": "<run>floor 2</run>"},
+    ]
+
+
 def test_headers_use_anthropic_scheme():
     provider = make_provider(lambda p: response(text_block("ok")))
     headers = provider._headers()

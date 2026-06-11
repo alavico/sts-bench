@@ -124,3 +124,53 @@ def test_discard_potion_out_of_range(combat):
     n = len(combat.game_state.potions)
     verdict = validate(DiscardPotion(slot_index=n + 5), combat)
     assert not verdict.ok
+
+
+def full_belt(raw):
+    raw["game_state"]["potions"] = [
+        {"id": n, "name": n, "can_use": True, "can_discard": True, "requires_target": False}
+        for n in ("Block Potion", "Strength Potion", "Dexterity Potion")
+    ]
+    return parse_message(raw)
+
+
+def test_potion_reward_rejected_when_belt_is_full():
+    raw = json.loads((FIXTURES / "combat_reward-1.json").read_text())
+    message = full_belt(raw)
+    # choice 1 is the Strength Potion reward; the game cannot take it and
+    # CommunicationMod hangs on the click, so the validator must stop it
+    verdict = validate(Choose(choice_index=1), message)
+    assert not verdict.ok
+    assert "belt is full" in verdict.reason and "discard_potion" in verdict.reason
+    # the other loot stays claimable
+    assert validate(Choose(choice_index=0), message).ok
+    assert validate(Choose(choice_index=2), message).ok
+
+
+def test_potion_reward_allowed_with_a_free_slot():
+    message = load("combat_reward-1")  # two empty slots in the fixture
+    assert validate(Choose(choice_index=1), message).ok
+
+
+def test_shop_potion_rejected_when_belt_is_full():
+    raw = json.loads((FIXTURES / "shop_screen-1.json").read_text())
+    message = full_belt(raw)
+    choices = message.game_state.choice_list
+    potion_index = choices.index("speed potion")
+    verdict = validate(Choose(choice_index=potion_index), message)
+    assert not verdict.ok
+    assert "belt is full" in verdict.reason
+    # cards are still buyable
+    assert validate(Choose(choice_index=choices.index("warcry")), message).ok
+
+
+def test_belt_capacity_comes_from_the_wire_not_a_constant():
+    # ascension 11+ runs have 2 slots; full at 2 must reject just like full at 3
+    raw = json.loads((FIXTURES / "combat_reward-1.json").read_text())
+    raw["game_state"]["potions"] = [
+        {"id": n, "name": n, "can_use": True, "can_discard": True, "requires_target": False}
+        for n in ("Block Potion", "Strength Potion")
+    ]
+    verdict = validate(Choose(choice_index=1), parse_message(raw))
+    assert not verdict.ok
+    assert "(2/2)" in verdict.reason

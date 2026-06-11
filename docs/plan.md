@@ -76,6 +76,8 @@ Files: `agents/floor.py`, `trajectory/schema.py`, `trajectory/jsonl.py`, `env/re
 
 **Accept:** replay a logged run from the JSONL alone (re-render each floor's conversation and each decision), and verify the packet property: the floor record's conversation matches what the wire saw, with no message stored twice.
 
+*Status: items 1–2 landed 2026-06-11 (`FloorAgent` default, `--agent stepwise` baseline, per-decision delta logging, `--` floor summaries; the loop-body moved to a shared `agents/base.py`). First live run (gpt-5.4-mini, responses, effort low) cut invalid-action decisions 11.8%→2.9% and reasoning spend ~7x vs the paired zero-shot run, then died on floor 14: it took a potion reward onto a full belt, which CommunicationMod never returns ready from. That run drove a player-parity pass (see spec: zero-click player parity): reward screens render as claim-all loot lists with slot counts and belt-full affordances, HAND_SELECT/REST/shop say what their remaining moves mean, the commands line speaks tool vocabulary, the validator rejects potion-take/buy on a full belt, step timeouts return an error result instead of crashing (totals print on every exit), and M6's card DB was pulled forward — pinned spire-archive snapshot (360 cards), printed text on card rewards and shop wares, and a once-per-combat `<deck_reference>` injected by the floor agent. Also fixed en route: upgrade marks double-rendered ("Strike++"). Items 3–4 (trajectory JSONL, floor rewards) remain.*
+
 ## M5 — Runner, baselines, report (MVP complete)
 
 **Goal:** the spec's MVP — 5 fixed Ironclad A0 seeds, baselines vs LLM, a report.
@@ -95,7 +97,7 @@ Files: `runner/async_runner.py`, `runner/seeds.py`, `runner/metrics.py`, `runner
 
 1. Stateless vs floor-stateful: same model, same seeds, `--agent stepwise` vs the M4 default — the first scaffold ablation, already free once M4 lands. Likewise reasoning effort sweeps (`--reasoning-effort` off/low/medium) per model.
 2. Turn-script agent: model emits an ordered play list; harness executes with per-step revalidation; halt-and-return on invalidation; log script completion rate.
-3. Card/relic DB (`tools/card_db.py`, `relic_db.py`) for `inspect_*` tools — source from a community data dump, pinned to game version.
+3. ~~Card/relic/potion DBs~~ — all three landed early during M4 (see its status note): pinned spire-archive snapshots in `tools/data/`, text on every offering surface, and the once-per-combat briefing (relic bar + potion belt + deck reference). Remaining here: the `inspect_*` observation tools themselves, now a thin lookup over the DBs.
 4. Reflection/planning scaffold; advisor tools behind config flags.
 5. Config system (one TOML/YAML per experiment: model, scaffold, tools, suite) so runs are reproducible by config hash.
 

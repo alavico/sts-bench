@@ -102,6 +102,8 @@ Tools fall into three classes with different rules:
 - `proceed()`
 - `return_back()`
 
+**The information split follows zero-click player parity.** Anything a human player sees on screen without clicking belongs in the always-present digest — including what the screen *means*: a loot screen says "take each in any order", a potion reward on a full belt says the belt is full, cards show their printed text. What a player gets by clicking around (pile contents, the full map) sits behind observation tools. What a player cannot see (draw order, future RNG) appears nowhere. Anything short of parity quietly turns the benchmark into a memory test of the game — measured live: models call observation tools on under 10% of decisions, so information left out of the digest is information the model plays without.
+
 **Observation tools** — first-class, not an ablation knob. The default scaffold sends a compact, cursory state view (floor, HP, gold, screen, energy, hand, enemy intents) and the model queries for the rest on demand. Each tool returns facts the player could legally see in the real game — never hidden information like future RNG, unrevealed map nodes, or shuffled draw order:
 
 - `get_legal_actions()`
@@ -112,7 +114,7 @@ Tools fall into three classes with different rules:
 - `inspect_relic(relic_id | relic_name)` — full relic text
 - `inspect_potion(potion_id | potion_name)` — full potion text
 
-The `inspect_*` text comes from the game's own localization files (`cards.json`, `relics.json`, `potions.json` inside the installed game's `desktop-1.0.jar`), extracted once into a versioned data file. That guarantees exact in-game wording matched to the installed patch — no wiki scraping, no community-dump drift. The payload's `id` field is the join key.
+Card/relic/potion text comes from a pinned snapshot of the spire-archive project's parse of the game files (`tools/data/`). The game's own localization files were the original plan but carry `!D!`-style placeholders — the numbers live in game code — so a community parse with baked values is the faithful source; the payload's `id` (normalized) and display name are the join keys. The same data serves in-digest parity, not just `inspect_*`: card rewards and shop wares always print their card text, and each combat opens with a one-time `<deck_reference>` briefing that the floor conversation keeps in view.
 
 This makes information-gathering itself a measured skill: which facts a model bothers to look up, and at what token cost, is part of the benchmark. Log every observation call.
 
