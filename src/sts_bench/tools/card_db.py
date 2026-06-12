@@ -75,19 +75,37 @@ def _squash(card_id: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", card_id.upper())
 
 
+def _lookup(card: Card) -> dict | None:
+    by_id, by_name = _index()
+    return (
+        by_id.get(card.id.upper().replace(" ", "_"))
+        or by_id.get(_squash(card.id))
+        or by_name.get(card.name.rstrip("+0123456789").strip().lower())
+    )
+
+
+def _is_upgraded(card: Card) -> bool:
+    return card.upgrades > 0 or card.name.endswith("+")
+
+
 def card_text(card: Card) -> str | None:
     """Printed rules text for a card as the mod reports it; None when unknown.
 
     Upgraded cards (the mod marks them in both `name` and `upgrades`) get the
     upgraded printing.
     """
-    by_id, by_name = _index()
-    entry = (
-        by_id.get(card.id.upper().replace(" ", "_"))
-        or by_id.get(_squash(card.id))
-        or by_name.get(card.name.rstrip("+0123456789").strip().lower())
-    )
+    entry = _lookup(card)
     if entry is None:
         return None
-    upgraded = card.upgrades > 0 or card.name.endswith("+")
-    return entry["upgraded_text"] if upgraded else entry["text"]
+    return entry["upgraded_text"] if _is_upgraded(card) else entry["text"]
+
+
+def upgraded_card_text(card: Card) -> str | None:
+    """What the card would read after an upgrade -- the hover preview on
+    upgrade screens. None when unknown, or when the card is already upgraded
+    (multi-upgrade cards like Searing Blow keep scaling, but the dataset
+    holds only the first upgraded printing)."""
+    entry = _lookup(card)
+    if entry is None or _is_upgraded(card):
+        return None
+    return entry["upgraded_text"]

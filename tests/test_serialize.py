@@ -154,6 +154,129 @@ def test_card_reward_shows_printed_text():
     assert "[0] Fusion" in text and "Channel 1 Plasma." in text
 
 
+def test_inflicted_cards_in_hand_print_their_text():
+    # Slimed/Dazed/Burn never appear in the deck briefing; a player reads
+    # them off the card face the turn they show up.
+    raw = load_raw("none-1.json")
+    raw["game_state"]["combat_state"]["hand"][0] = {
+        "id": "Dazed", "name": "Dazed", "cost": -2, "type": "STATUS",
+        "rarity": "COMMON", "upgrades": 0, "has_target": False,
+        "is_playable": False, "exhausts": False, "ethereal": True, "uuid": "x",
+    }
+    text = cursory_view(parse_message(raw))
+    assert "hand[0] Dazed [unplayable] -- Unplayable. Ethereal." in text
+    assert "(-2)" not in text
+    # deck cards stay name+cost: their text lives in the combat briefing
+    assert "hand[3] Strike (1) [needs target]" in text
+    assert "Deal 6 damage" not in text
+
+
+def test_x_cost_renders_as_x():
+    raw = load_raw("none-1.json")
+    raw["game_state"]["combat_state"]["hand"][0] = {
+        "id": "Whirlwind", "name": "Whirlwind", "cost": -1, "type": "ATTACK",
+        "rarity": "UNCOMMON", "upgrades": 0, "has_target": False,
+        "is_playable": True, "exhausts": False, "ethereal": False, "uuid": "x",
+    }
+    text = cursory_view(parse_message(raw))
+    assert "Whirlwind (X)" in text
+    assert "(-1)" not in text
+
+
+def test_unplayable_tag_is_hand_only():
+    # The wire flags reward cards unplayable too (nothing casts there), but
+    # the real screen doesn't grey them.
+    text = render(Path(__file__).parent / "fixtures" / "states" / "card_reward-1.json")
+    assert "[unplayable]" not in text
+
+
+def test_map_screen_names_the_act_boss():
+    text = render(Path(__file__).parent / "fixtures" / "states" / "map-1.json")
+    assert "act boss: " in text
+
+
+def test_upgrade_grid_shows_text_and_upgrade_preview():
+    text = render(Path(__file__).parent / "fixtures" / "states" / "grid-1.json")
+    assert "Strike (1) -- Deal 6 damage. | upgraded: Deal 9 damage." in text
+
+
+def test_potions_unusable_right_now_are_tagged_in_combat_only():
+    raw = load_raw("none-1.json")  # in combat
+    raw["game_state"]["potions"][0] = {
+        "id": "Fairy in a Bottle", "name": "Fairy in a Bottle",
+        "can_use": False, "can_discard": True, "requires_target": False,
+    }
+    assert "Fairy in a Bottle [not usable now]" in cursory_view(parse_message(raw))
+
+    out_of_combat = load_raw("card_reward-1.json")  # holds a combat potion
+    assert "[not usable now]" not in cursory_view(parse_message(out_of_combat))
+
+
+def test_card_reward_defines_the_keywords_its_cards_use():
+    raw = load_raw("card_reward-1.json")  # Fusion: "Channel 1 Plasma."
+    text = cursory_view(parse_message(raw))
+    screen = text[text.index('<screen type="CARD_REWARD">') : text.index("</screen>")]
+    assert "Channel:" in screen and "Plasma:" in screen
+
+
+def test_combat_briefing_carries_a_keyword_glossary():
+    from sts_bench.state.serialize import combat_briefing
+
+    state = parse_message(load_raw("none-1.json")).game_state  # Defect starter deck
+    briefing = combat_briefing(state)
+    glossary = briefing[briefing.index("<keywords>") : briefing.index("</keywords>")]
+    # Zap channels Lightning; Dualcast evokes; each defined exactly once
+    assert "Channel:" in glossary and "Evoke:" in glossary and "Lightning:" in glossary
+    assert glossary.count("Channel:") == 1
+
+
+def test_deck_reference_legend_explains_the_cost_parens():
+    from sts_bench.state.serialize import deck_reference
+
+    state = parse_message(load_raw("none-1.json")).game_state
+    assert "each line: name (energy cost): printed text" in deck_reference(state)
+
+
+def test_rest_options_carry_their_button_text():
+    text = render(Path(__file__).parent / "fixtures" / "states" / "rest-1.json")
+    assert "rest -- heal 30% of max HP" in text
+    assert "smith -- upgrade a card in your deck" in text
+    assert "recall -- obtain the Ruby Key (one of the 3 keys that unlock the final act)" in text
+
+
+def test_unopened_chest_offers_leaving_it():
+    text = render(Path(__file__).parent / "fixtures" / "states" / "chest-1.json")
+    assert "open it (choose) or leave it shut (proceed)" in text
+
+
+def test_sapphire_key_reward_explains_keys_and_the_relic_link():
+    text = render(Path(__file__).parent / "fixtures" / "states" / "combat_reward-2.json")
+    assert "sapphire key (one of the 3 keys that unlock the final act)" in text
+    assert "(linked: taking this forfeits Ink Bottle)" in text
+
+
+def test_run_line_reports_keys_when_the_wire_sends_them():
+    raw = load_raw("rest-1.json")
+    assert "keys 0/3" not in cursory_view(parse_message(raw))  # wire omitted them
+
+    raw["game_state"]["keys"] = {"ruby": True, "emerald": False, "sapphire": True}
+    text = cursory_view(parse_message(raw))
+    assert "keys 2/3 (ruby, sapphire; all 3 unlock the final act)" in text
+
+
+def test_card_reward_choices_offer_skip_as_a_peer_of_the_cards():
+    # The Skip button sits next to the cards on the real screen; if the
+    # choices menu lists only cards, the model reads it as "must take one".
+    raw = load_raw("card_reward-1.json")  # skip_available: true
+    text = cursory_view(parse_message(raw))
+    choices = text[text.index("<choices>") : text.index("</choices>")]
+    assert "or skip -- take no card (return_back)" in choices
+
+    raw["game_state"]["screen_state"]["skip_available"] = False
+    text = cursory_view(parse_message(raw))
+    assert "or skip" not in text
+
+
 def test_shop_cards_show_printed_text():
     text = render(Path(__file__).parent / "fixtures" / "states" / "shop_screen-1.json")
     assert "Warcry" in text and "Draw 1 card" in text  # Warcry's printed effect

@@ -13,7 +13,8 @@ the renderer stays swappable for format ablations.
 
 from __future__ import annotations
 
-from ..tools.card_db import card_text
+from ..tools.card_db import card_text, upgraded_card_text
+from ..tools.keyword_db import keyword_lines
 from ..tools.potion_db import potion_text
 from ..tools.relic_db import relic_text
 from .schema import (
@@ -52,6 +53,18 @@ TOOL_COMMAND_NAMES = {
 }
 
 
+# What each campfire button says on the real screen (relic-granted options
+# included). Unknown options render as the wire word, loudly bare.
+REST_OPTION_TEXT = {
+    "rest": "heal 30% of max HP",
+    "smith": "upgrade a card in your deck",
+    "recall": "obtain the Ruby Key (one of the 3 keys that unlock the final act)",
+    "lift": "gain 1 permanent Strength (Girya)",
+    "toke": "remove a card from your deck (Peace Pipe)",
+    "dig": "obtain a random relic (Shovel)",
+}
+
+
 def cursory_view(message: StateMessage) -> str:
     sections: list[str] = []
     state = message.game_state
@@ -63,12 +76,18 @@ def cursory_view(message: StateMessage) -> str:
         if screen:
             sections.append(screen)
         if state.combat_state is not None:
-            sections.append(f"<combat>\n{_combat_lines(state.combat_state)}\n</combat>")
+            deck_names = frozenset(card.name for card in state.deck)
+            sections.append(f"<combat>\n{_combat_lines(state.combat_state, deck_names)}\n</combat>")
         # The loot screen renders its own indexed lines; a second list of the
         # same items in keyword form only invites misreads.
         if state.choice_list and not isinstance(state.screen, CombatRewardScreen):
-            choices = "\n".join(f"[{i}] {choice}" for i, choice in enumerate(state.choice_list))
-            sections.append(f"<choices>\n{choices}\n</choices>")
+            lines = [f"[{i}] {choice}" for i, choice in enumerate(state.choice_list)]
+            # The Skip button is part of the card-pick menu on the real
+            # screen; a choices list without it reads as "you must take one",
+            # and skipping is often the right play.
+            if isinstance(state.screen, CardRewardScreen) and state.screen.skip_available:
+                lines.append("or skip -- take no card (return_back)")
+            sections.append("<choices>\n" + "\n".join(lines) + "\n</choices>")
     visible = [c for c in message.available_commands if c not in HIDDEN_COMMANDS]
     sections.append(f"<commands>{', '.join(TOOL_COMMAND_NAMES.get(c, c) for c in visible)}</commands>")
     return "\n".join(sections)
@@ -84,6 +103,15 @@ def combat_briefing(state: GameState) -> str:
     if belt:
         parts.append(belt)
     parts.append(deck_reference(state))
+    # The tooltip boxes a player sees beside those texts: define each game
+    # term the briefing actually uses, once.
+    glossary = keyword_lines(
+        [card_text(c) for c in state.deck]
+        + [relic_text(r) for r in state.relics]
+        + [potion_text(p) for p in state.potions]
+    )
+    if glossary:
+        parts.append("<keywords>\n" + "\n".join(glossary) + "\n</keywords>")
     return "\n".join(parts)
 
 
@@ -120,7 +148,7 @@ def deck_reference(state: GameState) -> str:
     for card in state.deck:
         counts[card.name] = counts.get(card.name, 0) + 1
         first.setdefault(card.name, card)
-    lines = ["your deck (printed card text):"]
+    lines = ["your deck -- each line: name (energy cost): printed text"]
     for name, card in first.items():
         copies = f" x{counts[name]}" if counts[name] > 1 else ""
         text = card_text(card)
@@ -129,7 +157,15 @@ def deck_reference(state: GameState) -> str:
 
 
 def _run_line(state: GameState) -> str:
-    held = [p.name for p in state.potions if p.id != EMPTY_POTION_ID]
+    # In combat the belt greys potions that can't be used right now (Fairy in
+    # a Bottle, Smoke Bomb against a boss); out of combat nothing is usable,
+    # so the flag carries no information and stays untagged.
+    in_combat = state.combat_state is not None
+    held = [
+        p.name + (" [not usable now]" if in_combat and not p.can_use else "")
+        for p in state.potions
+        if p.id != EMPTY_POTION_ID
+    ]
     slots = len(state.potions)
     full = ", full" if held and len(held) == slots else ""
     parts = [
@@ -141,6 +177,11 @@ def _run_line(state: GameState) -> str:
         f"relics {len(state.relics)}",
         f"potions ({len(held)}/{slots}{full}): {', '.join(held) if held else 'none'}",
     ]
+    if state.keys is not None:
+        # The key icons sit on the real HUD whenever act 4 is in play; all
+        # three are needed to enter it and face the heart.
+        got = [name for name in ("ruby", "emerald", "sapphire") if getattr(state.keys, name)]
+        parts.append(f"keys {len(got)}/3 ({', '.join(got) if got else 'none'}; all 3 unlock the final act)")
     return " | ".join(parts)
 
 
@@ -164,18 +205,18 @@ def _screen_section(state: GameState) -> str | None:
                 lines.append("next: " + ", ".join(_node(n) for n in screen.next_nodes))
             if screen.boss_available:
                 lines.append("boss fight available")
+            # The boss icon sits at the top of the real map; routing and
+            # drafting are planned against it.
+            lines.append(f"act boss: {state.act_boss}")
             lines.append("(symbols: M monster, E elite, $ shop, R rest, T chest, ? event, B boss; full layout via get_map)")
             return "<screen type=\"MAP\">\n" + "\n".join(lines) + "\n</screen>"
         case CardRewardScreen():
-            # A player reads the full card before picking; so does the model.
+            # A player reads the full card before picking; so does the model,
+            # tooltip definitions included.
             lines = [_card_with_text(card, i) for i, card in enumerate(screen.cards)]
-            extras = []
-            if screen.skip_available:
-                extras.append("skipping is allowed")
+            lines += keyword_lines(card_text(card) for card in screen.cards)
             if screen.bowl_available:
-                extras.append("Singing Bowl: +2 max HP instead")
-            if extras:
-                lines.append("; ".join(extras))
+                lines.append("Singing Bowl: +2 max HP instead")
             return "<screen type=\"CARD_REWARD\">\n" + "\n".join(lines) + "\n</screen>"
         case CombatRewardScreen():
             # Loot is not a pick-one menu: every item is claimable, in any
@@ -195,22 +236,36 @@ def _screen_section(state: GameState) -> str | None:
             )
             count = "any number of cards" if screen.any_number else f"{screen.num_cards} card(s)"
             lines = [f"pick {count} to {purpose}"]
-            lines += [_card(card, i) for i, card in enumerate(screen.cards)]
+            # These picks happen outside combat, where no deck briefing is in
+            # view -- print the text, and for upgrades the preview a player
+            # gets by hovering.
+            for i, card in enumerate(screen.cards):
+                line = _card_with_text(card, i)
+                if screen.for_upgrade:
+                    preview = upgraded_card_text(card)
+                    if preview:
+                        line += f" | upgraded: {preview}"
+                lines.append(line)
             if screen.selected_cards:
                 lines.append("selected: " + ", ".join(c.name for c in screen.selected_cards))
             if screen.confirm_up:
                 lines.append("confirm to finish")
             return "<screen type=\"GRID\">\n" + "\n".join(lines) + "\n</screen>"
         case RestScreen():
-            lines = [
-                "already rested -- proceed to move on"
-                if screen.has_rested
-                else "options: " + ", ".join(screen.rest_options)
-            ]
+            if screen.has_rested:
+                lines = ["already rested -- proceed to move on"]
+            else:
+                # Each campfire button explains itself in the real UI; bare
+                # option words would make "recall" a vocabulary test.
+                lines = ["options:"] + [
+                    f"{option} -- {REST_OPTION_TEXT[option]}" if option in REST_OPTION_TEXT else option
+                    for option in screen.rest_options
+                ]
             return "<screen type=\"REST\">\n" + "\n".join(lines) + "\n</screen>"
         case ChestScreen():
             status = "already open" if screen.chest_open else "unopened"
-            return f"<screen type=\"CHEST\">\n{screen.chest_type} ({status})\n</screen>"
+            leave = "" if screen.chest_open else " -- open it (choose) or leave it shut (proceed)"
+            return f"<screen type=\"CHEST\">\n{screen.chest_type} ({status}){leave}\n</screen>"
         case ShopScreen():
             # No bracketed indices here: buying goes through the <choices>
             # list, whose numbering (purge first, then wares) does not match
@@ -252,7 +307,7 @@ def _screen_section(state: GameState) -> str | None:
     return None  # NONE screen: combat section carries the content
 
 
-def _combat_lines(combat: CombatState) -> str:
+def _combat_lines(combat: CombatState, deck_names: frozenset[str] = frozenset()) -> str:
     player = combat.player
     lines = [f"turn {combat.turn} | energy {player.energy} | block {player.block}"]
     if combat.card_in_play is not None:
@@ -270,7 +325,14 @@ def _combat_lines(combat: CombatState) -> str:
             continue
         lines.append(_monster(monster, i))
     for i, card in enumerate(combat.hand):
-        lines.append("hand" + _card(card, i, show_target=True))
+        line = "hand" + _card(card, i, in_hand=True)
+        if card.name not in deck_names:
+            # Generated and inflicted cards (Slimed, Burn, Shiv, ...) are not
+            # in the deck briefing; a player reads them off the card face.
+            text = card_text(card)
+            if text:
+                line += f" -- {text}"
+        lines.append(line)
     lines.append(
         f"piles: draw {len(combat.draw_pile)}, discard {len(combat.discard_pile)}, "
         f"exhaust {len(combat.exhaust_pile)} (contents via tools)"
@@ -294,15 +356,26 @@ def _monster(monster: Monster, index: int) -> str:
     )
 
 
-def _card(card: Card, index: int | None = None, show_target: bool = False) -> str:
+def _card(card: Card, index: int | None = None, in_hand: bool = False) -> str:
     # The mod's name already carries upgrade marks ("Strike+", "Searing Blow+2").
+    # The playability tags are hand-only: the wire flags reward/shop/grid cards
+    # unplayable too (nothing is castable there), but the real screens don't
+    # grey them.
     tags = ""
-    if show_target and card.has_target:
+    if in_hand and card.has_target:
         tags += " [needs target]"
-    if card.is_playable is False:
+    if in_hand and card.is_playable is False:
         tags += " [unplayable]"
+    # Cost sentinels: -1 is the X in the energy orb, -2 is no orb at all
+    # (statuses, curses) -- neither is a number a player ever sees.
+    if card.cost == -1:
+        cost = " (X)"
+    elif card.cost == -2:
+        cost = ""
+    else:
+        cost = f" ({card.cost})"
     prefix = "" if index is None else f"[{index}] "
-    return f"{prefix}{card.name} ({card.cost}){tags}"
+    return f"{prefix}{card.name}{cost}{tags}"
 
 
 def _card_with_text(card: Card, index: int | None = None) -> str:
@@ -325,6 +398,8 @@ def _reward(reward, state: GameState) -> str:
             label = f"relic: {_with_text(reward.relic.name, relic_text(reward.relic))}"
         case "CARD":
             label = "card (opens a pick of cards, skippable)"
+        case "RUBY_KEY" | "EMERALD_KEY" | "SAPPHIRE_KEY" as key:
+            label = f"{key.lower().replace('_', ' ')} (one of the 3 keys that unlock the final act)"
         case other:
             label = other.lower().replace("_", " ")
     if reward.link is not None:
