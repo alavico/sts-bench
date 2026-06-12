@@ -660,6 +660,18 @@ function itemChip(item) {
   const chipEl = el("span", { class: "item-chip" },
     item.name,
     el("span", { class: "cnt" }, item.floor == null ? "start" : "floor " + item.floor));
+  if ("fate" in item) {
+    if (item.fate) {
+      const fate = el("span", { class: "cnt fate" }, `→ ${item.fate} floor ${item.fate_floor}`);
+      if (FLOOR_BY_NO.has(item.fate_floor)) {
+        fate.classList.add("linked");
+        fate.addEventListener("click", (e) => { e.stopPropagation(); openFloor(item.fate_floor); });
+      }
+      chipEl.append(fate);
+    } else {
+      chipEl.append(el("span", { class: "cnt never" }, "→ never used"));
+    }
+  }
   if (item.text) {
     chipEl.addEventListener("mouseenter", (e) => showTipNode(e, el("div", { class: "tipcard" },
       el("div", { class: "tip-head" }, el("b", {}, item.name)),
@@ -681,7 +693,12 @@ function deckView() {
   return section("Deck",
     el("div", { class: "collection" },
       deck ? panel(`Final deck — ${cardCount} cards`,
-        el("div", { class: "cards" }, deck.map(cardChip))) : null,
+        el("div", { class: "cards" }, deck.map(cardChip)),
+        el("div", { class: "panel-note" },
+          "Edge color marks the card type:",
+          [["var(--red)", "attack"], ["var(--green)", "skill"], ["var(--blue)", "power"],
+            ["#b07cf0", "curse"], ["var(--dim)", "status"]].map(([color, type]) => [
+            el("span", { class: "dot", style: "background:" + color }), type]))) : null,
       el("div", { class: "items" },
         DATA.relics.length ? panel("Relics",
           el("div", { class: "cards" }, DATA.relics.map(itemChip))) : null,
@@ -739,6 +756,7 @@ function behaviorView() {
       panel("Card rewards", el("div", { class: "big-stat" },
         el("div", {}, el("b", {}, takes), " taken"),
         el("div", {}, el("b", {}, skips), " skipped"))),
+      potionPanel(),
       panel("Observation lookups", lookups.size
         ? barList([...lookups.entries()].sort((a, b) => b[1] - a[1]))
         : el("div", { class: "dim" }, "None — the model never used a lookup tool"))),
@@ -754,8 +772,23 @@ function behaviorView() {
       : null);
 }
 
-function panel(name, body) {
+function panel(name, ...body) {
   return el("div", { class: "panel" }, el("h3", {}, name), body);
+}
+
+/* Hoarding is a classic agent failure: a potion that was never drunk did
+   nothing for the run, so the panel leads with used vs. never used. */
+function potionPanel() {
+  if (!DATA.potions.length) {
+    return panel("Potions", el("div", { class: "dim" }, "None seen this run"));
+  }
+  const used = DATA.potions.filter((p) => p.fate === "used").length;
+  const discarded = DATA.potions.filter((p) => p.fate === "discarded").length;
+  const unused = DATA.potions.length - used - discarded;
+  return panel("Potions", el("div", { class: "big-stat" },
+    el("div", {}, el("b", {}, used), " used"),
+    discarded ? el("div", {}, el("b", {}, discarded), " discarded") : null,
+    el("div", {}, el("b", {}, unused), " never used")));
 }
 
 function barList(entries) {
@@ -810,9 +843,9 @@ function floorBody(floor) {
   const changes = floor.deck_changes;
   if (gains.length || changes) {
     body.append(el("div", { class: "gains" },
-      gains.map(([kind, name]) => el("span", { class: "chip gain " + kind }, name)),
-      changes ? changes.removed.map((name) => el("span", { class: "chip gain removed" }, "− " + name)) : null,
-      changes ? changes.upgraded.map((name) => el("span", { class: "chip gain upgraded" }, "↑ " + name)) : null));
+      gains.map(([kind, name]) => gainChip(kind, "+", name, title(kind) + " gained")),
+      changes ? changes.removed.map((name) => gainChip("card", "−", name, "Card removed from the deck")) : null,
+      changes ? changes.upgraded.map((name) => gainChip("card", "↑", name, "Card upgraded")) : null));
   }
   if (floor.reward && Object.keys(floor.reward.components || {}).length) {
     body.append(el("div", { class: "dim small" },
@@ -823,6 +856,17 @@ function floorBody(floor) {
   if (floor.turns) body.append(fightsView(floor.turns));
   body.append(el("div", { class: "decisions" }, floor.decisions.map(decisionView)));
   return body;
+}
+
+/* Gain chips follow one color rule: the hue names what the thing is (card
+   blue, relic gold, potion green) and the glyph names what happened to it
+   (+ gained, − removed, ↑ upgraded). Hovering spells it out in words. */
+function gainChip(kind, glyph, name, what) {
+  const chipEl = el("span", { class: "chip gain " + kind }, glyph + " " + name);
+  chipEl.addEventListener("mouseenter", (e) => showTipNode(e, tipLine(what)));
+  chipEl.addEventListener("mouseleave", hideTip);
+  chipEl.addEventListener("mousemove", moveTip);
+  return chipEl;
 }
 
 function floorView(floor) {

@@ -11,6 +11,7 @@ Python, so the page script stays a renderer.
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import asdict
 from typing import Any
 
@@ -41,7 +42,7 @@ def build_report_data(records: list) -> dict[str, Any]:
         "acts": _acts(floors, decisions),
         "deck": _deck(floors[-1].exit_state) if floors else None,
         "relics": _collected(floors, "relics", "relics_gained", _relic_text),
-        "potions": _collected(floors, "potions", "potions_gained", _potion_text),
+        "potions": _potions(floors, decisions),
         "orphans": orphans,
     }
 
@@ -274,6 +275,39 @@ def _collected(
     for floor in floors:
         for name in getattr(floor.scorecard, gained_key):
             items.append({"name": name, "floor": floor.floor, "text": text_of({"name": name})})
+    return items
+
+
+# The action narration names the potion at the moment it left a slot:
+# "use_potion 2 (Fire Potion)" / "discard_potion 0 (Block Potion)".
+_POTION_EVENT = re.compile(r"^(use_potion|discard_potion) \d+ \((.+)\)$")
+
+
+def _potions(
+    floors: list[FloorRecord], decisions: dict[int | None, list[DecisionRecord]]
+) -> list[dict[str, Any]]:
+    """Collected potions with their fate: the floor each one was drunk or
+    tossed on, or None for a potion still in its slot when the run ended.
+    Duplicate names resolve earliest-gained-first."""
+    items = _collected(floors, "potions", "potions_gained", _potion_text)
+    for item in items:
+        item["fate"] = None
+        item["fate_floor"] = None
+    for floor in floors:
+        for decision in decisions.get(floor.floor, []):
+            event = _POTION_EVENT.match(decision.action or "")
+            if event is None:
+                continue
+            kind, name = event.groups()
+            for item in items:
+                if (
+                    item["name"] == name
+                    and item["fate"] is None
+                    and (item["floor"] or 0) <= floor.floor
+                ):
+                    item["fate"] = "used" if kind == "use_potion" else "discarded"
+                    item["fate_floor"] = floor.floor
+                    break
     return items
 
 

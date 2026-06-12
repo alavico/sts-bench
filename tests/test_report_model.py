@@ -207,6 +207,31 @@ def test_relics_and_potions_carry_acquisition_floor_and_text():
     assert "damage" in data["potions"][0]["text"]
 
 
+def test_potions_carry_their_fate_matched_earliest_gained_first():
+    first = make_floor_record(
+        floor=1,
+        scorecard=FloorScorecard(potions_gained=["Fire Potion", "Fire Potion", "Block Potion"]),
+    )
+    second = make_floor_record(floor=2)
+    drink = make_decision_record(
+        floor=2, decision_index=1, message_start=0, message_end=0,
+        action="use_potion 0 (Fire Potion)",
+    )
+    toss = make_decision_record(
+        floor=2, decision_index=2, message_start=0, message_end=0,
+        action="discard_potion 0 (Fire Potion)",
+    )
+    data = build_report_data([make_run_record(), first, second, drink, toss])
+
+    assert [(p["name"], p["fate"], p["fate_floor"]) for p in data["potions"]] == [
+        ("Fire Potion", "used", 2),
+        ("Fire Potion", "discarded", 2),
+        ("Block Potion", None, None),
+    ]
+    # relics have no fate: only potions get consumed
+    assert all("fate" not in r for r in data["relics"])
+
+
 def test_rendered_page_is_self_contained_and_script_safe(tmp_path):
     records = list(read_records(record_two_floor_run(tmp_path)))
     data = build_report_data(records)
