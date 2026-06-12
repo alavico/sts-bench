@@ -15,6 +15,10 @@ from dataclasses import asdict
 from typing import Any
 
 from ..replay import group, verify_floor
+from ..state.schema import Card, Potion, Relic
+from ..tools.card_db import card_text
+from ..tools.potion_db import potion_text
+from ..tools.relic_db import relic_text
 from ..trajectory import DecisionRecord, FloorRecord, RunRecord
 from ..trajectory.schema import TokenUsage
 from .digest import MapChoice, combat_snapshot, map_choice
@@ -35,6 +39,9 @@ def build_report_data(records: list) -> dict[str, Any]:
         "system_prompt": _system_prompt(floors),
         "floors": [_floor(floor, decisions.get(floor.floor, [])) for floor in floors],
         "acts": _acts(floors, decisions),
+        "deck": _deck(floors[-1].exit_state) if floors else None,
+        "relics": _collected(floors, "relics", "relics_gained", _relic_text),
+        "potions": _collected(floors, "potions", "potions_gained", _potion_text),
         "orphans": orphans,
     }
 
@@ -135,12 +142,139 @@ def _floor(floor: FloorRecord, decisions: list[DecisionRecord]) -> dict[str, Any
             if floor.reward is not None
             else None
         ),
+        "deck_changes": _deck_changes(floor.entry_state, floor.exit_state),
         "violations": verify_floor(floor, decisions),
         "usage": _usage(totals),
         "latency_ms": latency,
         "turns": _turns(floor, decisions),
         "decisions": [_decision(floor, decision) for decision in decisions],
     }
+
+
+# -- deck, relics, potions -----------------------------------------------------
+
+_TYPE_ORDER = {"ATTACK": 0, "SKILL": 1, "POWER": 2, "STATUS": 3, "CURSE": 4}
+
+
+def _card_name(card: dict) -> str:
+    """Display name with the upgrade marker the game uses ("Bash+"); the mod
+    usually bakes it into `name` already, so only add it when missing."""
+    name = str(card.get("name") or "?")
+    upgrades = card.get("upgrades") or 0
+    if upgrades and not name.endswith("+") and "+" not in name:
+        name += "+" if upgrades == 1 else f"+{upgrades}"
+    return name
+
+
+def _card_text(card: dict) -> str | None:
+    try:
+        return card_text(Card.model_validate({
+            "id": card.get("id") or card.get("name") or "?",
+            "uuid": card.get("uuid") or "",
+            "name": card.get("name") or "?",
+            "type": card.get("type") or "SKILL",
+            "rarity": card.get("rarity") or "SPECIAL",
+            "cost": card.get("cost") or 0,
+            "upgrades": card.get("upgrades") or 0,
+            "has_target": bool(card.get("has_target")),
+            "exhausts": bool(card.get("exhausts")),
+            "ethereal": bool(card.get("ethereal")),
+        }))
+    except ValueError:
+        return None
+
+
+def _deck(state: dict) -> list[dict[str, Any]] | None:
+    """The deck grouped for display: one entry per distinct card (upgrades
+    split copies apart), ordered the way a player scans a deck list --
+    attacks, skills, powers, then dross."""
+    cards = state.get("deck")
+    if not isinstance(cards, list) or not cards:
+        return None
+    groups: dict[str, dict[str, Any]] = {}
+    for card in cards:
+        name = _card_name(card)
+        entry = groups.get(name)
+        if entry is None:
+            groups[name] = entry = {
+                "name": name,
+                "count": 0,
+                "cost": card.get("cost"),
+                "type": card.get("type"),
+                "rarity": card.get("rarity"),
+                "text": _card_text(card),
+            }
+        entry["count"] += 1
+    return sorted(
+        groups.values(),
+        key=lambda c: (
+            _TYPE_ORDER.get(c["type"], len(_TYPE_ORDER)),
+            c["cost"] if isinstance(c["cost"], int) and c["cost"] >= 0 else 99,
+            c["name"],
+        ),
+    )
+
+
+def _deck_changes(entry_state: dict, exit_state: dict) -> dict[str, list[str]] | None:
+    """What happened to the deck on this floor, told by card identity: uuids
+    that appear are gains, uuids that vanish are removals, and a uuid whose
+    upgrade count climbed was smithed."""
+    before = {c["uuid"]: c for c in entry_state.get("deck") or [] if c.get("uuid")}
+    after = {c["uuid"]: c for c in exit_state.get("deck") or [] if c.get("uuid")}
+    if not before or not after:
+        return None
+    added = [_card_name(c) for u, c in after.items() if u not in before]
+    removed = [_card_name(c) for u, c in before.items() if u not in after]
+    upgraded = [
+        _card_name(c)
+        for u, c in after.items()
+        if u in before and (c.get("upgrades") or 0) > (before[u].get("upgrades") or 0)
+    ]
+    if not (added or removed or upgraded):
+        return None
+    return {"added": sorted(added), "removed": sorted(removed), "upgraded": sorted(upgraded)}
+
+
+def _relic_text(item: dict) -> str | None:
+    try:
+        return relic_text(Relic.model_validate({
+            "id": item.get("id") or item.get("name") or "?",
+            "name": item.get("name") or "?",
+            "counter": item.get("counter", -1),
+        }))
+    except ValueError:
+        return None
+
+
+def _potion_text(item: dict) -> str | None:
+    try:
+        return potion_text(Potion.model_validate({
+            "id": item.get("id") or item.get("name") or "?",
+            "name": item.get("name") or "?",
+            "can_use": bool(item.get("can_use")),
+            "can_discard": bool(item.get("can_discard")),
+            "requires_target": bool(item.get("requires_target")),
+        }))
+    except ValueError:
+        return None
+
+
+def _collected(
+    floors: list[FloorRecord], state_key: str, gained_key: str, text_of: Any
+) -> list[dict[str, Any]]:
+    """Every relic/potion that passed through the run's hands, with the floor
+    it arrived on (None marks starting items)."""
+    items: list[dict[str, Any]] = []
+    if floors:
+        for raw in floors[0].entry_state.get(state_key) or []:
+            name = str(raw.get("name") or "")
+            if not name or name == "Potion Slot":
+                continue
+            items.append({"name": name, "floor": None, "text": text_of(raw)})
+    for floor in floors:
+        for name in getattr(floor.scorecard, gained_key):
+            items.append({"name": name, "floor": floor.floor, "text": text_of({"name": name})})
+    return items
 
 
 def _decision(floor: FloorRecord, decision: DecisionRecord) -> dict[str, Any]:

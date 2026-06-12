@@ -2,7 +2,7 @@
 page stay faithful to the records they were built from."""
 
 from sts_bench.report import build_report_data, render_html
-from sts_bench.trajectory import read_records
+from sts_bench.trajectory import FloorScorecard, read_records
 
 from test_replay import record_two_floor_run
 from test_trajectory_schema import (
@@ -127,6 +127,84 @@ def test_rejection_tool_results_are_flagged_as_events():
     data = build_report_data([floor, decision])
     kinds = [ev["kind"] for ev in data["floors"][0]["decisions"][0]["events"]]
     assert kinds == ["state", "call", "rejection", "text"]
+
+
+def card(name, uuid, *, cost=1, type="ATTACK", rarity="COMMON", upgrades=0):
+    return {
+        "id": name, "uuid": uuid, "name": name + ("+" if upgrades else ""),
+        "type": type, "rarity": rarity, "cost": cost, "upgrades": upgrades,
+        "has_target": False, "is_playable": None, "exhausts": False, "ethereal": False,
+    }
+
+
+def test_deck_is_grouped_sorted_and_carries_card_text():
+    deck = [
+        card("Strike", "u1"), card("Strike", "u2"),
+        card("Defend", "u3", type="SKILL"),
+        card("Bash", "u4", cost=2, upgrades=1),
+        card("Inflame", "u5", type="POWER"),
+    ]
+    floor = make_floor_record(exit_state={"floor": 3, "deck": deck})
+    data = build_report_data([make_run_record(), floor])
+
+    names = [(c["name"], c["count"]) for c in data["deck"]]
+    # attacks by cost, then skills, then powers
+    assert names == [("Strike", 2), ("Bash+", 1), ("Defend", 1), ("Inflame", 1)]
+    strike = data["deck"][0]
+    assert strike["type"] == "ATTACK" and strike["cost"] == 1
+    assert "damage" in strike["text"]
+    bash = data["deck"][1]
+    assert "Vulnerable" in bash["text"]  # the upgraded printing
+
+
+def test_deck_changes_diff_by_card_identity():
+    before = [card("Strike", "u1"), card("Strike", "u2"), card("Defend", "u3", type="SKILL")]
+    after = [card("Strike", "u1"), card("Defend", "u3", type="SKILL", upgrades=1), card("Carnage", "u9", cost=2)]
+    floor = make_floor_record(
+        entry_state={"floor": 3, "deck": before},
+        exit_state={"floor": 3, "deck": after},
+    )
+    data = build_report_data([make_run_record(), floor])
+
+    assert data["floors"][0]["deck_changes"] == {
+        "added": ["Carnage"],
+        "removed": ["Strike"],
+        "upgraded": ["Defend+"],
+    }
+
+
+def test_deck_changes_absent_when_states_lack_decks_or_nothing_changed():
+    quiet = make_floor_record(
+        entry_state={"floor": 3, "deck": [card("Strike", "u1")]},
+        exit_state={"floor": 3, "deck": [card("Strike", "u1")]},
+    )
+    bare = make_floor_record(floor=4)
+    data = build_report_data([make_run_record(), quiet, bare])
+    assert all(f["deck_changes"] is None for f in data["floors"])
+    assert data["deck"] is None  # last floor's exit state has no deck
+
+
+def test_relics_and_potions_carry_acquisition_floor_and_text():
+    first = make_floor_record(
+        floor=1,
+        entry_state={
+            "floor": 1,
+            "relics": [{"id": "Burning Blood", "name": "Burning Blood", "counter": -1}],
+            "potions": [{"id": "Potion Slot", "name": "Potion Slot",
+                         "can_use": False, "can_discard": False, "requires_target": False}],
+        },
+        scorecard=FloorScorecard(potions_gained=["Fire Potion"]),
+    )
+    second = make_floor_record(floor=2, scorecard=FloorScorecard(relics_gained=["Shuriken"]))
+    data = build_report_data([make_run_record(), first, second])
+
+    assert [(r["name"], r["floor"]) for r in data["relics"]] == [
+        ("Burning Blood", None), ("Shuriken", 2)]
+    assert "heal 6 HP" in data["relics"][0]["text"]
+    assert "Strength" in data["relics"][1]["text"]
+    # the empty slot placeholder is not a potion
+    assert [(p["name"], p["floor"]) for p in data["potions"]] == [("Fire Potion", 1)]
+    assert "damage" in data["potions"][0]["text"]
 
 
 def test_rendered_page_is_self_contained_and_script_safe(tmp_path):

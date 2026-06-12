@@ -4,6 +4,30 @@
 
 const DATA = JSON.parse(document.getElementById("data").textContent);
 
+/* ---------- theme ---------- */
+
+const THEME_KEY = "sts-bench-theme";
+
+function applyTheme(name) {
+  document.documentElement.dataset.theme = name;
+  localStorage.setItem(THEME_KEY, name);
+}
+
+applyTheme(localStorage.getItem(THEME_KEY) || "dark");
+
+function themeToggle() {
+  const label = () =>
+    document.documentElement.dataset.theme === "dark" ? "☀ Light" : "☾ Dark";
+  const btn = el("button", {
+    class: "theme-toggle",
+    onclick: () => {
+      applyTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+      btn.textContent = label();
+    },
+  }, label());
+  return btn;
+}
+
 /* ---------- builders ---------- */
 
 const SVGNS = "http://www.w3.org/2000/svg";
@@ -40,19 +64,20 @@ function sv(tag, attrs = {}, ...children) {
 const fmt = new Intl.NumberFormat("en-US");
 const num = (v) => (v == null ? "?" : fmt.format(v));
 const signed = (v) => (v > 0 ? "+" + num(v) : num(v));
+const title = (s) => (s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s);
 
 /* ---------- room styling ---------- */
 
 const ROOM = {
-  MonsterRoom: ["monster", "#e06c5b", "M"],
-  MonsterRoomElite: ["elite", "#b07cf0", "E"],
-  MonsterRoomBoss: ["boss", "#ff5757", "B"],
-  EventRoom: ["event", "#5bc0de", "?"],
-  NeowRoom: ["start", "#9aa0a6", "N"],
-  ShopRoom: ["shop", "#e8c860", "$"],
-  RestRoom: ["rest", "#7ed87e", "R"],
-  TreasureRoom: ["chest", "#f0a850", "T"],
-  TreasureRoomBoss: ["boss chest", "#f0a850", "T"],
+  MonsterRoom: ["Monster", "#e06c5b", "M"],
+  MonsterRoomElite: ["Elite", "#b07cf0", "E"],
+  MonsterRoomBoss: ["Boss", "#ff5757", "B"],
+  EventRoom: ["Event", "#5bc0de", "?"],
+  NeowRoom: ["Start", "#9aa0a6", "N"],
+  ShopRoom: ["Shop", "#e8c860", "$"],
+  RestRoom: ["Rest", "#7ed87e", "R"],
+  TreasureRoom: ["Chest", "#f0a850", "T"],
+  TreasureRoomBoss: ["Boss chest", "#f0a850", "T"],
 };
 
 function room(type) {
@@ -61,19 +86,21 @@ function room(type) {
   return { label: type || "?", color: "#9aa0a6", symbol: "?" };
 }
 
-const SYMBOL_COLOR = {
-  M: "#e06c5b", E: "#b07cf0", $: "#e8c860", R: "#7ed87e",
-  T: "#f0a850", "?": "#5bc0de", B: "#ff5757",
-};
+const SYMBOL_COLOR = {};
+for (const [, color, symbol] of Object.values(ROOM)) {
+  if (!(symbol in SYMBOL_COLOR)) SYMBOL_COLOR[symbol] = color;
+}
 
-/* ---------- tooltip + navigation ---------- */
+const FLOOR_BY_NO = new Map(DATA.floors.map((f) => [f.floor, f]));
+
+/* ---------- tooltip ---------- */
 
 const tip = el("div", { class: "tooltip" });
 tip.style.display = "none";
 document.body.append(tip);
 
-function showTip(evt, lines) {
-  tip.replaceChildren(...lines.map((line) => el("div", {}, line)));
+function showTipNode(evt, node) {
+  tip.replaceChildren(node);
   tip.style.display = "block";
   moveTip(evt);
 }
@@ -93,7 +120,113 @@ function hideTip() {
   tip.style.display = "none";
 }
 
+const tipLine = (text) => el("div", {}, text);
+
+/* The floor tooltip is a small card: room header, aligned stat rows with
+   colored deltas, then anything gained. */
+function tipCard(floor, exit = false) {
+  const info = room(floor.type);
+  const sc = floor.scorecard;
+  const rows = [];
+  const row = (k, ...v) => rows.push(el("span", { class: "k" }, k), el("span", {}, ...v));
+  const delta = (v) => el("b", { class: v > 0 ? "up" : v < 0 ? "down" : "flat" }, ` ${signed(v)}`);
+
+  row("HP", `${floor.entry.hp} → ${floor.exit.hp}`, delta(sc.hp_delta));
+  row("Gold", `${floor.entry.gold} → ${floor.exit.gold}`, delta(sc.gold_delta));
+  if (sc.combat_turns) row("Combat", `${sc.combat_turns} turns`);
+  row("Decisions", String(floor.decisions.length));
+  row("Tokens", num(floor.usage.prompt + floor.usage.completion));
+  if (floor.reward) row("Reward", floor.reward.total > 0 ? "+" + floor.reward.total : String(floor.reward.total));
+
+  const gains = [...sc.cards_gained, ...sc.relics_gained, ...sc.potions_gained];
+  return el("div", { class: "tipcard" },
+    el("div", { class: "tip-head" },
+      el("span", { class: "sym", style: "background:" + info.color }, info.symbol),
+      el("b", {}, exit ? "End of run" : "Floor " + floor.floor),
+      el("span", { class: "dim" }, exit ? ` · after floor ${floor.floor}` : ` · ${info.label}`)),
+    el("div", { class: "tip-rows" }, rows),
+    gains.length ? el("div", { class: "tip-gains" }, gains.map((g) => el("span", { class: "chip" }, g))) : null);
+}
+
+/* ---------- linked floors ----------
+   Every chart mark, bar, axis symbol, and route node that stands for a floor
+   registers here; hovering any of them lights up all of its siblings. */
+
+const FLOOR_LINKS = new Map();
+
+function highlightFloor(floorNo, on) {
+  for (const elm of FLOOR_LINKS.get(floorNo) || []) elm.classList.toggle("hl", on);
+}
+
+function linkFloor(elm, floorNo, buildTip) {
+  let links = FLOOR_LINKS.get(floorNo);
+  if (!links) FLOOR_LINKS.set(floorNo, links = []);
+  links.push(elm);
+  elm.addEventListener("mouseenter", (e) => {
+    highlightFloor(floorNo, true);
+    showTipNode(e, buildTip());
+  });
+  elm.addEventListener("mouseleave", () => {
+    highlightFloor(floorNo, false);
+    hideTip();
+  });
+  elm.addEventListener("mousemove", moveTip);
+  elm.addEventListener("click", () => openFloor(floorNo));
+  return elm;
+}
+
+/* ---------- floor detail modal ----------
+   Charts and maps open a floor in a modal so the reader never loses their
+   place; the full floor-by-floor log stays at the bottom of the page. */
+
+let modalEl = null;
+
+function closeModal() {
+  if (modalEl) {
+    modalEl.remove();
+    modalEl = null;
+  }
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeModal();
+});
+
 function openFloor(floorNo) {
+  const floor = FLOOR_BY_NO.get(floorNo);
+  if (!floor) return;
+  hideTip();
+  closeModal();
+  const idx = DATA.floors.indexOf(floor);
+  const nav = (delta, glyph) => {
+    const target = DATA.floors[idx + delta];
+    return el("button", {
+      class: "modal-nav",
+      disabled: target ? null : "",
+      onclick: target ? () => openFloor(target.floor) : null,
+    }, glyph);
+  };
+  modalEl = el("div", {
+    class: "modal-backdrop",
+    onclick: (e) => { if (e.target === modalEl) closeModal(); },
+  },
+    el("div", { class: "modal", role: "dialog", "aria-label": "Floor " + floorNo },
+      el("div", { class: "modal-head" },
+        nav(-1, "‹"), nav(1, "›"),
+        floorHeading(floor),
+        el("span", { class: "spacer" }),
+        el("button", {
+          class: "modal-link",
+          onclick: () => { closeModal(); revealFloor(floorNo); },
+        }, "Full log ↓"),
+        el("button", { class: "modal-close", onclick: closeModal, "aria-label": "Close" }, "×")),
+      el("div", { class: "modal-body" },
+        el("div", { class: "meta" }, floorMeta(floor)),
+        floorBody(floor))));
+  document.body.append(modalEl);
+}
+
+function revealFloor(floorNo) {
   const target = document.getElementById("floor-" + floorNo);
   if (!target) return;
   target.open = true;
@@ -119,9 +252,10 @@ function header() {
   const config = [
     run.model,
     run.agent && run.agent + " agent",
-    run.character && `${run.character} · ascension ${run.ascension}`,
+    run.character && `${title(run.character)} · ascension ${run.ascension}`,
     "seed " + (run.seed || "random"),
-    run.api && run.api + " api" + (run.reasoning_effort ? `, effort ${run.reasoning_effort}` : ""),
+    run.api && run.api + " API" + (run.reasoning_effort ? `, effort ${run.reasoning_effort}` : ""),
+    run.started_at && new Date(run.started_at).toLocaleString(),
     run.run_id,
   ].filter(Boolean).join("  ·  ");
 
@@ -133,23 +267,23 @@ function header() {
   const decisions = run.decisions ?? DATA.floors.reduce((sum, floor) => sum + floor.decisions.length, 0);
 
   const head = el("header", {},
-    el("h1", {}, "sts-bench run report"),
+    el("h1", {}, "STS-Bench Run Report"),
     el("div", { class: "runline" },
-      el("span", { class: "verdict " + run.verdict.toLowerCase() }, run.verdict + where),
+      el("span", { class: "verdict " + run.verdict.toLowerCase() }, title(run.verdict) + where),
       run.score != null ? chip("score", num(run.score)) : null),
     el("div", { class: "configline" }, config),
     el("div", { class: "stats" },
       chip("floors", num(DATA.floors.length)),
       chip("decisions", num(decisions)),
       run.forced ? chip("forced", num(run.forced)) : null,
-      chip("prompt tok", num(usage.prompt)),
-      chip("completion tok", num(usage.completion)),
-      usage.reasoning ? chip("reasoning tok", num(usage.reasoning)) : null,
+      chip("prompt tokens", num(usage.prompt)),
+      chip("completion tokens", num(usage.completion)),
+      usage.reasoning ? chip("reasoning tokens", num(usage.reasoning)) : null,
       chip("model time", modelTime)));
 
   if (run.missing) {
     head.append(el("div", { class: "warn" },
-      "no run record: the run died mid-flight; the floors below are what completed"));
+      "No run record: the run died mid-flight; the floors below are what completed"));
   }
   if (run.verdict === "DEFEAT" && DATA.floors.length) {
     const last = DATA.floors[DATA.floors.length - 1];
@@ -157,7 +291,7 @@ function header() {
       el("a", {
         href: "#floor-" + last.floor,
         onclick: (e) => { e.preventDefault(); openFloor(last.floor); },
-      }, `→ post-mortem: floor ${last.floor} (${room(last.type).label})`)));
+      }, `Post-mortem: floor ${last.floor} — ${room(last.type).label}`)));
   }
   return head;
 }
@@ -166,35 +300,127 @@ function chip(label, value) {
   return el("span", { class: "chip" }, el("b", {}, value), label ? " " + label : "");
 }
 
-/* ---------- overview charts ---------- */
+/* ---------- overview: charts beside the route ---------- */
 
-function section(title, ...body) {
-  return el("section", {}, el("h2", {}, title), ...body);
+function section(name, ...body) {
+  return el("section", {}, el("h2", {}, name), ...body);
 }
 
 function overview() {
   const floors = DATA.floors;
-  if (!floors.length) return section("Run at a glance", el("p", { class: "dim" }, "no floors recorded"));
+  if (!floors.length) return section("Run at a glance", el("p", { class: "dim" }, "No floors recorded"));
   return section("Run at a glance",
-    hpChart(floors),
-    strip(floors, "gold at floor exit", (f) => f.exit.gold ?? 0, "#e8c860"),
-    strip(floors, "tokens per floor", (f) => f.usage.prompt + f.usage.completion, "#6f87c0"),
-    strip(floors, "decisions per floor (red = rejected first)",
-      (f) => f.decisions.length, "#8b909b",
-      (f) => f.decisions.reduce((sum, d) => sum + d.invalid, 0)));
+    el("div", { class: "glance" },
+      el("div", { class: "glance-charts" },
+        hpChart(floors),
+        toggledStrip(floors),
+        legendRow()),
+      actMaps()));
 }
 
-/* Shared horizontal scale: the hp chart plots floors.length+1 points (every
-   entry plus the final exit), and the strips center their bars on the same
-   x positions so the columns line up. */
-const CHART_W = 940, CHART_L = 42, CHART_R = 16;
+/* One slot for the secondary metrics: gold is a state and renders as a line,
+   tokens and decisions are per-floor amounts and render as bars. All share
+   the HP chart's x scale, so the columns stay floor-aligned. */
+function toggledStrip(floors) {
+  const metrics = [
+    ["Gold", () => goldChart(floors)],
+    ["Tokens", () => strip(floors, "Tokens per floor",
+      (f) => f.usage.prompt + f.usage.completion, "tokens", { unit: "tokens" })],
+    ["Decisions", () => strip(floors, "Decisions per floor",
+      (f) => f.decisions.length, "decisions", {
+        unit: "decisions",
+        note: "red: rejected attempts",
+        overlay: (f) => f.decisions.reduce((sum, d) => sum + d.invalid, 0),
+      })],
+  ];
+  const slot = el("div", {});
+  const pills = metrics.map(([name, render], i) =>
+    el("button", {
+      class: "pill" + (i === 0 ? " on" : ""),
+      onclick: () => {
+        pills.forEach((p, j) => p.classList.toggle("on", j === i));
+        slot.replaceChildren(render());
+      },
+    }, name));
+  slot.replaceChildren(metrics[0][1]());
+  return el("div", {}, el("div", { class: "pills" }, pills), slot);
+}
+
+function legendRow() {
+  const seen = new Set();
+  const items = [];
+  for (const [label, color, symbol] of Object.values(ROOM)) {
+    if (seen.has(symbol)) continue;
+    seen.add(symbol);
+    items.push(el("span", {},
+      el("span", { class: "dot", style: "background:" + color }), `${symbol} ${label}`));
+  }
+  return el("div", { class: "legend-row" }, items);
+}
+
+/* Shared horizontal scale: the line charts plot floors.length+1 points (every
+   room entry plus the final exit), and the bar strips center their bars on
+   the same x positions so the columns line up. */
+const CHART_W = 940, CHART_L = 46, CHART_R = 16;
 
 function chartX(index, count) {
   return CHART_L + (index * (CHART_W - CHART_L - CHART_R)) / Math.max(count - 1, 1);
 }
 
+const axisNum = (v) => (v >= 10000 ? Math.round(v / 1000) + "k" : num(v));
+
+/* Quarter gridlines with value ticks plus a rotated unit label on the left.
+   Small ranges round to duplicate ticks, so only distinct values are drawn. */
+function yGrid(top, y, label, yTop, yBottom) {
+  const seen = new Set();
+  const marks = [];
+  for (const frac of [0, 0.25, 0.5, 0.75, 1]) {
+    const v = Math.round(top * frac);
+    if (seen.has(v)) continue;
+    seen.add(v);
+    marks.push(
+      sv("line", { x1: CHART_L, x2: CHART_W - CHART_R, y1: y(v), y2: y(v), class: "grid" }),
+      sv("text", { x: CHART_L - 6, y: y(v) + 4, class: "axis", "text-anchor": "end" }, axisNum(v)));
+  }
+  const mid = (yTop + yBottom) / 2;
+  marks.push(sv("text", {
+    x: 14, y: mid, class: "axis-label", "text-anchor": "middle",
+    transform: `rotate(-90 14 ${mid})`,
+  }, label));
+  return marks;
+}
+
+function floorAxis(floors, x, H) {
+  const every = floors.length > 35 ? 5 : 1;
+  return [
+    floors.map((f, i) => f.floor % every === 0
+      ? sv("text", { x: x(i), y: H - 22, class: "axis", "text-anchor": "middle" }, f.floor)
+      : null),
+    sv("text", {
+      x: (CHART_L + CHART_W - CHART_R) / 2, y: H - 6,
+      class: "axis-label", "text-anchor": "middle",
+    }, "Floor"),
+  ];
+}
+
+/* Faint vertical rules where the run crosses into a new act. */
+function actSeparators(floors, x, yTop, yBottom) {
+  const marks = [];
+  for (let i = 1; i < floors.length; i++) {
+    if (floors[i].act == null || floors[i].act === floors[i - 1].act) continue;
+    const xm = (x(i - 1) + x(i)) / 2;
+    marks.push(
+      sv("line", { x1: xm, x2: xm, y1: yTop, y2: yBottom, class: "act-sep" }),
+      sv("text", { x: xm + 5, y: yTop + 10, class: "act-label" }, "Act " + floors[i].act));
+  }
+  if (marks.length && floors[0].act != null) {
+    marks.push(sv("text", { x: CHART_L + 4, y: yTop + 10, class: "act-label" }, "Act " + floors[0].act));
+  }
+  return marks;
+}
+
 function hpChart(floors) {
-  const H = 230, T = 16, B = 26;
+  const H = 320, T = 30, B = 58;
   const pts = floors.map((f) => ({ hp: f.entry.hp ?? 0, max: f.entry.max_hp ?? 0, f, exit: false }));
   const last = floors[floors.length - 1];
   pts.push({ hp: last.exit.hp ?? 0, max: last.exit.max_hp ?? 0, f: last, exit: true });
@@ -203,152 +429,264 @@ function hpChart(floors) {
   const y = (v) => T + (1 - v / top) * (H - T - B);
   const hpPath = pts.map((p, i) => (i ? "L" : "M") + x(i) + " " + y(p.hp)).join("");
   const maxPath = pts.map((p, i) => (i ? "L" : "M") + x(i) + " " + y(p.max)).join("");
+  const numberEvery = floors.length > 35 ? 5 : 1;
 
   return sv("svg", { viewBox: `0 0 ${CHART_W} ${H}`, class: "chart" },
-    [0, 0.5, 1].map((frac) => {
-      const v = Math.round(top * frac);
-      return [
-        sv("line", { x1: CHART_L, x2: CHART_W - CHART_R, y1: y(v), y2: y(v), class: "grid" }),
-        sv("text", { x: CHART_L - 6, y: y(v) + 4, class: "axis", "text-anchor": "end" }, v),
-      ];
-    }),
-    sv("text", { x: CHART_W - CHART_R, y: 11, class: "legend", "text-anchor": "end" },
-      "HP at floor entry — dotted: max HP — hover a floor, click to open it"),
+    yGrid(top, y, "HP", T, H - B),
+    actSeparators(floors, x, T, H - B),
+    sv("text", { x: CHART_L, y: 16, class: "chart-title" }, "HP at room entry"),
+    sv("text", { x: CHART_W - CHART_R, y: 16, class: "legend", "text-anchor": "end" },
+      "dotted: max HP · last point: end of run · hover a floor, click for details"),
     sv("path", { d: maxPath, class: "maxhp" }),
     sv("path", { d: hpPath, class: "hp" }),
-    pts.map((p, i) => p.exit ? null
-      : sv("text", { x: x(i), y: H - 8, class: "axis", "text-anchor": "middle" }, p.f.floor)),
+    pts.map((p, i) => {
+      if (p.exit) return null;
+      const info = room(p.f.type);
+      return [
+        p.f.floor % numberEvery === 0
+          ? sv("text", { x: x(i), y: H - 38, class: "axis", "text-anchor": "middle" }, p.f.floor)
+          : null,
+        linkFloor(sv("text", {
+          x: x(i), y: H - 22, class: "sym-axis", fill: info.color,
+        }, info.symbol), p.f.floor, () => tipCard(p.f)),
+      ];
+    }),
+    sv("text", { x: (CHART_L + CHART_W - CHART_R) / 2, y: H - 6, class: "axis-label", "text-anchor": "middle" }, "Floor"),
     pts.map((p, i) => marker(p, x(i), y(p.hp))));
 }
 
 function marker(point, cx, cy) {
   const floor = point.f;
-  const info = room(floor.type);
-  return sv("circle", {
+  const dot = sv("circle", {
     cx, cy,
-    r: point.exit ? 4 : 5.5,
-    class: "mark",
-    fill: point.exit ? "none" : info.color,
-    stroke: info.color,
-    onclick: () => openFloor(floor.floor),
-    onmousemove: moveTip,
-    onmouseenter: (e) => showTip(e, floorTipLines(floor)),
-    onmouseleave: hideTip,
+    r: point.exit ? 4 : 5,
+    class: "mark" + (point.exit ? " exit" : ""),
   });
+  if (point.exit) {
+    dot.addEventListener("mouseenter", (e) => showTipNode(e, tipCard(floor, true)));
+    dot.addEventListener("mouseleave", hideTip);
+    dot.addEventListener("mousemove", moveTip);
+    dot.addEventListener("click", () => openFloor(floor.floor));
+    return dot;
+  }
+  dot.style.setProperty("--room", room(floor.type).color);
+  return linkFloor(dot, floor.floor, () => tipCard(floor));
 }
 
-function floorTipLines(floor) {
-  const sc = floor.scorecard;
-  const lines = [
-    `floor ${floor.floor} — ${room(floor.type).label}`,
-    `HP ${floor.entry.hp}→${floor.exit.hp} (${signed(sc.hp_delta)})  ·  gold ${floor.entry.gold}→${floor.exit.gold}`,
-  ];
-  if (sc.combat_turns) lines.push(`${sc.combat_turns} combat turns`);
-  const gains = [...sc.cards_gained, ...sc.relics_gained, ...sc.potions_gained];
-  if (gains.length) lines.push("gained: " + gains.join(", "));
-  if (floor.reward) lines.push(`reward ${floor.reward.total > 0 ? "+" : ""}${floor.reward.total}`);
-  lines.push(`${floor.decisions.length} decisions · ${num(floor.usage.prompt + floor.usage.completion)} tokens`);
-  return lines;
+/* Gold is a running state like HP, so it gets the same treatment: a line
+   sampled at every room entry, closing with the end-of-run value. */
+function goldChart(floors) {
+  const H = 210, T = 26, B = 38;
+  const pts = floors.map((f) => ({ gold: f.entry.gold ?? 0, f }));
+  const last = floors[floors.length - 1];
+  pts.push({ gold: last.exit.gold ?? 0, f: last, exit: true });
+  const top = Math.max(...pts.map((p) => p.gold), 1);
+  const x = (i) => chartX(i, pts.length);
+  const y = (v) => T + (1 - v / top) * (H - T - B);
+  const path = pts.map((p, i) => (i ? "L" : "M") + x(i) + " " + y(p.gold)).join("");
+
+  return sv("svg", { viewBox: `0 0 ${CHART_W} ${H}`, class: "chart strip" },
+    yGrid(top, y, "Gold", T, H - B),
+    actSeparators(floors, x, T, H - B),
+    floorAxis(floors, x, H),
+    sv("text", { x: CHART_L, y: 16, class: "chart-title" }, "Gold at room entry"),
+    sv("path", { d: path, class: "goldline" }),
+    pts.map((p, i) => {
+      const dot = sv("circle", { cx: x(i), cy: y(p.gold), r: 3, class: "mark-gold" });
+      if (p.exit) {
+        dot.addEventListener("mouseenter", (e) => showTipNode(e, tipLine(`End of run: ${num(p.gold)} gold`)));
+        dot.addEventListener("mouseleave", hideTip);
+        dot.addEventListener("mousemove", moveTip);
+        return dot;
+      }
+      return linkFloor(dot, p.f.floor, () => tipLine(`Floor ${p.f.floor}: ${num(p.gold)} gold`));
+    }));
 }
 
-function strip(floors, title, value, color, overlay) {
-  const H = 86, T = 18, B = 6;
+/* Per-floor amounts (spend, decision counts) stay as bars: each floor is a
+   discrete unit of work, and bars compare those units without implying a
+   trend between them. */
+function strip(floors, name, value, cls, opts = {}) {
+  const H = 210, T = 26, B = 38;
   const values = floors.map(value);
   const top = Math.max(...values, 1);
-  const count = floors.length + 1; // align bars with the hp chart's points
+  const count = floors.length + 1; // align bars with the line charts' points
+  const x = (i) => chartX(i, count);
   const step = (CHART_W - CHART_L - CHART_R) / Math.max(count - 1, 1);
   const barWidth = Math.max(4, step * 0.55);
   const y = (v) => T + (1 - v / top) * (H - T - B);
 
   const bars = floors.map((floor, i) => {
     const cx = chartX(i, count);
-    const items = [sv("rect", {
+    const over = opts.overlay ? opts.overlay(floor) : 0;
+    const tipText = `Floor ${floor.floor}: ${num(values[i])} ${opts.unit || ""}`.trim()
+      + (over ? ` (${num(over)} rejected)` : "");
+    const bar = sv("rect", {
       x: cx - barWidth / 2, y: y(values[i]),
       width: barWidth, height: Math.max(0, H - B - y(values[i])),
-      fill: color, class: "bar",
-      onclick: () => openFloor(floor.floor),
-      onmousemove: moveTip,
-      onmouseenter: (e) => showTip(e, [`floor ${floor.floor}: ${num(values[i])}`]),
-      onmouseleave: hideTip,
-    })];
-    if (overlay) {
-      const over = overlay(floor);
-      if (over) {
-        items.push(sv("rect", {
-          x: cx - barWidth / 2, y: y(over),
-          width: barWidth, height: Math.max(0, H - B - y(over)),
-          fill: "#ff5757", class: "bar",
-        }));
-      }
-      if (floor.decisions.some((d) => d.forced)) {
-        items.push(sv("text", { x: cx, y: 13, "text-anchor": "middle", class: "warn-mark" }, "⚠"));
-      }
+      class: "bar " + cls,
+    });
+    const items = [linkFloor(bar, floor.floor, () => tipLine(tipText))];
+    if (over) {
+      items.push(sv("rect", {
+        x: cx - barWidth / 2, y: y(over),
+        width: barWidth, height: Math.max(0, H - B - y(over)),
+        class: "bar rejected",
+      }));
+    }
+    if (opts.overlay && floor.decisions.some((d) => d.forced)) {
+      items.push(sv("text", { x: cx, y: 13, "text-anchor": "middle", class: "warn-mark" }, "⚠"));
     }
     return items;
   });
 
   return sv("svg", { viewBox: `0 0 ${CHART_W} ${H}`, class: "chart strip" },
-    sv("text", { x: CHART_L, y: 12, class: "strip-title" }, `${title} (max ${num(top)})`),
+    yGrid(top, y, title(opts.unit || ""), T, H - B),
+    actSeparators(floors, x, T, H - B),
+    floorAxis(floors, x, H),
+    sv("text", { x: CHART_L, y: 16, class: "chart-title" }, name,
+      opts.note ? sv("tspan", { class: "legend" }, "  —  " + opts.note) : null),
     bars);
 }
 
 /* ---------- act maps ---------- */
 
-function mapsView() {
-  if (!DATA.acts.length) return null;
-  return section("The route", el("div", { class: "maps" }, DATA.acts.map(actMap)));
+/* All acts share one panel; pills swap which act's map is shown. Each act's
+   svg is built exactly once so its nodes register their floor links once,
+   then the pills only move the prebuilt svg in and out of the slot. */
+function actMaps() {
+  const acts = DATA.acts;
+  if (!acts.length) return null;
+  const bodies = acts.map(actMapBody);
+  const slot = el("div", {});
+  const show = (i) => {
+    pills.forEach((p, j) => p.classList.toggle("on", j === i));
+    slot.replaceChildren(bodies[i]);
+  };
+  const pills = acts.map((act, i) =>
+    el("button", { class: "pill", onclick: () => show(i) }, "Act " + act.act));
+  show(acts.length - 1); // open on the act the run ended in
+  return el("div", { class: "map" },
+    acts.length > 1 ? el("div", { class: "pills" }, pills) : el("h3", {}, "Act " + acts[0].act),
+    slot);
 }
 
-function actMap(act) {
+function actMapBody(act) {
   if (!act.nodes.length) {
-    return el("div", { class: "map map-missing" }, `act ${act.act}: no map captured`);
+    return el("div", { class: "map-missing" }, `Act ${act.act}: no map captured`);
   }
   const cols = Math.max(...act.nodes.map((n) => n.x)) + 1;
   const rows = Math.max(...act.nodes.map((n) => n.y)) + 1;
-  const cw = 40, ch = 28, pad = 18, top = 40;
+  const cw = 40, ch = 28, pad = 18, top = 56;
   const W = pad * 2 + cols * cw;
   const H = pad * 2 + rows * ch + top;
   const px = (v) => pad + v * cw + cw / 2;
   const py = (v) => H - pad - v * ch - ch / 2;
 
   const visited = new Map(act.path.filter((p) => !p.boss).map((p) => [p.x + "," + p.y, p]));
-  const bossTaken = act.path.some((p) => p.boss);
-  const bossX = W / 2, bossY = pad + 12;
+  const bossStep = act.path.find((p) => p.boss);
+
+  // The map's own edges name where the boss sits: every top-row node points
+  // at it. Anchoring the boss there keeps the route flush with those edges.
+  const bossEdge = act.edges.find(([, , , childY]) => childY >= rows);
+  const boss = bossEdge
+    ? { x: px(bossEdge[2]), y: py(bossEdge[3]) }
+    : { x: W / 2, y: pad + 14 };
 
   const edges = act.edges.map(([x1, y1, x2, y2]) =>
     sv("line", { x1: px(x1), y1: py(y1), x2: px(x2), y2: py(y2), class: "map-edge" }));
 
   const routePts = act.path.filter((p) => !p.boss).map((p) => px(p.x) + "," + py(p.y));
-  if (bossTaken && routePts.length) routePts.push(bossX + "," + (bossY + 10));
+  if (bossStep && routePts.length) routePts.push(boss.x + "," + boss.y);
   const route = routePts.length > 1
     ? sv("polyline", { points: routePts.join(" "), class: "route" })
     : null;
 
-  const nodes = act.nodes.map((node) => {
-    const hit = visited.get(node.x + "," + node.y);
-    const color = SYMBOL_COLOR[node.symbol] || "#9aa0a6";
-    return sv("g", {
-      class: "map-node" + (hit ? " visited" : ""),
-      onclick: hit ? () => openFloor(hit.floor) : null,
-      onmousemove: hit ? moveTip : null,
-      onmouseenter: hit ? (e) => showTip(e, [`floor ${hit.floor}`]) : null,
-      onmouseleave: hit ? hideTip : null,
-    },
-      sv("circle", { cx: px(node.x), cy: py(node.y), r: hit ? 10 : 7, fill: hit ? color : "none", stroke: color }),
+  const mapNode = (cx, cy, symbol, color, step) => {
+    const node = sv("g", { class: "map-node" + (step ? " visited" : "") },
+      sv("circle", { cx, cy, r: step ? 10 : 7, fill: step ? color : null, stroke: color }),
       sv("text", {
-        x: px(node.x), y: py(node.y) + 3.5, "text-anchor": "middle",
-        class: "map-symbol" + (hit ? " on" : ""),
-      }, node.symbol || "?"));
-  });
+        x: cx, y: cy + 3.5, "text-anchor": "middle",
+        class: "map-symbol" + (step ? " on" : ""),
+      }, symbol));
+    if (step) linkFloor(node, step.floor, () => floorTipFor(step.floor));
+    return node;
+  };
 
-  return el("div", { class: "map" },
-    el("h3", {}, "Act " + act.act),
-    sv("svg", { viewBox: `0 0 ${W} ${H}`, class: "act-map", style: `width:${W}px` },
-      edges, route, nodes,
-      sv("text", {
-        x: bossX, y: bossY, "text-anchor": "middle",
-        class: "boss-label" + (bossTaken ? " taken" : ""),
-      }, "BOSS · " + (act.boss || "?"))));
+  const nodes = act.nodes.map((node) =>
+    mapNode(px(node.x), py(node.y), node.symbol || "?",
+      SYMBOL_COLOR[node.symbol] || "#9aa0a6",
+      visited.get(node.x + "," + node.y)));
+
+  const bossNode = [
+    mapNode(boss.x, boss.y, "B", SYMBOL_COLOR.B, bossStep),
+    sv("text", {
+      x: boss.x, y: boss.y - 16, "text-anchor": "middle",
+      class: "boss-name" + (bossStep ? " taken" : ""),
+    }, act.boss || "?"),
+  ];
+
+  return sv("svg", { viewBox: `0 0 ${W} ${H}`, class: "act-map", style: `width:${W}px` },
+    edges, route, nodes, bossNode);
+}
+
+function floorTipFor(floorNo) {
+  const floor = FLOOR_BY_NO.get(floorNo);
+  return floor ? tipCard(floor) : tipLine(`Floor ${floorNo}`);
+}
+
+/* ---------- deck and collection ---------- */
+
+const CARD_COST = (cost) =>
+  cost == null ? "·" : cost === -1 ? "X" : cost < 0 ? "·" : String(cost);
+
+function cardChip(card) {
+  const chipEl = el("span", { class: "card-chip t-" + (card.type || "NONE") },
+    el("b", { class: "cost" }, CARD_COST(card.cost)),
+    card.name,
+    card.count > 1 ? el("span", { class: "cnt" }, "×" + card.count) : null);
+  if (card.text) {
+    chipEl.addEventListener("mouseenter", (e) => showTipNode(e, el("div", { class: "tipcard" },
+      el("div", { class: "tip-head" }, el("b", {}, card.name),
+        el("span", { class: "dim" }, ` · ${CARD_COST(card.cost)} energy · ${title(card.type)}`)),
+      el("div", {}, card.text))));
+    chipEl.addEventListener("mouseleave", hideTip);
+    chipEl.addEventListener("mousemove", moveTip);
+  }
+  return chipEl;
+}
+
+function itemChip(item) {
+  const chipEl = el("span", { class: "item-chip" },
+    item.name,
+    el("span", { class: "cnt" }, item.floor == null ? "start" : "floor " + item.floor));
+  if (item.text) {
+    chipEl.addEventListener("mouseenter", (e) => showTipNode(e, el("div", { class: "tipcard" },
+      el("div", { class: "tip-head" }, el("b", {}, item.name)),
+      el("div", {}, item.text))));
+    chipEl.addEventListener("mouseleave", hideTip);
+    chipEl.addEventListener("mousemove", moveTip);
+  }
+  if (item.floor != null && FLOOR_BY_NO.has(item.floor)) {
+    chipEl.classList.add("linked");
+    chipEl.addEventListener("click", () => openFloor(item.floor));
+  }
+  return chipEl;
+}
+
+function deckView() {
+  const deck = DATA.deck;
+  if (!deck && !DATA.relics.length && !DATA.potions.length) return null;
+  const cardCount = (deck || []).reduce((sum, c) => sum + c.count, 0);
+  return section("Deck",
+    el("div", { class: "collection" },
+      deck ? panel(`Final deck — ${cardCount} cards`,
+        el("div", { class: "cards" }, deck.map(cardChip))) : null,
+      el("div", { class: "items" },
+        DATA.relics.length ? panel("Relics",
+          el("div", { class: "cards" }, DATA.relics.map(itemChip))) : null,
+        DATA.potions.length ? panel("Potions found",
+          el("div", { class: "cards" }, DATA.potions.map(itemChip))) : null)));
 }
 
 /* ---------- behavior panels ---------- */
@@ -394,18 +732,18 @@ function behaviorView() {
 
   return section("Behavior",
     violations.length
-      ? el("div", { class: "warn" }, "packet property VIOLATED — ", violations.join(" | "))
+      ? el("div", { class: "warn" }, "Packet property violated — ", violations.join(" | "))
       : null,
     el("div", { class: "panels" },
-      panel("actions", barList([...mix.entries()].sort((a, b) => b[1] - a[1]))),
-      panel("card rewards", el("div", { class: "big-stat" },
+      panel("Actions", barList([...mix.entries()].sort((a, b) => b[1] - a[1]))),
+      panel("Card rewards", el("div", { class: "big-stat" },
         el("div", {}, el("b", {}, takes), " taken"),
         el("div", {}, el("b", {}, skips), " skipped"))),
-      panel("observation lookups", lookups.size
+      panel("Observation lookups", lookups.size
         ? barList([...lookups.entries()].sort((a, b) => b[1] - a[1]))
-        : el("div", { class: "dim" }, "none — the model never used a lookup tool"))),
+        : el("div", { class: "dim" }, "None — the model never used a lookup tool"))),
     rejections.length
-      ? panel(`rejected actions (${rejections.length})`,
+      ? panel(`Rejected actions (${rejections.length})`,
         el("div", { class: "rejections" }, rejections.map((r) =>
           el("div", { class: "rej" },
             el("a", {
@@ -416,8 +754,8 @@ function behaviorView() {
       : null);
 }
 
-function panel(title, body) {
-  return el("div", { class: "panel" }, el("h3", {}, title), body);
+function panel(name, body) {
+  return el("div", { class: "panel" }, el("h3", {}, name), body);
 }
 
 function barList(entries) {
@@ -435,42 +773,46 @@ function floorsView() {
   return section("Floors",
     DATA.system_prompt
       ? el("details", { class: "sysprompt" },
-        el("summary", {}, "system prompt (constant; shown once)"),
+        el("summary", {}, "System prompt (shown once)"),
         el("pre", {}, DATA.system_prompt))
       : null,
     DATA.floors.map(floorView),
     DATA.orphans.map((o) => el("div", { class: "warn" },
-      `floor ${o.floor}: ${o.decisions} decisions but no floor record (run died mid-floor)`)));
+      `Floor ${o.floor}: ${o.decisions} decisions but no floor record (run died mid-floor)`)));
 }
 
-function floorView(floor) {
+function floorHeading(floor) {
   const info = room(floor.type);
-  const sc = floor.scorecard;
-  const details = el("details", { class: "floor", id: "floor-" + floor.floor });
+  return el("span", { class: "floor-heading" },
+    el("span", { class: "sym", style: "background:" + info.color }, info.symbol),
+    el("b", {}, `Floor ${floor.floor}`), `· ${info.label}`);
+}
 
-  const meta =
-    ` HP ${floor.entry.hp}→${floor.exit.hp} (${signed(sc.hp_delta)}) · gold ${floor.entry.gold}→${floor.exit.gold}` +
+function floorMeta(floor) {
+  const sc = floor.scorecard;
+  return ` HP ${floor.entry.hp}→${floor.exit.hp} (${signed(sc.hp_delta)}) · gold ${floor.entry.gold}→${floor.exit.gold}` +
     (sc.combat_turns ? ` · ${sc.combat_turns} turns` : "") +
     ` · ${floor.decisions.length} decisions · ${num(floor.usage.prompt + floor.usage.completion)} tok` +
     (floor.reward ? ` · reward ${floor.reward.total > 0 ? "+" : ""}${floor.reward.total}` : "");
+}
 
-  details.append(el("summary", {},
-    el("span", { class: "sym", style: "background:" + info.color }, info.symbol),
-    el("b", {}, `floor ${floor.floor}`), `· ${info.label}`,
-    el("span", { class: "meta" }, meta)));
-
+function floorBody(floor) {
+  const sc = floor.scorecard;
   const body = el("div", { class: "floor-body" });
   if (floor.violations.length) {
-    body.append(el("div", { class: "warn" }, "packet violations: " + floor.violations.join(" | ")));
+    body.append(el("div", { class: "warn" }, "Packet violations: " + floor.violations.join(" | ")));
   }
   const gains = [
     ...sc.cards_gained.map((g) => ["card", g]),
     ...sc.relics_gained.map((g) => ["relic", g]),
     ...sc.potions_gained.map((g) => ["potion", g]),
   ];
-  if (gains.length) {
+  const changes = floor.deck_changes;
+  if (gains.length || changes) {
     body.append(el("div", { class: "gains" },
-      gains.map(([kind, name]) => el("span", { class: "chip gain " + kind }, name))));
+      gains.map(([kind, name]) => el("span", { class: "chip gain " + kind }, name)),
+      changes ? changes.removed.map((name) => el("span", { class: "chip gain removed" }, "− " + name)) : null,
+      changes ? changes.upgraded.map((name) => el("span", { class: "chip gain upgraded" }, "↑ " + name)) : null));
   }
   if (floor.reward && Object.keys(floor.reward.components || {}).length) {
     body.append(el("div", { class: "dim small" },
@@ -480,7 +822,15 @@ function floorView(floor) {
   }
   if (floor.turns) body.append(fightsView(floor.turns));
   body.append(el("div", { class: "decisions" }, floor.decisions.map(decisionView)));
-  details.append(body);
+  return body;
+}
+
+function floorView(floor) {
+  const details = el("details", { class: "floor", id: "floor-" + floor.floor });
+  details.append(el("summary", {},
+    floorHeading(floor),
+    el("span", { class: "meta" }, floorMeta(floor))));
+  details.append(floorBody(floor));
   return details;
 }
 
@@ -493,8 +843,30 @@ function fightsView(turns) {
     fights[fights.length - 1].push(turn);
     lastTurn = turn.turn;
   }
-  return el("div", { class: "fights" }, fights.map((fight) =>
-    el("div", { class: "fight" }, fightSpark(fight), turnTable(fight))));
+  return el("div", { class: "fights" },
+    el("div", { class: "spark-legend" },
+      "Fight sparkline — HP turn by turn:",
+      el("span", { class: "dot", style: "background: var(--green)" }), "player",
+      el("span", { class: "dot", style: "background: var(--red)" }), "all enemies combined"),
+    fights.map((fight) =>
+      el("div", { class: "fight" },
+        el("div", { class: "fight-summary" }, fightSummary(fight)),
+        fightSpark(fight),
+        turnTable(fight))));
+}
+
+function fightSummary(turns) {
+  const names = [...new Set(turns.flatMap((t) => t.enemies.map((e) => e.name)))];
+  const first = turns[0], last = turns[turns.length - 1];
+  const potions = turns.reduce((sum, t) =>
+    sum + t.actions.filter((a) => a.text.startsWith("use_potion")).length, 0);
+  const parts = [
+    names.join(", "),
+    `${turns.length} ${turns.length === 1 ? "turn" : "turns"}`,
+    `HP ${first.hp ?? "?"} → ${last.hp ?? "?"}`,
+  ];
+  if (potions) parts.push(`${potions} ${potions === 1 ? "potion" : "potions"} used`);
+  return parts.join("  ·  ");
 }
 
 function fightSpark(turns) {
@@ -559,13 +931,14 @@ function eventView(ev) {
 
 /* ---------- assemble ---------- */
 
+document.body.append(themeToggle());
 document.getElementById("app").append(el("main", {},
   header(),
   overview(),
-  mapsView(),
+  deckView(),
   behaviorView(),
   floorsView(),
-  el("footer", { class: "dim small" }, "generated by sts-bench · python -m sts_bench.report")));
+  el("footer", { class: "dim small" }, "Generated by sts-bench · python -m sts_bench.report")));
 
 if (DATA.run.verdict === "DEFEAT" && DATA.floors.length) {
   const last = document.getElementById("floor-" + DATA.floors[DATA.floors.length - 1].floor);
