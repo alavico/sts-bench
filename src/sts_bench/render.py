@@ -12,6 +12,14 @@ would have captured to logs/unparsed/.
     uv run python -m sts_bench.render logs/latest.log --screen COMBAT_REWARD --deck
     uv run python -m sts_bench.render logs/latest.log --index 142
     uv run python -m sts_bench.render tests/fixtures/states/shop_screen-1.json
+
+This is deliberately agent-agnostic: it renders the serializer's view of a
+state, not any agent's transcript. What the model *actually* received at a
+decision -- recent-decisions trail, action-outcome tool results, carried
+floor summaries, where exactly the combat briefing landed -- is recorded
+verbatim on the log's `>m` lines (and, once the trajectory store lands, in
+the floor records). `--deck` previews the briefing against any combat state;
+the floor agent only sends it at combat start.
 """
 
 from __future__ import annotations

@@ -9,12 +9,12 @@ from sts_bench.play import (
     _auto_api,
     _floor_summary,
     _model_traffic,
-    _screen_label,
     _transition_notes,
     describe_action,
 )
 from sts_bench.providers import Usage
 from sts_bench.state import parse_message
+from sts_bench.trajectory import screen_label
 
 FIXTURES = Path(__file__).parent / "fixtures" / "states"
 
@@ -99,9 +99,9 @@ def test_transition_notes_floor_and_combat_start():
 
 
 def test_screen_label_renames_combat_none():
-    assert _screen_label({"screen_type": "NONE", "combat_state": {"turn": 1}}) == "COMBAT"
-    assert _screen_label({"screen_type": "NONE"}) == "NONE"
-    assert _screen_label({"screen_type": "SHOP_ROOM"}) == "SHOP_ROOM"
+    assert screen_label({"screen_type": "NONE", "combat_state": {"turn": 1}}) == "COMBAT"
+    assert screen_label({"screen_type": "NONE"}) == "NONE"
+    assert screen_label({"screen_type": "SHOP_ROOM"}) == "SHOP_ROOM"
 
 
 def test_transition_notes_turn_change_and_combat_over():

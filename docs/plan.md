@@ -78,6 +78,10 @@ Files: `agents/floor.py`, `trajectory/schema.py`, `trajectory/jsonl.py`, `env/re
 
 *Status: items 1–2 landed 2026-06-11 (`FloorAgent` default, `--agent stepwise` baseline, per-decision delta logging, `--` floor summaries; the loop-body moved to a shared `agents/base.py`). First live run (gpt-5.4-mini, responses, effort low) cut invalid-action decisions 11.8%→2.9% and reasoning spend ~7x vs the paired zero-shot run, then died on floor 14: it took a potion reward onto a full belt, which CommunicationMod never returns ready from. That run drove a player-parity pass (see spec: zero-click player parity): reward screens render as claim-all loot lists with slot counts and belt-full affordances, HAND_SELECT/REST/shop say what their remaining moves mean, the commands line speaks tool vocabulary, the validator rejects potion-take/buy on a full belt, step timeouts return an error result instead of crashing (totals print on every exit), and M6's card DB was pulled forward — pinned spire-archive snapshot (360 cards), printed text on card rewards and shop wares, and a once-per-combat `<deck_reference>` injected by the floor agent. Also fixed en route: upgrade marks double-rendered ("Strike++"). Items 3–4 (trajectory JSONL, floor rewards) remain.*
 
+*Items 3–4 landed 2026-06-11. `trajectory/` (record schemas with a `record` discriminator + `schema_version`, all three kinds in one JSONL per run; append-only store, whole-line writes flushed per append so the file is valid mid-run and after a crash; `RunRecorder` accumulates each floor's conversation from decision transcript deltas — for the floor agent the deltas concatenate to exactly the wire conversation, which is the packet property — and writes decisions as they commit, floor records at boundaries, the run record last from a `finally`, so a missing run record itself marks a death mid-flight). `env/rewards.py` (spec v1: floor_advanced +1, combat_won +2, run_won +50, HP delta ×5/max_hp; terminal value only — gold was cut after review since rewarding its delta punishes spending it at shops; instrumental resources stay scorecard metrics; components stored per signal; a floor's exit boundary is the *next* floor's first state — the state that proves the advance — so rewards recompute from the stored raw pair alone). `replay.py` re-renders a run from the JSONL with no game or model (`uv run python -m sts_bench.replay <file> [--floor N]`) and verifies the packet property on every floor: decision index ranges must tile the stored conversation — gaps, overlaps, and orphaned messages all flag and exit nonzero. The trajectory file pairs with the protocol log by name (`logs/trajectories/play-<stamp>.jsonl`). Run records carry prompt/tool-schema hashes so runs compare only when the model saw the same surfaces. `Reward` moved to the env layer (spec: reward extraction belongs to the env, and it breaks the env↔trajectory import cycle); decision latency now measured; `TokenUsage.cache_read_tokens` reserved (providers don't report cache reads yet — small follow-up). 228 tests.*
+
+***ACCEPTED** (2026-06-11, harness-level): a run recorded through the real `FloorAgent` (scripted provider, two floors incl. a boundary) replays from the JSONL alone — run header, floor scorecards + rewards, every decision with its conversation slice — and the wire-equivalence test asserts the stored floor conversation equals the provider's final request + response byte for byte, with the store-once test confirming each message lands in the file exactly once. Live-game spot check (a real run, then `replay` on its trajectory) still worth doing on the next play session.*
+
 ## M5 — Runner, baselines, report (MVP complete)
 
 **Goal:** the spec's MVP — 5 fixed Ironclad A0 seeds, baselines vs LLM, a report.
@@ -85,6 +89,7 @@ Files: `agents/floor.py`, `trajectory/schema.py`, `trajectory/jsonl.py`, `env/re
 Files: `runner/async_runner.py`, `runner/seeds.py`, `runner/metrics.py`, `runner/reports.py`, `agents/heuristic.py` (random-legal + scripted baselines).
 
 1. Seed suites as data (`smoke: 5 seeds` first).
+   Ride-along experiment while live: combat-start states sometimes arrive before intents roll (`intent DEBUG` → "not yet revealed"; 21 of the 2026-06-11 run's digests) though the GUI always shows turn-1 intents — try one `state` re-poll from the env when a ready state carries a DEBUG intent, and verify it resolves.
 2. Runner v1 can be sequential (one game instance, N runs back to back); make the interface async-shaped so multi-instance is a config change, not a rewrite.
 3. Multi-instance: each game's relay connects to the same harness server; session routing by connection. Load-test 2–3 instances for memory before promising more.
 4. Metrics from trajectories: floor reached, win/loss, invalid-action rate, forced actions, latency, tokens, cost, observation-tool usage. Report as a markdown table per (model, scaffold, seed suite).
@@ -97,7 +102,7 @@ Files: `runner/async_runner.py`, `runner/seeds.py`, `runner/metrics.py`, `runner
 
 1. Stateless vs floor-stateful: same model, same seeds, `--agent stepwise` vs the M4 default — the first scaffold ablation, already free once M4 lands. Likewise reasoning effort sweeps (`--reasoning-effort` off/low/medium) per model.
 2. Turn-script agent: model emits an ordered play list; harness executes with per-step revalidation; halt-and-return on invalidation; log script completion rate.
-3. ~~Card/relic/potion DBs~~ — all three landed early during M4 (see its status note): pinned spire-archive snapshots in `tools/data/`, text on every offering surface, and the once-per-combat briefing (relic bar + potion belt + deck reference). Remaining here: the `inspect_*` observation tools themselves, now a thin lookup over the DBs.
+3. ~~Card/relic/potion DBs~~ — all three landed early during M4 (see its status note): pinned spire-archive snapshots in `tools/data/`, text on every offering surface, and the once-per-combat briefing (relic bar + potion belt + deck reference). Remaining here: the `inspect_*` observation tools themselves, now a thin lookup over the DBs. Also pull spire-archive's `powers.json` (and wire it to the keyword DB, pinned during M4): monster-applied powers arrive after the combat briefing and go undefined (the act-2 Snecko's Confused, Vulnerable on a deck with no vuln cards), and power lines render the wire's `-1` no-stacks sentinel literally (`Confused -1`) because without power data it is indistinguishable from a real `Strength -1`.
 4. Reflection/planning scaffold; advisor tools behind config flags.
 5. Config system (one TOML/YAML per experiment: model, scaffold, tools, suite) so runs are reproducible by config hash.
 
@@ -112,6 +117,15 @@ Files: `runner/async_runner.py`, `runner/seeds.py`, `runner/metrics.py`, `runner
 3. Re-benchmark a served open model (vLLM/Ollama behind the same provider) to validate the teacher/student symmetry claim.
 
 RLVR itself (gym wrapper, simulator promotion) is the next project iteration, per the spec — M1's `Env` and M4's versioned rewards are the prep work.
+
+## Parked — act 4 / heart runs (revisit when any model reliably reaches act 3)
+
+Decided 2026-06-11, during M4 live-run review: the MVP scores an act-3 boss kill as a win (the game itself calls it victory without keys); heart runs become a later suite dimension. Information groundwork is in: rest options carry their button text (recall = Ruby Key), key rewards explain themselves, the run line shows held keys when the wire sends them. Two blockers wait at the mod boundary, both confirmed against CommunicationMod master:
+
+1. **Installed CommunicationMod predates `keys` serialization** — master sends `keys` (ruby/emerald/sapphire) in every state, our 2026-06-11 run never did. Upgrading the jar lights up the existing `keys 2/3 (...)` run-line support with no harness change.
+2. **Burning elites are invisible on the wire** — map nodes serialize only symbol/x/y/edges; the game's `MapRoomNode.hasEmeraldKey` is never sent, so no model can deliberately route to the emerald key (a parity violation in the mod: the flame is plainly visible to a human). Fix is a one-line fork of `convertMapRoomNodeToJson`; the spec blesses Java at the mod boundary. **Grow the `MapNode` schema (optional field) in the same change** — it is `extra="forbid"`, so a patched mod fails parsing until the schema knows the field.
+
+Also waiting there: act 4 door/entry screens are unmodeled (designed recovery path: unparsed capture → fixture → schema), and the reward spec can grow a `heart_kill` component when heart runs are scored.
 
 ## Cross-cutting rules
 

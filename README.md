@@ -40,6 +40,17 @@ Precedence: CLI flags > shell environment > `.env`. `STS_BENCH_API`, `STS_BENCH_
 
 Each run writes `logs/play-<timestamp>.log` (`logs/latest.log` symlinks it): game wire traffic verbatim (`>>`/`<<`), model traffic (`>m`/`<m`, including reasoning), and a readable narrative (`--`). States the schema can't parse are captured to `logs/unparsed/` — they're schema gaps; promote them to fixtures once fixed.
 
+## Trajectories
+
+Alongside the log, each run writes `logs/trajectories/play-<timestamp>.jsonl` — the structured record: a run record (config, outcome, totals), one record per floor (the floor's full conversation, raw boundary states, scorecard, versioned reward), and one per decision (indices into the floor conversation plus action, validation counts, latency, tokens). Replay a run from the trajectory alone, no game or model needed:
+
+```bash
+uv run python -m sts_bench.replay logs/trajectories/play-<timestamp>.jsonl
+uv run python -m sts_bench.replay <file> --floor 14   # just the floor that went wrong
+```
+
+Every replay verifies the packet property: each floor's decisions tile its stored conversation exactly — no message stored twice, none orphaned.
+
 ## Development
 
 ```bash

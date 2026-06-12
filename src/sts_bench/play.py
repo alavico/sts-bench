@@ -23,6 +23,7 @@ import hashlib
 import json
 import os
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 
@@ -41,6 +42,8 @@ from .providers import (
 )
 from .smoke import LOG_DIR, MAX_STEPS, choose_action, choose_command, dump_unparsed, fallback_command
 from .state import StateMessage, StateParseError, parse_message
+from .tools import ToolRegistry
+from .trajectory import RunRecorder, TrajectoryStore, screen_label
 
 MAX_DECISIONS = 1000
 LOOP_GUARD_LIMIT = 3
@@ -180,22 +183,13 @@ def _floor_summary(entry: dict, exit_state: dict, decisions: int, usage: Usage) 
     )
 
 
-def _screen_label(game_state: dict) -> str:
-    """Screen name for narration. The wire says NONE for combat with no
-    overlay on top; call that what it is."""
-    screen = game_state.get("screen_type")
-    if screen == "NONE":
-        return "COMBAT" if game_state.get("combat_state") else "NONE"
-    return screen or "?"
-
-
 def _transition_notes(prev: dict, cur: dict) -> list[str]:
     """Run landmarks worth narrating when the game state moves between steps."""
     notes = []
     if not cur:
         return notes
     if cur.get("floor") != prev.get("floor"):
-        notes.append(f"entering floor {cur.get('floor')} (act {cur.get('act')}): {_screen_label(cur)}")
+        notes.append(f"entering floor {cur.get('floor')} (act {cur.get('act')}): {screen_label(cur)}")
     prev_combat = prev.get("combat_state") or {}
     cur_combat = cur.get("combat_state") or {}
     if cur_combat and not prev_combat:
@@ -262,6 +256,8 @@ def run(args: argparse.Namespace) -> int:
     totals = Usage()
     decisions = forced = unparsed = 0
     guard = LoopGuard()
+    store: TrajectoryStore | None = None
+    recorder: RunRecorder | None = None
 
     try:
         with HarnessServer(port=args.port) as server:
@@ -278,6 +274,28 @@ def run(args: argparse.Namespace) -> int:
             for prompt_line in system_prompt.format(character=args.character.upper()).splitlines():
                 log.line(">m", prompt_line)
             say(f"protocol log: {log.path}")
+            # The trajectory file shares the protocol log's name, so the wire
+            # view and the record view of one run pair up by filename.
+            store = TrajectoryStore(LOG_DIR / "trajectories", run_id=log.path.stem)
+            recorder = RunRecorder(
+                store,
+                run_id=log.path.stem,
+                seed=args.seed or None,
+                character=args.character,
+                ascension=args.ascension,
+                model=provider.model,
+                provider_base_url=provider.base_url,
+                api=api,
+                reasoning_effort=args.reasoning_effort,
+                agent=args.agent,
+                prompt_hash=hashlib.sha256(
+                    system_prompt.format(character=args.character.upper()).encode("utf-8")
+                ).hexdigest()[:16],
+                tool_schema_hash=hashlib.sha256(
+                    json.dumps(ToolRegistry().openai_tools(), sort_keys=True).encode("utf-8")
+                ).hexdigest()[:16],
+            )
+            say(f"trajectory: {store.path}")
             say(f"relay connected from {conn.peer}")
 
             env = CommunicationModEnv(conn, on_protocol_line=log.line)
@@ -293,16 +311,20 @@ def run(args: argparse.Namespace) -> int:
                     if floor_entry:
                         say(_floor_summary(floor_entry, prev_game_state, floor_decisions, floor_usage))
                     floor_entry, floor_decisions, floor_usage = game_state, 0, Usage()
+                recorder.observe(game_state)
                 for note in _transition_notes(prev_game_state, game_state):
                     say(note)
                 prev_game_state = game_state
                 command = None
                 history = None  # what to tell the agent actually happened here
+                decision = None
+                latency_ms = None
 
                 try:
                     message = parse_message(state)
                 except StateParseError as exc:
                     unparsed += 1
+                    recorder.unparsed_state()
                     path = dump_unparsed(exc.raw)
                     say(f"state didn't fit the schema; captured -> {path} (scripted fallback)")
                     message = None
@@ -313,7 +335,9 @@ def run(args: argparse.Namespace) -> int:
                         break
                     decisions += 1
                     floor_decisions += 1
+                    started = time.monotonic()
                     decision = agent.decide(message)
+                    latency_ms = int((time.monotonic() - started) * 1000)
                     totals += decision.usage
                     floor_usage += decision.usage
                     for tag, text in _model_traffic(decision.transcript):
@@ -333,7 +357,7 @@ def run(args: argparse.Namespace) -> int:
                     if action is not None:
                         history = describe_action(action, message)
                         say(
-                            f"decision {decisions} ({_screen_label(game_state)}): {history} "
+                            f"decision {decisions} ({screen_label(game_state)}): {history} "
                             f"[rounds {decision.rounds}, lookups {decision.observation_calls}, "
                             f"invalid {decision.invalid_actions}, "
                             f"tokens {decision.usage.prompt_tokens}+{decision.usage.completion_tokens}"
@@ -351,6 +375,17 @@ def run(args: argparse.Namespace) -> int:
                     if state.get("in_game"):
                         history = f"{command} (scripted)"
 
+                if decision is not None:
+                    # Recorded before the step: a wire failure right after
+                    # must not cost the floor packet its final decision.
+                    recorder.decision(
+                        decision,
+                        screen=screen_label(game_state),
+                        action=history if decision.forced_reason is None else None,
+                        command=command,
+                        latency_ms=latency_ms,
+                    )
+
                 result: StepResult = env.step(command)
                 if not result.ok:
                     say(f"step {command!r} failed: {result.error}")
@@ -367,7 +402,7 @@ def run(args: argparse.Namespace) -> int:
 
                 if history is not None:
                     agent.record(
-                        f"floor {game_state.get('floor')} {_screen_label(game_state)}: {history}"
+                        f"floor {game_state.get('floor')} {screen_label(game_state)}: {history}"
                     )
 
                 new_game_state = state.get("game_state") or {}
@@ -382,7 +417,12 @@ def run(args: argparse.Namespace) -> int:
 
     finally:
         # The bottom line prints even when the session dies mid-step
-        # (timeout, dropped connection, Ctrl-C): a crashed run still reports.
+        # (timeout, dropped connection, Ctrl-C): a crashed run still reports,
+        # and the trajectory closes with whatever floors completed.
+        if recorder is not None:
+            recorder.finish()
+        if store is not None:
+            store.close()
         say(
             f"totals: {decisions} decisions, {forced} forced, {unparsed} unparsed states, "
             f"tokens {totals.prompt_tokens} prompt + {totals.completion_tokens} completion"
