@@ -51,6 +51,12 @@ uv run python -m sts_bench.replay <file> --floor 14   # just the floor that went
 
 Every replay verifies the packet property: each floor's decisions tile its stored conversation exactly — no message stored twice, none orphaned.
 
+Or render the run as a self-contained HTML report — HP and spend charts across the floors, the route walked on each act map, turn-by-turn tables for every fight, and each decision's full conversation, browsable offline in one file:
+
+```bash
+uv run python -m sts_bench.report logs/trajectories/play-<timestamp>.jsonl   # writes the .html next to it
+```
+
 ## Development
 
 ```bash
