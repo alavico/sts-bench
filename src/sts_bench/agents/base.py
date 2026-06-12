@@ -25,6 +25,40 @@ NUDGE = (
     "plain text is welcome, but only a tool call acts on the game."
 )
 
+# System-prompt sections shared by every scaffold. They carry what the game
+# itself teaches a player -- the goal and the tutorial rules -- and how this
+# harness presents the game; strategy stays out (advisor prompts are a
+# separate, flagged scaffold), so the benchmark measures play, not coaching.
+
+GOAL_AND_RULES = """\
+You are playing Slay the Spire as the {character}. The spire has three acts, \
+each a branching map of floors ending in a boss; defeat the act 3 boss to win \
+the run. Your HP carries over between fights, and if it reaches 0 the run is \
+over for good.
+
+Combat rules: each of your turns you draw a fresh hand and your energy \
+refills. At the end of your turn, unplayed cards go to the discard pile and \
+unspent energy is lost. Block expires at the start of your turn. When the \
+draw pile runs out, the discard pile reshuffles into it. Each enemy's intent \
+shows what it will do on its next turn."""
+
+READING_THE_VIEW = """\
+At each decision point you get a compact view of the game. Card listings show \
+the energy cost in parentheses after the name. Intent damage numbers are \
+already adjusted for active effects; card text is the base printing -- your \
+powers and debuffs apply on top. Use the observation tools (get_deck, \
+get_map, get_relics, get_potions, the pile tools) whenever you need details \
+that are not in the view -- they are free and do not advance the game."""
+
+ACTION_PROTOCOL = """\
+You may reason briefly in plain text before or alongside your tool calls; \
+only a tool call acts on the game.
+
+When you have decided, respond with exactly one action tool call \
+(play_card, end_turn, choose, use_potion, discard_potion, proceed, return_back). \
+All indices are 0-based exactly as shown in the listings. If an action is \
+rejected, read the rejection reason and pick a legal alternative."""
+
 DEFAULT_MAX_ROUNDS = 10
 DEFAULT_MAX_INVALID = 3
 

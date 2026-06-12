@@ -21,30 +21,17 @@ from __future__ import annotations
 
 from ..state.schema import StateMessage
 from ..state.serialize import combat_briefing, cursory_view
-from .base import Decision, ToolLoopAgent, tool_result
+from .base import ACTION_PROTOCOL, GOAL_AND_RULES, READING_THE_VIEW, Decision, ToolLoopAgent, tool_result
 
-SYSTEM_PROMPT = """\
-You are playing Slay the Spire as the {character}. Climb the spire: survive \
-combats, choose your path on the map, and build your deck toward winning the run.
-
+FLOOR_CONTEXT = """\
 This conversation covers the current floor: your earlier decisions here stay \
 in context, and each action you take receives a result reporting what actually \
 happened -- it was executed, or it was rejected (with the reason), or the \
 harness played a fallback instead. A new floor starts a fresh conversation, \
 opened with a one-line summary of the floor before. Use the history: do not \
-repeat an action that already failed or revisit a screen that has not changed.
+repeat an action that already failed or revisit a screen that has not changed."""
 
-At each decision point you get a compact view of the game. Use the observation \
-tools (get_deck, get_map, get_relics, get_potions, the pile tools) whenever you \
-need details that are not in the view -- they are free and do not advance the game.
-
-You may reason briefly in plain text before or alongside your tool calls; \
-only a tool call acts on the game.
-
-When you have decided, respond with exactly one action tool call \
-(play_card, end_turn, choose, use_potion, discard_potion, proceed, return_back). \
-All indices are 0-based exactly as shown in the listings. If an action is \
-rejected, read the rejection reason and pick a legal alternative."""
+SYSTEM_PROMPT = "\n\n".join((GOAL_AND_RULES, FLOOR_CONTEXT, READING_THE_VIEW, ACTION_PROTOCOL))
 
 
 class FloorAgent(ToolLoopAgent):
