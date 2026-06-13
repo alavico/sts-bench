@@ -139,7 +139,12 @@ def test_rest_after_resting_points_at_proceed():
 def test_commands_line_speaks_tool_names():
     raw = load_raw("shop_screen-1.json")  # wire offers: choose, potion, leave
     text = cursory_view(parse_message(raw))
-    assert "<commands>choose, use_potion, discard_potion, return_back (leave)</commands>" in text
+    # Observation tools ride along: the commands line is what a model reads
+    # as "what may I call here", and lookups are legal on every screen.
+    assert (
+        "<commands>choose, use_potion, discard_potion, return_back (leave)"
+        " + observation tools (always available)</commands>"
+    ) in text
 
 
 def test_shop_listing_has_no_indices_that_clash_with_choices():
@@ -348,3 +353,67 @@ def test_deck_reference_groups_counts_and_text():
     # the upgraded copy lists separately, with upgraded text and no doubled mark
     assert "Strike+ (1): Deal 9 damage." in text
     assert "Strike++" not in text
+
+
+# -- powers: sentinel rendering and first-appearance definitions ----------------
+
+
+def combat_with_powers(*powers):
+    """none-1's combat with monster 0 carrying the given raw powers."""
+    raw = json.loads((Path(__file__).parent / "fixtures" / "states" / "none-1.json").read_text())
+    raw["game_state"]["combat_state"]["monsters"][0]["powers"] = list(powers)
+    return raw
+
+
+def test_stackless_sentinel_drops_the_number():
+    raw = combat_with_powers(
+        {"id": "Split", "name": "Split", "amount": -1},
+        {"id": "Strength", "name": "Strength", "amount": -1},
+        {"id": "Vulnerable", "name": "Vulnerable", "amount": 2},
+    )
+    text = cursory_view(parse_message(raw))
+    assert "Split," in text and "Split -1" not in text  # the sentinel, confirmed by the DB
+    assert "Strength -1" in text  # a real negative stack stays visible
+    assert "Vulnerable 2" in text  # turns remaining are information
+
+
+def test_power_definitions_appear_once_per_combat():
+    from sts_bench.state.serialize import power_definitions
+
+    raw = combat_with_powers({"id": "Split", "name": "Split", "amount": -1})
+    combat = parse_message(raw).game_state.combat_state
+
+    first, seen = power_definitions(combat, frozenset())
+    assert "splits into 2 smaller slimes" in first
+    assert "X is the power's current amount" in first
+
+    again, seen = power_definitions(combat, seen)
+    assert again is None  # nothing new: the conversation already holds it
+
+
+def test_power_definitions_pick_up_midfight_arrivals():
+    from sts_bench.state.serialize import power_definitions
+
+    raw = combat_with_powers({"id": "Split", "name": "Split", "amount": -1})
+    combat = parse_message(raw).game_state.combat_state
+    _, seen = power_definitions(combat, frozenset())
+
+    raw = combat_with_powers(
+        {"id": "Split", "name": "Split", "amount": -1},
+        {"id": "Hex", "name": "Hex", "amount": 1},
+    )
+    combat = parse_message(raw).game_state.combat_state
+    block, _ = power_definitions(combat, seen)
+    assert "Hex" in block and "Dazed" in block
+    assert "splits into" not in block  # Split was defined turns ago
+
+
+def test_unknown_powers_define_nothing_but_stay_rendered():
+    from sts_bench.state.serialize import power_definitions
+
+    raw = combat_with_powers({"id": "Modded Nonsense", "name": "Modded Nonsense", "amount": 3})
+    message = parse_message(raw)
+    block, seen = power_definitions(message.game_state.combat_state, frozenset())
+    assert block is None
+    assert "Modded Nonsense" in seen  # not retried every decision
+    assert "Modded Nonsense 3" in cursory_view(message)

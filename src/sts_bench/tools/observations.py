@@ -83,7 +83,13 @@ def get_legal_actions(message: StateMessage) -> str:
         lines.append("proceed -- advance past this screen")
     if commands.intersection(("return", "skip", "cancel", "leave")):
         lines.append("return_back -- back out / skip this screen")
-    return "legal action tools now:\n" + "\n".join(lines) if lines else "no actions available (waiting)"
+    if not lines:
+        return "no actions available (waiting)"
+    return (
+        "legal action tools now:\n"
+        + "\n".join(lines)
+        + "\nobservation tools are always available and do not count as your action"
+    )
 
 
 def get_map(message: StateMessage) -> str:

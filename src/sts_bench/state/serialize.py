@@ -16,6 +16,7 @@ from __future__ import annotations
 from ..tools.card_db import card_text, upgraded_card_text
 from ..tools.keyword_db import keyword_lines
 from ..tools.potion_db import potion_text
+from ..tools.power_db import amount_is_sentinel, power_text
 from ..tools.relic_db import relic_text
 from .schema import (
     EMPTY_POTION_ID,
@@ -89,7 +90,13 @@ def cursory_view(message: StateMessage) -> str:
                 lines.append("or skip -- take no card (return_back)")
             sections.append("<choices>\n" + "\n".join(lines) + "\n</choices>")
     visible = [c for c in message.available_commands if c not in HIDDEN_COMMANDS]
-    sections.append(f"<commands>{', '.join(TOOL_COMMAND_NAMES.get(c, c) for c in visible)}</commands>")
+    # Observation tools ride along explicitly: a model inferring "what may I
+    # call here" from this line alone otherwise concludes lookups are off
+    # the table (observed live: a shop decision declined get_deck for it).
+    sections.append(
+        f"<commands>{', '.join(TOOL_COMMAND_NAMES.get(c, c) for c in visible)}"
+        " + observation tools (always available)</commands>"
+    )
     return "\n".join(sections)
 
 
@@ -113,6 +120,45 @@ def combat_briefing(state: GameState) -> str:
     if glossary:
         parts.append("<keywords>\n" + "\n".join(glossary) + "\n</keywords>")
     return "\n".join(parts)
+
+
+def power_definitions(
+    combat: CombatState, seen: frozenset[str]
+) -> tuple[str | None, frozenset[str]]:
+    """Tooltips for powers newly in play this decision; the hover text a
+    player reads the first time an icon appears.
+
+    `seen` carries the power ids already defined this combat (the floor
+    agent's conversation keeps earlier definitions in view), so each power
+    explains itself exactly once per fight no matter how many times it
+    stacks or reappears. Returns the section (None when nothing is new) and
+    the updated seen-set.
+    """
+    creatures = [combat.player, *[m for m in combat.monsters if not m.is_gone]]
+    lines = []
+    defined: set[str] = set()
+    now_seen = set(seen)
+    for creature in creatures:
+        for power in creature.powers:
+            if power.id in now_seen:
+                continue
+            now_seen.add(power.id)
+            text = power_text(power)
+            if text:
+                lines.append(f"{power.name}: {text}")
+                defined.add(power.name.lower())
+    if not lines:
+        return None, frozenset(now_seen)
+    header = "powers in play -- X is the power's current amount, shown beside its name:"
+    body = "\n".join(lines)
+    # Terms inside the definitions get their tooltip too (Hex's "Dazed"), but
+    # a keyword that *is* one of the powers just defined would only repeat it.
+    glossary = [
+        line for line in keyword_lines(lines) if line.split(":")[0].lower() not in defined
+    ]
+    if glossary:
+        body += "\n" + "\n".join(glossary)
+    return f"<power_definitions>\n{header}\n{body}\n</power_definitions>", frozenset(now_seen)
 
 
 def potion_belt(state: GameState) -> str | None:
@@ -412,6 +458,12 @@ def _with_text(name: str, text: str | None) -> str:
 
 
 def _power(power) -> str:
+    # The wire sends -1 for "this power has no stacks"; rendered literally it
+    # reads as a negative stack ("Split -1" looks like depleted Strength).
+    # Drop it only when the database confirms the sentinel -- a -1 on
+    # Strength is real, and a -1 on an unknown power stays visible.
+    if amount_is_sentinel(power):
+        return power.name
     return f"{power.name} {power.amount}"
 
 

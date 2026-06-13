@@ -20,7 +20,7 @@ are built for.
 from __future__ import annotations
 
 from ..state.schema import StateMessage
-from ..state.serialize import combat_briefing, cursory_view
+from ..state.serialize import combat_briefing, cursory_view, power_definitions
 from .base import ACTION_PROTOCOL, GOAL_AND_RULES, READING_THE_VIEW, Decision, ToolLoopAgent, tool_result
 
 FLOOR_CONTEXT = """\
@@ -43,6 +43,7 @@ class FloorAgent(ToolLoopAgent):
         self._outcome: str | None = None
         self._floor_outcomes: list[str] = []
         self._combat_briefed = False
+        self._powers_defined: frozenset[str] = frozenset()
 
     def record(self, line: str) -> None:
         """Note what actually happened at a decision point.
@@ -91,10 +92,19 @@ class FloorAgent(ToolLoopAgent):
 
         # Brief each combat once with the relic bar and the deck's printed
         # card text; the conversation keeps it in view for the whole fight.
+        # Powers explain themselves the first time they appear in the fight
+        # (a player hovers the new icon) -- monster-applied debuffs land
+        # mid-combat, after any briefing could have covered them.
         if state is not None and state.combat_state is not None:
             if not self._combat_briefed:
                 prefix.append(combat_briefing(state))
                 self._combat_briefed = True
+                self._powers_defined = frozenset()
+            definitions, self._powers_defined = power_definitions(
+                state.combat_state, self._powers_defined
+            )
+            if definitions:
+                prefix.append(definitions)
         else:
             self._combat_briefed = False
 

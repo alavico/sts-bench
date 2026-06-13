@@ -54,7 +54,10 @@ ACTION_PROTOCOL = """\
 You may reason briefly in plain text before or alongside your tool calls; \
 only a tool call acts on the game.
 
-When you have decided, respond with exactly one action tool call \
+You may call any number of observation tools first -- they are available on \
+every screen, regardless of which actions the commands line offers, and they \
+never count as your action. When you have decided, finish with exactly one \
+action tool call \
 (play_card, end_turn, choose, use_potion, discard_potion, proceed, return_back). \
 All indices are 0-based exactly as shown in the listings. If an action is \
 rejected, read the rejection reason and pick a legal alternative."""

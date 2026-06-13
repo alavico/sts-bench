@@ -228,3 +228,34 @@ def test_usage_is_per_decision_not_cumulative():
     second = agent.decide(combat)
     assert first.usage.prompt_tokens == 10
     assert second.usage.prompt_tokens == 10
+
+
+def test_powers_define_themselves_once_on_first_appearance():
+    raw = json.loads((FIXTURES / "none-1.json").read_text())
+    raw["game_state"]["combat_state"]["monsters"][0]["powers"] = [
+        {"id": "Split", "name": "Split", "amount": -1}
+    ]
+    hexed = json.loads(json.dumps(raw))
+    hexed["game_state"]["combat_state"]["player"]["powers"] = [
+        {"id": "Hex", "name": "Hex", "amount": 1}
+    ]
+    provider = ScriptedProvider([tool_response(("end_turn", {})) for _ in range(3)])
+    agent = FloorAgent(provider)
+
+    agent.decide(parse_message(raw))
+    agent.record("floor 1 COMBAT: end_turn")
+    agent.decide(parse_message(hexed))  # Hex lands mid-fight
+    agent.record("floor 1 COMBAT: end_turn")
+    agent.decide(parse_message(hexed))
+
+    first = provider.requests[0]["messages"][1]["content"]
+    assert "<power_definitions>" in first
+    assert "splits into 2 smaller slimes" in first
+    assert "Split -1" not in first  # the no-stacks sentinel never reaches the model
+
+    second = provider.requests[1]["messages"][-1]["content"]
+    assert "Dazed" in second  # the new arrival explains itself...
+    assert "splits into" not in second  # ...but Split was defined a turn ago
+
+    third = provider.requests[2]["messages"][-1]["content"]
+    assert "<power_definitions>" not in third  # nothing new, nothing repeated
