@@ -4,15 +4,15 @@ import json
 from pathlib import Path
 
 from sts_bench.actions import Choose, DiscardPotion, PlayCard, Proceed, ReturnBack
-from sts_bench.play import (
+from sts_bench.protocol_log import model_traffic as _model_traffic
+from sts_bench.providers import Usage, auto_api as _auto_api
+from sts_bench.runner.session import (
     LoopGuard,
-    _auto_api,
     _floor_summary,
-    _model_traffic,
     _transition_notes,
     describe_action,
+    forced_command,
 )
-from sts_bench.providers import Usage
 from sts_bench.state import parse_message
 from sts_bench.trajectory import screen_label
 
@@ -162,3 +162,54 @@ def test_model_traffic_tags_directions_and_skips_system():
         ("<m", "(reasoning) deck is thin"),
         ("<m", "I will strike."),
     ]
+
+
+# -- forced decisions ----------------------------------------------------------
+
+
+def shop_room_state():
+    """SHOP_ROOM as the live game sends it: enter the shop, or proceed past."""
+    raw = json.loads((FIXTURES / "shop_screen-1.json").read_text())
+    raw["available_commands"] = ["choose", "proceed", "key", "click", "wait", "state"]
+    raw["game_state"]["screen_type"] = "SHOP_ROOM"
+    raw["game_state"]["screen_state"] = {}
+    raw["game_state"]["choice_list"] = ["shop"]
+    return raw
+
+
+def broke_shop_state():
+    """A shop with nothing affordable: the mod drops `choose` entirely."""
+    raw = json.loads((FIXTURES / "shop_screen-1.json").read_text())
+    raw["available_commands"] = ["leave", "key", "click", "wait", "state"]
+    return raw
+
+
+def test_forced_by_budget_plays_the_scripted_move():
+    raw = json.loads((FIXTURES / "none-1.json").read_text())
+    command, history = forced_command(
+        parse_message(raw), raw, "no valid action within 10 rounds"
+    )
+    assert command.startswith("play ")
+    assert history.endswith("(forced)")
+
+
+def test_forced_by_loop_guard_skips_the_scripted_policy():
+    # The scripted policy can BE the loop (shop-room choose <-> re-enter);
+    # a guard trip must answer with the advance family instead.
+    raw = shop_room_state()
+    command, history = forced_command(parse_message(raw), raw, "loop guard")
+    assert command == "proceed"  # never the scripted `choose 0` that loops
+    assert history == "proceed (forced)"
+
+
+def test_forced_in_a_broke_shop_leaves():
+    raw = broke_shop_state()
+    command, _ = forced_command(parse_message(raw), raw, "loop guard")
+    assert command == "leave"
+
+
+def test_forced_with_no_way_forward_returns_nothing():
+    raw = broke_shop_state()
+    raw["available_commands"] = ["key", "click", "wait", "state"]
+    command, history = forced_command(parse_message(raw), raw, "loop guard")
+    assert command is None and history is None

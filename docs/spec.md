@@ -244,10 +244,11 @@ sts-bench/
       pathing.py
       combat.py
     runner/
-      async_runner.py
-      seeds.py
-      metrics.py
-      reports.py
+      session.py               # one run end to end: the loop every front end drives
+      async_runner.py          # suite runner: workers pull (agent, seed) jobs per game instance
+      seeds.py                 # seed suites as data
+      metrics.py               # per-run metrics + per-configuration aggregation, from trajectories
+      reports.py               # markdown comparison report
     trajectory/
       schema.py                # training-ready trajectory records
       jsonl.py

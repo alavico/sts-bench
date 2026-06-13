@@ -23,41 +23,15 @@ import json
 import sys
 from pathlib import Path
 
-from .actions import Action, Choose, EndTurn, PlayCard, Proceed, translate, validate
+from .actions import translate, validate
+from .agents.heuristic import scripted_action
 from .env import CommunicationModEnv, HarnessServer, RawState, StepResult
 from .protocol_log import ProtocolLog
-from .state import StateMessage, StateParseError, parse_message
+from .state import StateParseError, parse_message
 
 LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
 UNPARSED_DIR = LOG_DIR / "unparsed"
 MAX_STEPS = 3000
-
-
-def choose_action(message: StateMessage) -> Action | None:
-    """Typed scripted policy; None when only raw handling applies (e.g. start)."""
-    commands = set(message.available_commands)
-    state = message.game_state
-    if "play" in commands and state is not None and state.combat_state is not None:
-        combat = state.combat_state
-        target = next(
-            (i for i, m in enumerate(combat.monsters) if not m.is_gone and not m.half_dead and m.current_hp > 0),
-            None,
-        )
-        for i, card in enumerate(combat.hand):
-            if not card.is_playable:
-                continue
-            if card.has_target:
-                if target is None:
-                    continue
-                return PlayCard(card_index=i, target_index=target)
-            return PlayCard(card_index=i)
-    if "end" in commands:
-        return EndTurn()
-    if "choose" in commands:
-        return Choose(choice_index=0)
-    if commands.intersection(("proceed", "confirm")):
-        return Proceed()
-    return None
 
 
 def dump_unparsed(raw: RawState) -> Path:
@@ -159,7 +133,7 @@ def run(args: argparse.Namespace) -> int:
                 path = dump_unparsed(exc.raw)
                 say(f"state didn't fit the schema; captured -> {path} (raw fallback)")
             else:
-                action = choose_action(message)
+                action = scripted_action(message)
                 if action is not None:
                     verdict = validate(action, message)
                     if verdict.ok:

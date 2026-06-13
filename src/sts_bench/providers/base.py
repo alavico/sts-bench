@@ -67,6 +67,10 @@ class ModelResponse:
 
 
 class ModelProvider(Protocol):
+    # Identity for logs and run records: which model, behind which endpoint.
+    model: str
+    base_url: str
+
     def complete(
         self,
         messages: list[dict[str, Any]],

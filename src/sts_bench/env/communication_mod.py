@@ -81,7 +81,12 @@ class CommunicationModEnv:
         A step timeout is a result, not a crash: the game can absorb a click
         without ever becoming ready again (observed live: taking a potion
         reward onto a full belt), and the caller is the one who can try a
-        different command or end the run gracefully.
+        different command or end the run gracefully. If the wait saw any
+        state at all -- the mid-timeout `state` nudge answers even when the
+        mod never flips ready_for_command (observed live: `cancel` on an
+        event grid deselects the card and triggers no new dump) -- that
+        freshest state becomes current, so the caller's recovery acts on
+        what the game looks like now, never a snapshot from before the click.
         """
         self._require_state()
         self._send(command)
@@ -90,7 +95,9 @@ class CommunicationModEnv:
         except ProtocolErrorMessage as err:
             # Game unchanged; keep the previous state as current.
             return StepResult(state=self._require_state(), error=err.message)
-        except TimeoutError as err:
+        except StepTimeout as err:
+            if err.last_state is not None:
+                self._state = err.last_state
             return StepResult(state=self._require_state(), error=str(err))
         return StepResult(state=self._state)
 
@@ -118,20 +125,25 @@ class CommunicationModEnv:
         """
         deadline = time.monotonic() + timeout
         nudged = False
+        last_seen: RawState | None = None
         while True:
             remaining = deadline - time.monotonic()
             if remaining <= 0:
-                raise TimeoutError(f"no ready state within {timeout}s (last command may still be animating)")
+                raise StepTimeout(timeout, last_seen)
             line = self._conn.poll_line(remaining if nudged else remaining / 2)
             if line is None:
                 if nudged:
-                    raise TimeoutError(f"no ready state within {timeout}s (last command may still be animating)")
+                    raise StepTimeout(timeout, last_seen)
                 self._send("state")
                 nudged = True
                 continue
             message = self._parse(line)
             if "error" in message:
                 raise ProtocolErrorMessage(str(message["error"]))
+            if "available_commands" in message:
+                # Not ready, but real: the nudge's answer reflects the game
+                # as it stands, which beats a stale snapshot if we time out.
+                last_seen = message
             if message.get("ready_for_command"):
                 latest = self._drain(message)
                 if probe_rolling_intent and _intent_rolling(latest):
@@ -187,3 +199,14 @@ class ProtocolErrorMessage(Exception):
     def __init__(self, message: str):
         super().__init__(message)
         self.message = message
+
+
+class StepTimeout(TimeoutError):
+    """No ready state arrived in time. Carries the freshest state the wait
+    saw (a nudge's not-ready answer), so recovery can act on the present."""
+
+    def __init__(self, timeout: float, last_state: RawState | None):
+        super().__init__(
+            f"no ready state within {timeout}s (last command may still be animating)"
+        )
+        self.last_state = last_state

@@ -81,6 +81,29 @@ def test_step_timeout_nudges_then_returns_error_result(link):
     assert result.state == before
 
 
+def test_step_timeout_adopts_freshest_unready_state(link):
+    # Observed live (Neow grid): `cancel` deselects the card, the mod never
+    # flips ready_for_command, and the nudge's answer -- not ready, but true --
+    # is the only account of what the game looks like now. The timeout result
+    # must carry it, so the caller's fallback picks from real commands instead
+    # of the pre-click snapshot (which still offered confirm/cancel).
+    conn, mod = link
+    env = handshaken(conn, mod)
+    env._step_timeout = 0.4
+    fresh = {
+        "available_commands": ["choose", "state"],
+        "ready_for_command": False,
+        "in_game": True,
+        "game_state": {"floor": 0, "act": 1, "screen_type": "GRID"},
+    }
+    mod.send_json(fresh)  # queued ahead: what the wire shows during the wait
+    result = env.step("cancel")
+    assert not result.ok
+    assert "no ready state" in result.error
+    assert result.state == fresh
+    assert env.state == fresh  # the env moved on too: recovery acts on the present
+
+
 def combat_with_intent(intent):
     return {
         "floor": 1,

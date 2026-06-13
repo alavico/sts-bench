@@ -23,7 +23,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Iterator
 
-from .play import _model_traffic, _reasoning_note
+from .protocol_log import model_traffic, reasoning_note
 from .trajectory import DecisionRecord, FloorRecord, RunRecord, read_records
 from .trajectory.schema import TokenUsage
 
@@ -69,7 +69,7 @@ def verify_floor(floor: FloorRecord, decisions: list[DecisionRecord]) -> list[st
 
 def _spend(usage: TokenUsage) -> str:
     cache = f", {usage.cache_read_tokens} cached" if usage.cache_read_tokens else ""
-    return f"tokens {usage.prompt_tokens}+{usage.completion_tokens}{_reasoning_note(usage)}{cache}"
+    return f"tokens {usage.prompt_tokens}+{usage.completion_tokens}{reasoning_note(usage)}{cache}"
 
 
 def _floor_header(floor: FloorRecord, decisions: list[DecisionRecord]) -> str:
@@ -142,7 +142,7 @@ def render_run(records: list, only_floor: int | None = None) -> Iterator[str]:
         for decision in floor_decisions:
             yield f"-- {_decision_line(decision)}"
             slice_ = floor.conversation[decision.message_start : decision.message_end]
-            for tag, text in _model_traffic(slice_):
+            for tag, text in model_traffic(slice_):
                 for line in text.splitlines():
                     yield f"{tag} {line}"
 

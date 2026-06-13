@@ -57,6 +57,22 @@ Or render the run as a self-contained HTML report — HP and spend charts across
 uv run python -m sts_bench.report logs/trajectories/play-<timestamp>.jsonl   # writes the .html next to it
 ```
 
+## Benchmarking
+
+One command runs a whole seed suite — baselines and LLM scaffolds back to back over the same game instance — and emits a comparison report:
+
+```bash
+uv run python -m sts_bench.bench --suite smoke --agents random,scripted,floor
+```
+
+`random` (uniform over validator-accepted actions) and `scripted` (play the first playable card, otherwise advance) are the free baselines that calibrate the scale: a model has to beat `scripted` before its floor count means strategy. LLM agents (`floor`, `stepwise`) take the same backend flags as `sts_bench.play`. Each job starts from the main menu with its seed, plays to game over, and writes its own protocol log and trajectory; the markdown report (one row per model/scaffold/effort configuration, floor-by-seed grid, per-run table) lands in `logs/reports/` and prints to stdout. `--pricing costs.json` (model → `[input, output]` dollars per Mtok) adds the cost column. Runs whose prompt or tool schemas differ are never averaged together — the report keeps them in separate rows and says why.
+
+Sessions compose: every trajectory is self-contained, so baselines recorded one day and model runs another regenerate into one table without replaying anything —
+
+```bash
+uv run python -m sts_bench.bench --report-from logs/trajectories/bench-*.jsonl
+```
+
 ## Development
 
 ```bash
