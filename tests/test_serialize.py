@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from sts_bench.state import parse_message
-from sts_bench.state.serialize import cursory_view
+from sts_bench.state.serialize import act_map, cursory_view
 
 FIXTURES = sorted((Path(__file__).parent / "fixtures" / "states").glob("*.json"))
 
@@ -195,9 +195,44 @@ def test_unplayable_tag_is_hand_only():
     assert "[unplayable]" not in text
 
 
-def test_map_screen_names_the_act_boss():
+def test_map_screen_shows_the_whole_act():
+    # The real map screen shows the entire act at once; route picks made
+    # from the next nodes alone are myopic by construction.
     text = render(Path(__file__).parent / "fixtures" / "states" / "map-1.json")
-    assert "act boss: " in text
+    assert "boss: " in text
+    assert "floor 1:" in text  # rows labeled with absolute floor numbers
+    assert "-> " in text  # adjacency, not just a node list
+
+
+def test_map_marks_position_at_act_entrance():
+    # map-1 is the pre-first-pick screen: floor 0, entrance node at y=-1.
+    text = render(Path(__file__).parent / "fixtures" / "states" / "map-1.json")
+    assert "you are below the map; floor 1 nodes are your first picks" in text
+
+
+def test_map_marks_position_on_a_node():
+    raw = load_raw("map-1.json")
+    raw["game_state"]["floor"] = 6
+    raw["game_state"]["screen_state"]["current_node"] = {"x": 1, "y": 5, "symbol": "R"}
+    text = cursory_view(parse_message(raw))
+    assert "you are at R(x=1) on floor 6" in text
+    assert "floor 1:" in text  # rows still anchored to the act's bottom row
+
+
+def test_map_rows_carry_absolute_floors_in_later_acts():
+    # Off the map screen there is no current node; the act fixes the base
+    # floor (act 2 rows start at floor 18). Models were observed fumbling
+    # exactly this arithmetic when rows were labeled y=0..14.
+    raw = load_raw("map-1.json")
+    raw["game_state"]["act"] = 2
+    raw["game_state"]["floor"] = 21
+    raw["game_state"]["screen_type"] = "NONE"
+    raw["game_state"]["screen_state"] = {}
+    layout = act_map(parse_message(raw).game_state)
+    assert layout is not None
+    assert "you are on floor 21" in layout
+    assert "floor 18:" in layout
+    assert "floor y=" not in layout
 
 
 def test_upgrade_grid_shows_text_and_upgrade_preview():
@@ -246,7 +281,9 @@ def test_rest_options_carry_their_button_text():
     text = render(Path(__file__).parent / "fixtures" / "states" / "rest-1.json")
     assert "rest -- heal 30% of max HP" in text
     assert "smith -- upgrade a card in your deck" in text
-    assert "recall -- obtain the Ruby Key (one of the 3 keys that unlock the final act)" in text
+    # Keys must say they are optional: every live run traded real resources
+    # (a rest, a chest relic) for keys that cannot help win at ascension 0.
+    assert "recall -- obtain the Ruby Key (a key to the optional 4th act; NOT needed to win this run) instead of resting or smithing" in text
 
 
 def test_unopened_chest_offers_leaving_it():
@@ -256,7 +293,7 @@ def test_unopened_chest_offers_leaving_it():
 
 def test_sapphire_key_reward_explains_keys_and_the_relic_link():
     text = render(Path(__file__).parent / "fixtures" / "states" / "combat_reward-2.json")
-    assert "sapphire key (one of the 3 keys that unlock the final act)" in text
+    assert "sapphire key (a key to the optional 4th act; NOT needed to win this run)" in text
     assert "(linked: taking this forfeits Ink Bottle)" in text
 
 
@@ -266,7 +303,7 @@ def test_run_line_reports_keys_when_the_wire_sends_them():
 
     raw["game_state"]["keys"] = {"ruby": True, "emerald": False, "sapphire": True}
     text = cursory_view(parse_message(raw))
-    assert "keys 2/3 (ruby, sapphire; all 3 unlock the final act)" in text
+    assert "keys 2/3 (ruby, sapphire; all 3 unlock the optional 4th act)" in text
 
 
 def test_card_reward_choices_offer_skip_as_a_peer_of_the_cards():
@@ -417,3 +454,79 @@ def test_unknown_powers_define_nothing_but_stay_rendered():
     assert block is None
     assert "Modded Nonsense" in seen  # not retried every decision
     assert "Modded Nonsense 3" in cursory_view(message)
+
+
+# -- v3 parity: damage tags, intent phrasing, relics at events ------------------
+
+
+def combat_with_player_powers(*powers):
+    raw = json.loads((Path(__file__).parent / "fixtures" / "states" / "none-1.json").read_text())
+    raw["game_state"]["combat_state"]["player"]["powers"] = list(powers)
+    return raw
+
+
+def test_attack_cards_carry_current_damage_when_modified():
+    raw = combat_with_player_powers({"id": "Strength", "name": "Strength", "amount": 2})
+    text = cursory_view(parse_message(raw))
+    # none-1's hand: Strike (Deal 6 damage) -> 8 with Strength 2
+    assert "Strike (1) [needs target] [deals 8]" in text
+    # non-attacks never get a tag
+    assert "Defend (1) [deals" not in text
+
+
+def test_weak_reduces_the_tagged_damage():
+    raw = combat_with_player_powers({"id": "Weakened", "name": "Weakened", "amount": 2})
+    text = cursory_view(parse_message(raw))
+    assert "Strike (1) [needs target] [deals 4]" in text  # floor(6 * 0.75)
+
+
+def test_unmodified_attacks_stay_untagged():
+    raw = json.loads((Path(__file__).parent / "fixtures" / "states" / "none-1.json").read_text())
+    assert "[deals" not in cursory_view(parse_message(raw))
+
+
+def test_special_math_cards_are_never_mislabeled():
+    raw = combat_with_player_powers({"id": "Strength", "name": "Strength", "amount": 3})
+    raw["game_state"]["combat_state"]["hand"][0] = {
+        "id": "Heavy Blade", "name": "Heavy Blade", "cost": 2, "type": "ATTACK",
+        "rarity": "COMMON", "upgrades": 0, "has_target": True,
+        "is_playable": True, "exhausts": False, "ethereal": False, "uuid": "x",
+    }
+    text = cursory_view(parse_message(raw))
+    # Heavy Blade's text says Strength affects it 3 times; a flat tag would lie
+    assert "Heavy Blade (2) [needs target] [deals" not in text
+
+
+def test_intent_unknown_reads_as_preparing():
+    raw = json.loads((Path(__file__).parent / "fixtures" / "states" / "none-1.json").read_text())
+    raw["game_state"]["combat_state"]["monsters"][0]["intent"] = "UNKNOWN"
+    assert "intent unclear (preparing)" in cursory_view(parse_message(raw))
+
+
+def test_intent_none_names_runic_dome_when_held():
+    raw = json.loads((Path(__file__).parent / "fixtures" / "states" / "none-1.json").read_text())
+    raw["game_state"]["combat_state"]["monsters"][0]["intent"] = "NONE"
+    text = cursory_view(parse_message(raw))
+    assert "intent none" in text  # no dome: plainly no intent
+
+    raw["game_state"]["relics"].append({"id": "Runic Dome", "name": "Runic Dome", "counter": -1})
+    text = cursory_view(parse_message(raw))
+    assert "intent hidden (Runic Dome)" in text
+
+
+def test_relic_referencing_event_shows_the_relic_bar():
+    raw = load_raw("event-1.json")
+    screen = raw["game_state"]["screen_state"]
+    screen["options"] = [
+        {"choice_index": 0, "disabled": False, "text": "Obtain a random boss Relic in exchange for your starting Relic", "label": "swap"},
+    ]
+    raw["game_state"]["choice_list"] = ["swap"]
+    text = cursory_view(parse_message(raw))
+    assert "your relics:" in text
+    # the fixture is a Defect save: the swap would give up Cracked Core
+    assert "Cracked Core" in text
+
+
+def test_plain_event_keeps_the_view_lean():
+    text = render(Path(__file__).parent / "fixtures" / "states" / "event-1.json")
+    assert "your relics:" not in text

@@ -45,10 +45,12 @@ shows what it will do on its next turn."""
 READING_THE_VIEW = """\
 At each decision point you get a compact view of the game. Card listings show \
 the energy cost in parentheses after the name. Intent damage numbers are \
-already adjusted for active effects; card text is the base printing -- your \
-powers and debuffs apply on top. Use the observation tools (get_deck, \
-get_map, get_relics, get_potions, the pile tools) whenever you need details \
-that are not in the view -- they are free and do not advance the game."""
+already adjusted for active effects; card text is the base printing. When \
+your own Strength or Weak changes an attack's damage, its hand entry carries \
+the current value as [deals N] -- an enemy marked Vulnerable takes 50% more \
+on top of that. Use the observation tools (get_deck, get_map, get_relics, \
+get_potions, the pile tools) whenever you need details that are not in the \
+view -- they are free and do not advance the game."""
 
 ACTION_PROTOCOL = """\
 You may reason briefly in plain text before or alongside your tool calls; \

@@ -10,10 +10,9 @@ from __future__ import annotations
 
 from collections import Counter
 
-from ..state.schema import HIDDEN_COMMANDS, Card, MapNode, StateMessage
+from ..state.schema import HIDDEN_COMMANDS, Card, StateMessage
 
 NOT_IN_RUN = "not in a run right now"
-MAP_LEGEND = "M monster, E elite, $ shop, R rest, T chest, ? event, B boss"
 
 
 def get_deck(message: StateMessage) -> str:
@@ -95,36 +94,18 @@ def get_legal_actions(message: StateMessage) -> str:
 def get_map(message: StateMessage) -> str:
     """Full act layout as floor-by-floor adjacency, bottom to top.
 
-    `y` is the floor within the act (0 at the bottom). Each node lists the
-    nodes it connects to on the floor above; you can only move along those
-    edges. Top-floor nodes all lead to the act boss.
+    The MAP screen digest includes this layout already (the real screen
+    shows the whole act); the tool answers the same question from anywhere.
     """
+    # Imported here: serialize pulls in the tools package (card/relic/power
+    # text), so a module-level import back into it would be a cycle.
+    from ..state.serialize import act_map
+
     state = message.game_state
     if state is None:
         return NOT_IN_RUN
-    if not state.map:
-        return "no map available on this screen"
-
-    by_pos = {(node.x, node.y): node for node in state.map}
-    floors: dict[int, list[MapNode]] = {}
-    for node in state.map:
-        floors.setdefault(node.y, []).append(node)
-
-    lines = [f"act {state.act} map, boss: {state.act_boss} (symbols: {MAP_LEGEND})"]
-    for y in sorted(floors):
-        entries = []
-        for node in sorted(floors[y], key=lambda n: n.x):
-            children = ", ".join(
-                _node_label(by_pos.get((ref.x, ref.y))) for ref in node.children
-            )
-            entries.append(f"{node.symbol}(x={node.x}) -> {children or 'BOSS'}")
-        lines.append(f"floor y={y}: " + "; ".join(entries))
-    return "\n".join(lines)
-
-
-def _node_label(node: MapNode | None) -> str:
-    # An edge pointing past the listed floors is the act boss (e.g. {x:3, y:16}).
-    return f"{node.symbol}(x={node.x})" if node else "BOSS"
+    layout = act_map(state)
+    return layout if layout else "no map available on this screen"
 
 
 def _pile(message: StateMessage, attr: str, title: str) -> str:

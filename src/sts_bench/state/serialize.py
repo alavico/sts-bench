@@ -13,6 +13,8 @@ the renderer stays swappable for format ablations.
 
 from __future__ import annotations
 
+import re
+
 from ..tools.card_db import card_text, upgraded_card_text
 from ..tools.keyword_db import keyword_lines
 from ..tools.potion_db import potion_text
@@ -39,6 +41,12 @@ from .schema import (
     StateMessage,
 )
 
+# Keys exist for the optional fourth act only; this run is won at the act 3
+# boss. Without the second clause, "unlock the final act" reads as progress
+# and models trade real resources for keys (observed live: sapphire over the
+# chest relic, recall over resting while wounded -- in every single run).
+KEY_NOTE = "a key to the optional 4th act; NOT needed to win this run"
+
 # The model acts through tools, so the legal-commands line speaks tool names,
 # keeping the game's own button word visible where it differs (the screen
 # says "leave"/"confirm"; the tools say return_back/proceed).
@@ -59,7 +67,7 @@ TOOL_COMMAND_NAMES = {
 REST_OPTION_TEXT = {
     "rest": "heal 30% of max HP",
     "smith": "upgrade a card in your deck",
-    "recall": "obtain the Ruby Key (one of the 3 keys that unlock the final act)",
+    "recall": f"obtain the Ruby Key ({KEY_NOTE}) instead of resting or smithing",
     "lift": "gain 1 permanent Strength (Girya)",
     "toke": "remove a card from your deck (Peace Pipe)",
     "dig": "obtain a random relic (Shovel)",
@@ -78,7 +86,12 @@ def cursory_view(message: StateMessage) -> str:
             sections.append(screen)
         if state.combat_state is not None:
             deck_names = frozenset(card.name for card in state.deck)
-            sections.append(f"<combat>\n{_combat_lines(state.combat_state, deck_names)}\n</combat>")
+            intents_hidden = any(relic.name == "Runic Dome" for relic in state.relics)
+            sections.append(
+                "<combat>\n"
+                + _combat_lines(state.combat_state, deck_names, intents_hidden)
+                + "\n</combat>"
+            )
         # The loot screen renders its own indexed lines; a second list of the
         # same items in keyword form only invites misreads.
         if state.choice_list and not isinstance(state.screen, CombatRewardScreen):
@@ -120,6 +133,69 @@ def combat_briefing(state: GameState) -> str:
     if glossary:
         parts.append("<keywords>\n" + "\n".join(glossary) + "\n</keywords>")
     return "\n".join(parts)
+
+
+MAP_LEGEND = "M monster, E elite, $ shop, R rest, T chest, ? event, B boss"
+
+
+def act_map(state: GameState) -> str | None:
+    """Full act layout as floor-by-floor adjacency, bottom to top.
+
+    Rows carry absolute floor numbers -- the same numbering as the run
+    line -- and a "you are" line states the current position outright, so
+    placing yourself on the map takes no arithmetic. Each node lists the
+    nodes it connects to on the floor above; movement is only along those
+    edges. Top-floor nodes all lead to the act boss. The real map screen
+    shows all of this at once; route picks are planned against it.
+    """
+    if not state.map:
+        return None
+    by_pos = {(node.x, node.y): node for node in state.map}
+    floors: dict[int, list] = {}
+    for node in state.map:
+        floors.setdefault(node.y, []).append(node)
+    base = _row_zero_floor(state)
+
+    def label(node) -> str:
+        # An edge pointing past the listed floors is the act boss.
+        return f"{node.symbol}(x={node.x})" if node else "BOSS"
+
+    lines = [
+        f"act {state.act} map, boss: {state.act_boss} (symbols: {MAP_LEGEND})",
+        _position_line(state, base),
+    ]
+    for y in sorted(floors):
+        entries = []
+        for node in sorted(floors[y], key=lambda n: n.x):
+            children = ", ".join(label(by_pos.get((ref.x, ref.y))) for ref in node.children)
+            entries.append(f"{node.symbol}(x={node.x}) -> {children or 'BOSS'}")
+        lines.append(f"floor {base + y}: " + "; ".join(entries))
+    return "\n".join(lines)
+
+
+def _row_zero_floor(state: GameState) -> int:
+    """Absolute floor number of the map's bottom row.
+
+    On the map screen the position is exact: the run's floor counter and
+    the current node's row describe the same spot (the pre-act entrance
+    node sits at y=-1). Elsewhere the act layout itself fixes it: 15 rows,
+    a boss floor, and a landing make 17 floors per act.
+    """
+    screen = state.screen
+    if isinstance(screen, MapScreen) and screen.current_node is not None:
+        return state.floor - screen.current_node.y
+    return (state.act - 1) * 17 + 1
+
+
+def _position_line(state: GameState, base: int) -> str:
+    screen = state.screen
+    if isinstance(screen, MapScreen) and screen.current_node is not None:
+        node = screen.current_node
+        if node.symbol:
+            return f"you are at {node.symbol}(x={node.x}) on floor {state.floor}"
+    if state.floor < base:
+        return f"you are below the map; floor {base} nodes are your first picks"
+    return f"you are on floor {state.floor}"
 
 
 def power_definitions(
@@ -173,12 +249,16 @@ def potion_belt(state: GameState) -> str | None:
 
 
 def relic_bar(state: GameState) -> str:
+    return "<relic_bar>\n" + "\n".join(_relic_lines(state)) + "\n</relic_bar>"
+
+
+def _relic_lines(state: GameState) -> list[str]:
     lines = ["your relics:"]
     for relic in state.relics:
         counter = f" (counter {relic.counter})" if relic.counter >= 0 else ""
         text = relic_text(relic)
         lines.append(f"{relic.name}{counter}{f': {text}' if text else ''}")
-    return "<relic_bar>\n" + "\n".join(lines) + "\n</relic_bar>"
+    return lines
 
 
 def deck_reference(state: GameState) -> str:
@@ -227,7 +307,7 @@ def _run_line(state: GameState) -> str:
         # The key icons sit on the real HUD whenever act 4 is in play; all
         # three are needed to enter it and face the heart.
         got = [name for name in ("ruby", "emerald", "sapphire") if getattr(state.keys, name)]
-        parts.append(f"keys {len(got)}/3 ({', '.join(got) if got else 'none'}; all 3 unlock the final act)")
+        parts.append(f"keys {len(got)}/3 ({', '.join(got) if got else 'none'}; all 3 unlock the optional 4th act)")
     return " | ".join(parts)
 
 
@@ -242,19 +322,29 @@ def _screen_section(state: GameState) -> str | None:
                 idx = "x" if option.choice_index is None else option.choice_index
                 disabled = " (disabled)" if option.disabled else ""
                 lines.append(f"[{idx}] {option.text}{disabled}")
+            # An option trading or referencing relics is read against the
+            # relic bar a player always sees (Neow's swap stakes the starting
+            # relic without naming it).
+            event_text = " ".join(lines).lower()
+            if "relic" in event_text and state.relics:
+                lines.extend(_relic_lines(state))
             return f"<screen type=\"EVENT\">\n" + "\n".join(lines) + "\n</screen>"
         case MapScreen():
             lines = []
-            if screen.current_node and screen.current_node.symbol:
-                lines.append(f"at node {_node(screen.current_node)}")
             if screen.next_nodes:
                 lines.append("next: " + ", ".join(_node(n) for n in screen.next_nodes))
             if screen.boss_available:
                 lines.append("boss fight available")
-            # The boss icon sits at the top of the real map; routing and
-            # drafting are planned against it.
-            lines.append(f"act boss: {state.act_boss}")
-            lines.append("(symbols: M monster, E elite, $ shop, R rest, T chest, ? event, B boss; full layout via get_map)")
+            # The real map screen shows the whole act at once -- elites,
+            # rests, shops, the boss icon, and your own position. A route
+            # pick made from the next nodes alone is myopic by construction.
+            layout = act_map(state)
+            if layout:
+                lines.append(layout)
+            else:
+                if screen.current_node and screen.current_node.symbol:
+                    lines.append(f"at node {_node(screen.current_node)}")
+                lines.append(f"act boss: {state.act_boss}")
             return "<screen type=\"MAP\">\n" + "\n".join(lines) + "\n</screen>"
         case CardRewardScreen():
             # A player reads the full card before picking; so does the model,
@@ -353,7 +443,11 @@ def _screen_section(state: GameState) -> str | None:
     return None  # NONE screen: combat section carries the content
 
 
-def _combat_lines(combat: CombatState, deck_names: frozenset[str] = frozenset()) -> str:
+def _combat_lines(
+    combat: CombatState,
+    deck_names: frozenset[str] = frozenset(),
+    intents_hidden: bool = False,
+) -> str:
     player = combat.player
     lines = [f"turn {combat.turn} | energy {player.energy} | block {player.block}"]
     if combat.card_in_play is not None:
@@ -369,9 +463,14 @@ def _combat_lines(combat: CombatState, deck_names: frozenset[str] = frozenset())
     for i, monster in enumerate(combat.monsters):
         if monster.is_gone:
             continue
-        lines.append(_monster(monster, i))
+        lines.append(_monster(monster, i, intents_hidden))
+    strength = sum(p.amount for p in player.powers if p.id == "Strength")
+    weakened = any(p.id == "Weakened" for p in player.powers)
     for i, card in enumerate(combat.hand):
         line = "hand" + _card(card, i, in_hand=True)
+        tag = _damage_tag(card, strength, weakened)
+        if tag:
+            line += tag
         if card.name not in deck_names:
             # Generated and inflicted cards (Slimed, Burn, Shiv, ...) are not
             # in the deck briefing; a player reads them off the card face.
@@ -386,13 +485,23 @@ def _combat_lines(combat: CombatState, deck_names: frozenset[str] = frozenset())
     return "\n".join(lines)
 
 
-def _monster(monster: Monster, index: int) -> str:
+def _monster(monster: Monster, index: int, intents_hidden: bool = False) -> str:
     intent = monster.intent.value
     if intent == "DEBUG":
         # The combat's first snapshot can land before intents finish rolling;
         # the wire reports the game's DEBUG placeholder. Distinct from
         # UNKNOWN, which is the game's real question-mark intent.
         intent = "not yet revealed"
+    elif intent == "UNKNOWN":
+        # The in-game question-mark icon: the creature is preparing/charging
+        # and its next move is genuinely unreadable. "UNKNOWN" bare reads
+        # like a harness error.
+        intent = "unclear (preparing)"
+    elif intent == "NONE":
+        # Under Runic Dome the game strips every intent; a player sees no
+        # icon at all and knows their relic is why. Without attribution,
+        # "NONE" reads as an idle enemy.
+        intent = "hidden (Runic Dome)" if intents_hidden else "none"
     if monster.move_adjusted_damage is not None and monster.move_adjusted_damage >= 0:
         intent += f" {monster.move_adjusted_damage}x{monster.move_hits}"
     powers = ("; " + ", ".join(_power(p) for p in monster.powers)) if monster.powers else ""
@@ -400,6 +509,38 @@ def _monster(monster: Monster, index: int) -> str:
     return (
         f"enemy[{index}] {monster.name} {monster.current_hp}/{monster.max_hp}{block} | intent {intent}{powers}"
     )
+
+
+# The number printed on an attack's face in the GUI updates with the
+# player's own modifiers (Strength, Weak); the model deserves the same
+# arithmetic done for it. Only the plain "Deal N damage" pattern is safe to
+# recompute -- cards with special math (Heavy Blade, Body Slam, Perfected
+# Strike) describe it in their text and stay untagged rather than mislabeled.
+_PLAIN_DAMAGE = re.compile(r"Deals? (\d+) damage", flags=re.IGNORECASE)
+
+
+def _damage_tag(card: Card, strength: int, weakened: bool) -> str | None:
+    """' [deals N]' when the player's own modifiers change an attack's damage.
+
+    Enemy-side modifiers stay off the card line, as on the real card face:
+    Vulnerable lives on the enemy line and its definition carries the +50%.
+    """
+    if card.type != "ATTACK" or (strength == 0 and not weakened):
+        return None
+    text = card_text(card) or ""
+    matches = _PLAIN_DAMAGE.findall(text)
+    if len(matches) != 1:
+        return None  # zero: special math; several: ambiguous which to tag
+    if any(marker in text for marker in ("Strength", "equal to", "for each")):
+        return None  # the card does its own arithmetic; a flat tag would lie
+    base = int(matches[0])
+    adjusted = max(0, base + strength)
+    if weakened:
+        adjusted = int(adjusted * 0.75)
+    if adjusted == base:
+        return None
+    per_hit = " per hit" if "times" in text else ""
+    return f" [deals {adjusted}{per_hit}]"
 
 
 def _card(card: Card, index: int | None = None, in_hand: bool = False) -> str:
@@ -445,7 +586,7 @@ def _reward(reward, state: GameState) -> str:
         case "CARD":
             label = "card (opens a pick of cards, skippable)"
         case "RUBY_KEY" | "EMERALD_KEY" | "SAPPHIRE_KEY" as key:
-            label = f"{key.lower().replace('_', ' ')} (one of the 3 keys that unlock the final act)"
+            label = f"{key.lower().replace('_', ' ')} ({KEY_NOTE})"
         case other:
             label = other.lower().replace("_", " ")
     if reward.link is not None:

@@ -98,11 +98,11 @@ def test_piles_require_combat(registry):
 
 
 def test_map_renders_every_floor_with_edges(registry):
-    message = load("map-1.json")
+    message = load("map-1.json")  # act 1 entrance: row y sits on floor y+1
     text = registry.observe("get_map", message)
     floors = {node.y for node in message.game_state.map}
     for y in floors:
-        assert f"floor y={y}:" in text
+        assert f"floor {y + 1}:" in text
     assert "->" in text
     assert message.game_state.act_boss in text
     # top floor leads to the boss
