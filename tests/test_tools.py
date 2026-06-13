@@ -84,6 +84,17 @@ def test_deck_listing_groups_duplicates(registry):
         assert f"{strikes}x Strike" in text
 
 
+def test_listings_carry_hover_text(registry):
+    # A player inspecting deck, relics, or potions reads the tooltips,
+    # anywhere -- not only where the combat briefing happens to be in view.
+    message = load("shop_screen-1.json")
+    assert "Strike (cost 1, ATTACK) -- Deal 6 damage." in registry.observe("get_deck", message)
+    relics = registry.observe("get_relics", message)
+    assert "Philosopher's Stone -- " in relics and "Strength" in relics
+    potions = registry.observe("get_potions", message)
+    assert "Strength Potion -- Gain 2 Strength. (not usable now, discardable)" in potions
+
+
 def test_draw_pile_masks_order(registry):
     message = load("none-1.json")
     text = registry.observe("get_draw_pile", message)

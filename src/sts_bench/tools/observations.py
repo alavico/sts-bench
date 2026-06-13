@@ -3,7 +3,9 @@
 Each handler takes the current StateMessage and returns plain text -- no game
 round-trips, no hidden information. Everything here is legally visible to a
 human player: deck and pile *contents* are known but draw order is not, so
-card listings are grouped and sorted, never in pile order.
+card listings are grouped and sorted, never in pile order. Listings carry the
+printed hover text -- a player inspecting a card, relic, or potion reads its
+tooltip, anywhere, not just in combat.
 """
 
 from __future__ import annotations
@@ -11,6 +13,9 @@ from __future__ import annotations
 from collections import Counter
 
 from ..state.schema import HIDDEN_COMMANDS, Card, StateMessage
+from .card_db import card_text
+from .potion_db import potion_text
+from .relic_db import relic_text
 
 NOT_IN_RUN = "not in a run right now"
 
@@ -41,7 +46,8 @@ def get_relics(message: StateMessage) -> str:
     lines = []
     for relic in state.relics:
         counter = f" (counter {relic.counter})" if relic.counter >= 0 else ""
-        lines.append(f"{relic.name}{counter}")
+        text = relic_text(relic)
+        lines.append(f"{relic.name}{counter}{f' -- {text}' if text else ''}")
     return f"relics ({len(lines)}):\n" + "\n".join(lines) if lines else "no relics"
 
 
@@ -60,7 +66,9 @@ def get_potions(message: StateMessage) -> str:
             notes.append("needs a target")
         if potion.can_discard:
             notes.append("discardable")
-        lines.append(f"[{i}] {potion.name} -- {', '.join(notes)}")
+        text = potion_text(potion)
+        effect = f" -- {text}" if text else ""
+        lines.append(f"[{i}] {potion.name}{effect} ({', '.join(notes)})")
     return "potions:\n" + "\n".join(lines) if lines else "no potion slots"
 
 
@@ -127,4 +135,14 @@ def _card_listing(cards: list[Card]) -> str:
 
 def _card_line(card: Card) -> str:
     upgraded = "+" * card.upgrades
-    return f"{card.name}{upgraded} (cost {card.cost}, {card.type.value})"
+    # Cost sentinels as in the digest: -1 is the X in the energy orb, -2 is
+    # no orb at all (statuses, curses) -- neither is a number a player sees.
+    if card.cost == -1:
+        cost = "cost X, "
+    elif card.cost == -2:
+        cost = ""
+    else:
+        cost = f"cost {card.cost}, "
+    line = f"{card.name}{upgraded} ({cost}{card.type.value})"
+    text = card_text(card)
+    return f"{line} -- {text}" if text else line
