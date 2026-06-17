@@ -27,14 +27,21 @@ def _embed(data: dict[str, Any]) -> str:
     )
 
 
-def render_html(data: dict[str, Any]) -> str:
-    template = (_ASSETS / "template.html").read_text()
-    title = data.get("run", {}).get("run_id") or "run"
+def render_html(
+    data: dict[str, Any],
+    *,
+    template: str = "template.html",
+    css: tuple[str, ...] = ("report.css",),
+    js: tuple[str, ...] = ("report.js",),
+    title: str | None = None,
+) -> str:
+    page = (_ASSETS / template).read_text()
+    title = str(title or data.get("run", {}).get("run_id") or "run")
     # The data payload is substituted last so nothing inside it is ever
     # subject to the other replacements.
     return (
-        template.replace("/*__CSS__*/", (_ASSETS / "report.css").read_text())
-        .replace("//__JS__", (_ASSETS / "report.js").read_text())
+        page.replace("/*__CSS__*/", "\n".join((_ASSETS / name).read_text() for name in css))
+        .replace("//__JS__", "\n".join((_ASSETS / name).read_text() for name in js))
         .replace("__TITLE__", html.escape(title))
         .replace("__DATA__", _embed(data))
     )

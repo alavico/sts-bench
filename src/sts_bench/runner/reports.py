@@ -62,21 +62,27 @@ def report_from_files(
 
 def _config_table(aggregates: list[SuiteAggregate], pricing: Pricing) -> list[str]:
     header = (
-        "| configuration | runs | wins | floor mean | floor best | reward mean "
-        "| invalid dec. | forced | lookups/dec | latency p50 | tokens/run | cost/run |"
+        "| configuration | runs | wins | floor mean | floor median | floor best | reward mean "
+        "| card skips | potions used | gold spent "
+        "| invalid dec. | forced | lookups/dec | latency p50 | tokens/run (in+out) | cost/run |"
     )
-    rows = [header, "|" + "---|" * 12]
+    rows = [header, "|" + "---|" * 16]
     for agg in aggregates:
         prompt, completion = agg.mean_tokens_per_run
         rows.append(
-            "| {label} | {n} | {wins} | {floor} | {best} | {reward} | {invalid} "
+            "| {label} | {n} | {wins} | {floor} | {median} | {best} | {reward} "
+            "| {skips} | {potions} | {gold} | {invalid} "
             "| {forced} | {lookups} | {latency} | {tokens} | {cost} |".format(
                 label=agg.key.label,
                 n=agg.n,
                 wins=agg.wins,
                 floor=_num(agg.mean_floor),
+                median=_num(agg.median_floor),
                 best=_num(agg.best_floor),
                 reward=_num(agg.mean_reward),
+                skips=_pct(agg.skip_rate),
+                potions=_pct(agg.potion_use_rate),
+                gold=_pct(agg.gold_spent_ratio),
                 invalid=f"{agg.invalid_decision_rate:.1%}",
                 forced=f"{agg.forced_rate:.1%}",
                 lookups=f"{agg.observation_calls_per_decision:.2f}",
@@ -123,7 +129,7 @@ def _run_table(runs: list[RunMetrics]) -> list[str]:
         "## Runs",
         "",
         "| run | configuration | seed | outcome | floor | score | decisions "
-        "| forced | invalid | tokens | reward |",
+        "| forced | invalid | tokens (in+out) | reward |",
         "|" + "---|" * 11,
     ]
     for run in runs:
@@ -164,6 +170,10 @@ def _num(value: float | int | None) -> str:
     if isinstance(value, float):
         return f"{value:.1f}".rstrip("0").rstrip(".")
     return str(value)
+
+
+def _pct(rate: float | None) -> str:
+    return f"{rate:.0%}" if rate is not None else "-"
 
 
 def _latency(ms: float | None) -> str:

@@ -5,7 +5,7 @@ every decision's slice of it, the boundary states, scorecards, and rewards.
 This replays one without the game, the model, or the protocol log --
 the same `>m`/`<m` channel the live log shows, reconstructed from storage.
 
-    uv run python -m sts_bench.replay logs/trajectories/play-20260611-101500.jsonl
+    uv run python -m sts_bench.replay logs/2026-06-11/trajectories/play-20260611-101500.jsonl
     uv run python -m sts_bench.replay <file> --floor 14
 
 Every replay also verifies the packet property on every floor: the decision
@@ -171,7 +171,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
-    parser.add_argument("path", help="trajectory JSONL file (logs/trajectories/*.jsonl)")
+    parser.add_argument("path", help="trajectory JSONL file (logs/<date>/trajectories/*.jsonl)")
     parser.add_argument("--floor", type=int, default=None, help="only render this floor")
     args = parser.parse_args()
 

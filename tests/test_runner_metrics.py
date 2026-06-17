@@ -11,6 +11,7 @@ from sts_bench.trajectory import (
     RunRecord,
     TokenUsage,
 )
+from sts_bench.trajectory.schema import FloorScorecard, StateSummary
 
 
 def make_run(
@@ -42,10 +43,20 @@ def make_run(
     )
 
 
-def make_floor(run_id="run-1", floor=1, reward_total=3.0):
+def make_floor(
+    run_id="run-1",
+    floor=1,
+    reward_total=3.0,
+    *,
+    gold_delta=0,
+    potions_gained=(),
+    exit_gold: int | None = None,
+):
     return FloorRecord(
         run_id=run_id,
         floor=floor,
+        scorecard=FloorScorecard(gold_delta=gold_delta, potions_gained=list(potions_gained)),
+        exit=StateSummary(gold=exit_gold),
         reward=Reward(spec_version="v1", total=reward_total, components={"floor_advanced": reward_total}),
     )
 
@@ -59,6 +70,9 @@ def make_decision(
     forced_reason: str | None = None,
     observation_calls=0,
     latency_ms: int | None = 2000,
+    screen: str | None = None,
+    action: str | None = None,
+    command: str | None = None,
 ):
     return DecisionRecord(
         run_id=run_id,
@@ -70,6 +84,9 @@ def make_decision(
         forced_reason=forced_reason,
         observation_calls=observation_calls,
         latency_ms=latency_ms,
+        screen=screen,
+        action=action,
+        command=command,
         usage=TokenUsage(prompt_tokens=1000, completion_tokens=50, reasoning_tokens=20),
     )
 
@@ -104,6 +121,78 @@ def test_run_metrics_from_records():
     assert metrics.reasoning_tokens == 80
     assert metrics.latencies_ms == [2000, 2000, 2000]  # the forced decision had none
     assert metrics.reward_total == 4.5
+
+
+def strategic_records():
+    """A run that takes one of three card rewards, drinks one of two potions,
+    and spends 60 of the 100 gold it earned."""
+    return [
+        make_decision(index=1, floor=1, screen="CARD_REWARD", command="choose 0", action="choose 0 (bash)"),
+        make_decision(index=2, floor=1, screen="CARD_REWARD", command="skip", action="skip"),
+        make_floor(floor=1, gold_delta=40, potions_gained=["Fire Potion"], exit_gold=139),
+        make_decision(index=3, floor=2, screen="CARD_REWARD", command="return", action="return_back"),
+        make_decision(index=4, floor=2, action="use_potion 0 (Fire Potion)", command="potion use 0"),
+        make_floor(floor=2, gold_delta=60, potions_gained=["Block Potion"], exit_gold=199),
+        make_floor(floor=3, gold_delta=-60, exit_gold=139),
+        make_run(floor_reached=3),
+    ]
+
+
+def test_strategic_metrics_from_records():
+    metrics = RunMetrics.from_records(strategic_records())
+    assert metrics.card_reward_decisions == 3
+    assert metrics.card_skips == 2  # "skip" and "return" decline; "choose 0" takes
+    assert metrics.skip_rate == 2 / 3
+    assert metrics.potions_gained == 2
+    assert metrics.potions_used == 1
+    assert metrics.potion_use_rate == 0.5
+    assert metrics.gold_earned == 100
+    assert metrics.gold_spent == 60
+    assert metrics.gold_spent_ratio == 0.6
+    assert metrics.gold_final == 139
+
+
+def test_strategic_metrics_default_to_none_without_data():
+    metrics = RunMetrics.from_records([make_run()])
+    assert metrics.skip_rate is None
+    assert metrics.potion_use_rate is None
+    assert metrics.gold_spent_ratio is None
+    assert metrics.gold_final is None
+
+
+def test_aggregate_strategic_rates_pool_counts_not_rates():
+    # 0/3 skips in one run, 2/3 in another: the pooled rate is 2/6, not the
+    # mean of per-run rates (runs with more card rewards weigh more).
+    never = RunMetrics.from_records([
+        make_decision(index=i, floor=1, screen="CARD_REWARD", command="choose 0")
+        for i in (1, 2, 3)
+    ] + [make_run(run_id="a", seed="S1")])
+    sometimes = RunMetrics.from_records(strategic_records())
+    agg = aggregate([never, sometimes])[0]
+    assert agg.skip_rate == 2 / 6
+    assert agg.potion_use_rate == 0.5
+    assert agg.gold_spent_ratio == 0.6
+
+
+def test_config_table_carries_strategic_columns():
+    report = comparison_report([RunMetrics.from_records(strategic_records())])
+    assert "| card skips | potions used | gold spent |" in report
+    assert "| 67% | 50% | 60% |" in report
+
+
+def test_median_floor_resists_a_lucky_seed():
+    # Four runs wall at 16, one reaches 33: the mean (19.4) overstates a
+    # configuration whose median run dies at the act 1 boss.
+    runs = [
+        RunMetrics.from_records([make_run(run_id=f"r{i}", seed=f"S{i}", floor_reached=f)])
+        for i, f in enumerate((16, 16, 16, 16, 33))
+    ]
+    agg = aggregate(runs)[0]
+    assert agg.median_floor == 16
+    assert agg.mean_floor == 19.4
+    report = comparison_report(runs)
+    assert "| floor mean | floor median | floor best |" in report
+    assert "tokens/run (in+out)" in report
 
 
 def test_run_without_run_record_is_incomplete():

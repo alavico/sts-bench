@@ -29,7 +29,7 @@ from .env import CommunicationModEnv, HarnessServer
 from .protocol_log import ProtocolLog, reasoning_note
 from .providers import PROVIDERS, ProviderError, auto_api
 from .runner.session import RunTally, play_run
-from .smoke import LOG_DIR
+from .smoke import session_dir
 from .tools import ToolRegistry
 from .trajectory import RunRecorder, TrajectoryStore
 
@@ -88,7 +88,7 @@ def run(args: argparse.Namespace) -> int:
         with HarnessServer(port=args.port) as server:
             say(f"listening on {server.host}:{server.port} -- start the external process in-game")
             conn = server.accept(timeout=300)
-            log = ProtocolLog(LOG_DIR, name="play")
+            log = ProtocolLog(session_dir(), name="play")
             effort_note = f", effort {args.reasoning_effort}" if args.reasoning_effort else ""
             log.line(
                 "--",
@@ -99,9 +99,10 @@ def run(args: argparse.Namespace) -> int:
             for prompt_line in system_prompt.format(character=args.character.upper()).splitlines():
                 log.line(">m", prompt_line)
             say(f"protocol log: {log.path}")
-            # The trajectory file shares the protocol log's name, so the wire
-            # view and the record view of one run pair up by filename.
-            store = TrajectoryStore(LOG_DIR / "trajectories", run_id=log.path.stem)
+            # The trajectory file shares the protocol log's name and session
+            # folder, so the wire view and the record view of one run pair up
+            # by filename within the day's logs.
+            store = TrajectoryStore(log.path.parent / "trajectories", run_id=log.path.stem)
             recorder = RunRecorder(
                 store,
                 run_id=log.path.stem,

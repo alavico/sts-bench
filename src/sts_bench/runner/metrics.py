@@ -18,6 +18,10 @@ from typing import Iterable
 from ..replay import group
 from ..trajectory import read_records
 
+# Wire commands that decline a card reward (return_back translates to
+# whichever of these the screen offers); "choose N" takes a card.
+_SKIP_COMMANDS = ("skip", "return", "cancel", "leave")
+
 
 @dataclass(frozen=True)
 class ConfigKey:
@@ -69,6 +73,16 @@ class RunMetrics:
     invalid_decisions: int = 0  # decisions with at least one rejected attempt
     unparsed_states: int = 0
     observation_calls: int = 0
+    # Strategic signals: how the run played, beyond how far it got. All from
+    # records already stored -- skips and potion sips are decisions, gold
+    # moves at floor boundaries.
+    card_reward_decisions: int = 0
+    card_skips: int = 0
+    potions_gained: int = 0
+    potions_used: int = 0
+    gold_earned: int = 0
+    gold_spent: int = 0
+    gold_final: int | None = None
     prompt_tokens: int = 0
     completion_tokens: int = 0
     reasoning_tokens: int = 0
@@ -104,6 +118,27 @@ class RunMetrics:
     @property
     def median_latency_ms(self) -> float | None:
         return median(self.latencies_ms) if self.latencies_ms else None
+
+    @property
+    def skip_rate(self) -> float | None:
+        """Card rewards declined; never skipping is the deck-bloat signature."""
+        if not self.card_reward_decisions:
+            return None
+        return self.card_skips / self.card_reward_decisions
+
+    @property
+    def potion_use_rate(self) -> float | None:
+        """Potions drunk per potion picked up; hoarding shows as a low rate."""
+        if not self.potions_gained:
+            return None
+        return self.potions_used / self.potions_gained
+
+    @property
+    def gold_spent_ratio(self) -> float | None:
+        """Gold spent per gold earned; dying rich shows as a low ratio."""
+        if not self.gold_earned:
+            return None
+        return self.gold_spent / self.gold_earned
 
     @classmethod
     def from_records(cls, records: list) -> "RunMetrics":
@@ -156,12 +191,28 @@ class RunMetrics:
             if decision.invalid_actions:
                 metrics.invalid_decisions += 1
             metrics.observation_calls += decision.observation_calls
+            if decision.screen == "CARD_REWARD":
+                metrics.card_reward_decisions += 1
+                if (decision.command or "").startswith(_SKIP_COMMANDS):
+                    metrics.card_skips += 1
+            if (decision.action or "").startswith("use_potion"):
+                metrics.potions_used += 1
             metrics.prompt_tokens += decision.usage.prompt_tokens
             metrics.completion_tokens += decision.usage.completion_tokens
             metrics.reasoning_tokens += decision.usage.reasoning_tokens
             metrics.cache_read_tokens += decision.usage.cache_read_tokens
             if decision.latency_ms is not None:
                 metrics.latencies_ms.append(decision.latency_ms)
+
+        for floor in floors:
+            metrics.potions_gained += len(floor.scorecard.potions_gained)
+            delta = floor.scorecard.gold_delta
+            if delta > 0:
+                metrics.gold_earned += delta
+            else:
+                metrics.gold_spent -= delta
+        if floors:
+            metrics.gold_final = floors[-1].exit.gold
 
         rewards = [floor.reward.total for floor in floors if floor.reward is not None]
         if rewards:
@@ -198,6 +249,12 @@ class SuiteAggregate:
         return mean(floors) if floors else None
 
     @property
+    def median_floor(self) -> float | None:
+        """Less skewed than the mean: one lucky seed can't drag it up."""
+        floors = [run.floor_reached for run in self.runs if run.floor_reached is not None]
+        return median(floors) if floors else None
+
+    @property
     def best_floor(self) -> int | None:
         floors = [run.floor_reached for run in self.runs if run.floor_reached is not None]
         return max(floors) if floors else None
@@ -230,6 +287,27 @@ class SuiteAggregate:
     def median_latency_ms(self) -> float | None:
         latencies = [ms for run in self.runs for ms in run.latencies_ms]
         return median(latencies) if latencies else None
+
+    @property
+    def skip_rate(self) -> float | None:
+        rewards = sum(run.card_reward_decisions for run in self.runs)
+        if not rewards:
+            return None
+        return sum(run.card_skips for run in self.runs) / rewards
+
+    @property
+    def potion_use_rate(self) -> float | None:
+        gained = sum(run.potions_gained for run in self.runs)
+        if not gained:
+            return None
+        return sum(run.potions_used for run in self.runs) / gained
+
+    @property
+    def gold_spent_ratio(self) -> float | None:
+        earned = sum(run.gold_earned for run in self.runs)
+        if not earned:
+            return None
+        return sum(run.gold_spent for run in self.runs) / earned
 
     @property
     def mean_tokens_per_run(self) -> tuple[float, float]:

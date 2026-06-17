@@ -6,9 +6,13 @@ Start this first (it listens on the relay port), then trigger
 CommunicationMod's external process in-game. Jobs run back to back over the
 same game instance: each run starts from the main menu with its job's seed,
 plays to game over, and dismisses the death screen so the next can begin.
-Every job writes its own protocol log and trajectory file; when all jobs
-have run, the comparison report (markdown, one row per configuration) lands
-in logs/reports/ and prints to stdout.
+Logs are grouped one folder per day (logs/<date>/), with protocol logs at the
+session root and trajectories, reports, and rendered html each in their own
+subfolder. Every job writes its own protocol log and trajectory file; when all
+jobs have run, the comparison report lands in logs/<date>/reports/ as markdown
+(printed to stdout) and the interactive campaign HTML page in logs/<date>/html/
+beside the single-run report rendered for each trajectory, which its run rows
+link to.
 
 Baselines (`random`, `scripted`) need no model. LLM scaffolds (`floor`,
 `stepwise`) take the same backend selection as sts_bench.play: --model /
@@ -20,9 +24,9 @@ mapping model name to [input, output] dollars per million tokens.
 
 Sessions are composable: every run's trajectory is self-contained, so
 baselines recorded one day and model runs another combine into one table
-without replaying anything:
+without replaying anything (the report lands under today's date folder):
 
-    uv run python -m sts_bench.bench --report-from logs/trajectories/bench-*.jsonl
+    uv run python -m sts_bench.bench --report-from logs/*/trajectories/bench-*.jsonl
 """
 
 from __future__ import annotations
@@ -41,23 +45,58 @@ from dotenv import dotenv_values, load_dotenv
 from .agents import SCAFFOLDS
 from .play import DEFAULT_ENV_FILE
 from .providers import PROVIDERS, ProviderError, auto_api
-from .runner import SUITES, RunMetrics, comparison_report
+from .report.campaign import CampaignRun, build_campaign_data, render_campaign_html
+from .report.model import build_report_data
+from .report.page import render_html
+from .runner import SUITES, comparison_report
 from .runner.async_runner import BASELINES, BenchConfig, run_suite
-from .runner.reports import report_from_files
-from .smoke import LOG_DIR
+from .runner.seeds import Suite
+from .smoke import run_html_path, session_dir
+from .trajectory import read_records
 
 
 def say(msg: str) -> None:
     print(f"[bench] {msg}", file=sys.stderr)
 
 
-def _write_report(report: str, name: str) -> Path:
-    report_dir = LOG_DIR / "reports"
+def _write_reports(
+    paths: list[Path],
+    suite: Suite | None,
+    pricing: dict[str, tuple[float, float]] | None,
+) -> tuple[str, Path, Path]:
+    """All three report artifacts from one pass over the trajectories.
+
+    The markdown comparison lands in today's `reports/`; every run's
+    single-run html page lands in the `html/` folder of its own session
+    (beside the trajectory's data, separated from it); the campaign html
+    joins the markdown's session and links across to those pages. Html stays
+    out of the data and markdown folders, dated runs keep their renderings."""
+    today = session_dir()
+    report_dir = today / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
+    campaign_html_dir = today / "html"
+    campaign_html_dir.mkdir(parents=True, exist_ok=True)
+
+    campaign_runs = []
+    for path in paths:
+        records = list(read_records(path))
+        page = run_html_path(path)
+        page.write_text(render_html(build_report_data(records)), encoding="utf-8")
+        href = os.path.relpath(page, campaign_html_dir)
+        campaign_runs.append(CampaignRun.from_records(records, page=href))
+
+    report = comparison_report(
+        [run.metrics for run in campaign_runs], suite=suite, pricing=pricing
+    )
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    path = report_dir / f"bench-{name}-{stamp}.md"
-    path.write_text(report, encoding="utf-8")
-    return path
+    name = suite.name if suite else "combined"
+    md_path = report_dir / f"bench-{name}-{stamp}.md"
+    md_path.write_text(report, encoding="utf-8")
+
+    data = build_campaign_data(campaign_runs, suite=suite, pricing=pricing)
+    html_path = campaign_html_dir / f"bench-{name}-{stamp}.html"
+    html_path.write_text(render_campaign_html(data), encoding="utf-8")
+    return report, md_path, html_path
 
 
 def _load_pricing(arg: str | None) -> dict[str, tuple[float, float]] | None:
@@ -82,8 +121,9 @@ def run(args: argparse.Namespace) -> int:
         if missing:
             say(f"no such trajectory: {', '.join(missing)}")
             return 1
-        report = report_from_files(paths, suite=suite, pricing=_load_pricing(args.pricing))
-        say(f"report over {len(paths)} runs: {_write_report(report, suite.name if suite else 'combined')}")
+        report, md_path, html_path = _write_reports(paths, suite, _load_pricing(args.pricing))
+        say(f"report over {len(paths)} runs: {md_path}")
+        say(f"campaign page: {html_path}")
         print(report)
         return 0
 
@@ -149,6 +189,7 @@ def run(args: argparse.Namespace) -> int:
         max_rounds=args.max_rounds,
         port=args.port,
         instances=args.instances,
+        log_dir=session_dir(),
     )
     results = asyncio.run(run_suite(config, say))
 
@@ -158,16 +199,13 @@ def run(args: argparse.Namespace) -> int:
     for result in failed:
         say(f"  {result.agent} {result.seed}: {result.error}")
 
-    runs = [
-        RunMetrics.from_file(result.trajectory)
-        for result in results
-        if result.trajectory.exists()
-    ]
-    if not runs:
+    paths = [result.trajectory for result in results if result.trajectory.exists()]
+    if not paths:
         say("no trajectories recorded; nothing to report")
         return 1
-    report = comparison_report(runs, suite=suite, pricing=pricing)
-    say(f"report: {_write_report(report, suite.name)}")
+    report, md_path, html_path = _write_reports(paths, suite, pricing)
+    say(f"report: {md_path}")
+    say(f"campaign page: {html_path}")
     print(report)
     return 0 if len(results) == planned and not failed else 1
 

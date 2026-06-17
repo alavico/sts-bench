@@ -19,6 +19,7 @@ fight was completed); the default plays until the run ends.
 from __future__ import annotations
 
 import argparse
+import datetime
 import json
 import sys
 from pathlib import Path
@@ -30,8 +31,34 @@ from .protocol_log import ProtocolLog
 from .state import StateParseError, parse_message
 
 LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
+# Unparsed captures are a cross-session harvest queue, not a session artifact,
+# so they stay flat at the logs root rather than under a date folder.
 UNPARSED_DIR = LOG_DIR / "unparsed"
 MAX_STEPS = 3000
+
+
+def session_dir(when: datetime.date | None = None) -> Path:
+    """A session's output folder: logs grouped one directory per day.
+
+    Everything a run or report produces lands under here -- protocol logs at
+    the root, trajectories, reports, and rendered html each in their own
+    subfolder -- so a day's work stays together and the top level stays
+    scannable.
+    """
+    day = (when or datetime.date.today()).strftime("%Y-%m-%d")
+    path = LOG_DIR / day
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def run_html_path(trajectory: Path) -> Path:
+    """Where a run's single-run html report belongs: the `html/` subfolder of
+    the same session the trajectory lives in (alongside, not buried with the
+    .jsonl), so the data and its rendering stay separated but co-located."""
+    base = trajectory.parent.parent if trajectory.parent.name == "trajectories" else trajectory.parent
+    html_dir = base / "html"
+    html_dir.mkdir(parents=True, exist_ok=True)
+    return html_dir / f"{trajectory.stem}.html"
 
 
 def dump_unparsed(raw: RawState) -> Path:
@@ -107,7 +134,7 @@ def run(args: argparse.Namespace) -> int:
         say(f"listening on {server.host}:{server.port} -- start the external process in-game")
         conn = server.accept(timeout=300)
         # Only now is there a run worth a logfile; aborted startups leave none.
-        log = ProtocolLog(LOG_DIR, name="smoke")
+        log = ProtocolLog(session_dir(), name="smoke")
         say(f"protocol log: {log.path}")
         say(f"relay connected from {conn.peer}")
 
