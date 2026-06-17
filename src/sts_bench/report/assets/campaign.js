@@ -112,7 +112,6 @@ const runAt = (label, seed) => (RUNS_OF.get(label) || []).find((r) => r.seed ===
 // heat ramp and which extreme is "best". Cost is free for token-less baselines.
 const METRICS = [
   { key: "floor", label: "floor", of: (r) => r.floor, fmt: num, higherBetter: true },
-  { key: "reward", label: "reward", of: (r) => r.reward, fmt: dec1, higherBetter: true },
   { key: "score", label: "score", of: (r) => r.score, fmt: num, higherBetter: true },
   { key: "tokens", label: "tokens", of: (r) => r.prompt_tokens + r.completion_tokens, fmt: compact, higherBetter: false },
   {
@@ -124,15 +123,31 @@ const METRICS = [
 const signed = (metric, d) =>
   d == null ? "–" : (d > 0 ? "+" : d < 0 ? "−" : "±") + metric.fmt(Math.abs(d));
 
-/* Heat ramp red(worst) -> gold -> green(best); t already oriented to [0,1]. */
-function heat(t) {
-  const stops = [[224, 108, 91], [232, 200, 96], [126, 216, 126]];
-  t = Math.max(0, Math.min(1, t)) * (stops.length - 1);
-  const i = Math.min(Math.floor(t), stops.length - 2);
-  const f = t - i;
-  const mix = stops[i].map((a, k) => Math.round(a + (stops[i + 1][k] - a) * f));
-  return `rgb(${mix[0]},${mix[1]},${mix[2]})`;
+/* Diverging tint, calm and colorblind-safe (blue ahead of the pack, amber
+   behind), painted as a translucent overlay so the number leads and the cell
+   reads in both themes. t is oriented [0,1], 0.5 = middle of the field. */
+const AHEAD = [96, 165, 230], BEHIND = [223, 150, 74];
+function heatBg(t) {
+  if (t == null) return null;
+  const m = t - 0.5;
+  const [r, g, b] = m >= 0 ? AHEAD : BEHIND;
+  return `rgba(${r},${g},${b},${(Math.min(0.5, Math.abs(m) * 0.85 + 0.05)).toFixed(3)})`;
 }
+function deltaBg(better, mag) {
+  const [r, g, b] = better ? AHEAD : BEHIND;
+  return `rgba(${r},${g},${b},${(0.12 + 0.42 * mag).toFixed(3)})`;
+}
+
+/* Sort helpers shared by the grid and the runs table: nulls sink, strings
+   collate, a marked direction. */
+function cmpBy(av, bv, desc) {
+  if (av == null && bv == null) return 0;
+  if (av == null) return 1;
+  if (bv == null) return -1;
+  const c = typeof av === "string" ? av.localeCompare(bv) : av - bv;
+  return desc ? -c : c;
+}
+const sortMark = (active, desc) => (active ? (desc ? " ▼" : " ▲") : "");
 
 // Map a metric value to [0,1] (1 = best) across a set of runs, orientation-aware.
 function metricScale(metric, runs) {
@@ -167,6 +182,8 @@ const store = {
   delta: false,
   reference: null, // config label; defaults to first selected
   seed: DATA.seeds[0],
+  gridSort: { key: "mean", desc: true }, // configs ranked best-first on load
+  runsSort: { key: null, desc: true }, // null = payload order
 };
 
 const RERENDER = [];
@@ -220,7 +237,6 @@ function runTip(run) {
   row("seed", run.seed);
   row("outcome", run.outcome + (run.floor != null ? ` on floor ${run.floor}` : ""));
   if (run.score != null) row("score", num(run.score));
-  if (run.reward != null) row("reward", dec1(run.reward));
   row("decisions", `${num(run.decisions)} (${run.forced} forced, ${run.invalid} invalid)`);
   if (run.skip_rate != null) row("card skips", pct(run.skip_rate));
   if (run.potions_gained) row("potions", `${run.potions_used}/${run.potions_gained} used`);
@@ -306,7 +322,7 @@ function gridSection() {
     const ref = referenceLabel(sel);
     const refRun = (seed) => (ref ? runAt(ref, seed) : null);
 
-    // winner per seed (best among selected) and best seed per config (any config)
+    // winner per seed: the best config among the selected on that game.
     const winner = new Map();
     for (const seed of DATA.seeds) {
       let bestLabel = null, bestVal = null;
@@ -318,12 +334,6 @@ function gridSection() {
       }
       if (bestLabel) winner.set(seed, bestLabel);
     }
-    const rowBest = new Map(); // config label -> seed with its best value
-    for (const c of DATA.configs) {
-      const best = summarize(c.label, metric).best;
-      const seed = DATA.seeds.find((s) => { const r = runAt(c.label, s); return r && metric.of(r) === best; });
-      if (seed != null) rowBest.set(c.label, seed);
-    }
     let maxAbsDelta = 0;
     if (store.delta && ref) {
       for (const c of sel) for (const seed of DATA.seeds) {
@@ -332,12 +342,26 @@ function gridSection() {
       }
     }
 
-    const head = el("tr", {},
-      el("th", { class: "left" }, "configuration"),
-      ["mean", "median", "best"].map((s) => el("th", { class: "agg" }, s)),
-      DATA.seeds.map((s) => el("th", {}, s)));
+    // sort: aggregate keys summarize the active metric, a seed key reads that
+    // column. Re-sorts live as you switch metric.
+    const gs = store.gridSort;
+    const sortVal = (config, key) =>
+      key === "label" ? config.label
+        : ["mean", "median", "best"].includes(key) ? summarize(config.label, metric)[key]
+          : (runAt(config.label, key) ? metric.of(runAt(config.label, key)) : null);
+    const configs = [...DATA.configs].sort((a, b) => cmpBy(sortVal(a, gs.key), sortVal(b, gs.key), gs.desc));
 
-    const rows = DATA.configs.map((config) => {
+    const cols = [["label", "configuration"], ["mean", "mean"], ["median", "median"], ["best", "best"],
+      ...DATA.seeds.map((s) => [s, s])];
+    const head = el("tr", {}, cols.map(([key, name]) => {
+      const active = gs.key === key;
+      return el("th", {
+        class: (key === "label" ? "left " : "") + (["mean", "median", "best"].includes(key) ? "agg " : "") + "sortable" + (active ? " sorted" : ""),
+        onclick: () => { if (gs.key === key) gs.desc = !gs.desc; else { gs.key = key; gs.desc = key !== "label"; } rerender(); },
+      }, name + sortMark(active, gs.desc));
+    }));
+
+    const rows = configs.map((config) => {
       const on = store.selected.has(config.label);
       const box = el("input", { type: "checkbox", onchange: () => { on ? store.selected.delete(config.label) : store.selected.add(config.label); rerender(); } });
       box.checked = on;
@@ -348,14 +372,13 @@ function gridSection() {
         el("td", { class: "agg" }, metric.fmt(sum.mean)),
         el("td", { class: "agg" }, metric.fmt(sum.median)),
         el("td", { class: "agg" }, metric.fmt(sum.best)),
-        DATA.seeds.map((seed) => gridCell(config, seed, metric, { on, scale, winner, rowBest, ref, refRun, maxAbsDelta })));
+        DATA.seeds.map((seed) => gridCell(config, seed, metric, { on, scale, winner, ref, refRun, maxAbsDelta })));
     });
 
     return [
       el("div", { class: "grid-bar" }, metricSelector(), selectionControls(sel)),
       el("div", { class: "dim small grid-legend" },
-        "color = relative ", metric.label,
-        " among selected · ★ best config on a seed · ring = config's best seed · check rows to focus the comparison · rows with different prompt/tool hashes never merge"),
+        "color shows ", metric.label, " relative to the selected field — blue ahead, amber behind · ★ best on a seed · click a header to sort · rows with different prompt/tool hashes never merge"),
       el("div", { class: "grid-scroll" }, el("table", { class: "grid" }, head, ...rows)),
     ];
   });
@@ -367,7 +390,6 @@ function gridCell(config, seed, metric, ctx) {
   const v = metric.of(run);
   const won = run.outcome === "VICTORY";
   const isWinner = ctx.winner.get(seed) === config.label;
-  const isRowBest = ctx.rowBest.get(config.label) === seed;
 
   let text, bg;
   if (ctx.ref && store.delta) {
@@ -378,23 +400,21 @@ function gridCell(config, seed, metric, ctx) {
       text = signed(metric, d);
       const better = metric.higherBetter ? d > 0 : d < 0;
       const mag = ctx.maxAbsDelta ? Math.min(1, Math.abs(d) / ctx.maxAbsDelta) : 0;
-      bg = d === 0 ? null : (better ? `rgba(126,216,126,${0.2 + 0.6 * mag})` : `rgba(224,108,91,${0.2 + 0.6 * mag})`);
+      bg = d === 0 ? null : deltaBg(better, mag);
     } else { text = v == null ? "–" : metric.fmt(v); bg = null; }
   } else {
     text = v == null ? "?" : metric.fmt(v);
-    const t = ctx.on ? ctx.scale(v) : null;
-    bg = t == null ? null : heat(t);
+    bg = ctx.on ? heatBg(ctx.scale(v)) : null;
   }
 
   const cls = ["gcell"];
   if (!ctx.on) cls.push("off");
   if (isWinner) cls.push("winner");
-  if (isRowBest) cls.push("rowbest");
   const node = el(run.page ? "a" : "span", {
     class: cls.join(" "),
     href: run.page || null,
     style: bg ? "background:" + bg : null,
-  }, text, won ? el("span", { class: "star" }, "★") : (isWinner ? el("span", { class: "star" }, "★") : null));
+  }, text, (won || isWinner) ? el("span", { class: "star" }, "★") : null);
   node.addEventListener("mousemove", (evt) => showTipNode(evt, runTip(run)));
   node.addEventListener("mouseleave", hideTip);
   return el("td", {}, node);
@@ -558,28 +578,41 @@ function detailsSection() {
 
 /* ---------- runs table (selection-aware) ---------- */
 
+const RUN_COLS = [
+  { key: "run_id", name: "run", left: true, str: true, val: (r) => r.run_id,
+    cell: (r) => (r.page ? el("a", { href: r.page }, r.run_id) : el("span", { class: "no-page" }, r.run_id)) },
+  { key: "config", name: "configuration", left: true, str: true, val: (r) => r.config,
+    cell: (r) => el("span", {}, configDot(r.config), r.config) },
+  { key: "seed", name: "seed", left: true, str: true, val: (r) => r.seed, cell: (r) => r.seed },
+  { key: "outcome", name: "outcome", str: true, val: (r) => r.outcome,
+    cell: (r) => el("span", { class: "outcome " + r.outcome.toLowerCase() }, r.outcome) },
+  { key: "floor", name: "floor", val: (r) => r.floor, cell: (r) => num(r.floor) },
+  { key: "score", name: "score", val: (r) => r.score, cell: (r) => num(r.score) },
+  { key: "decisions", name: "decisions", val: (r) => r.decisions, cell: (r) => num(r.decisions) },
+  { key: "forced", name: "forced", val: (r) => r.forced, cell: (r) => num(r.forced) },
+  { key: "invalid", name: "invalid", val: (r) => r.invalid, cell: (r) => num(r.invalid) },
+  { key: "skip_rate", name: "card skips", val: (r) => r.skip_rate, cell: (r) => pct(r.skip_rate) },
+  { key: "tokens", name: "tokens", val: (r) => r.prompt_tokens + r.completion_tokens, cell: (r) => tokensText(r.prompt_tokens, r.completion_tokens) },
+  { key: "cost", name: "cost", val: (r) => r.cost, cell: (r) => money(r.cost) },
+];
+
 function runsTable() {
   return section("Runs", () => {
-    const head = el("tr", {},
-      ["run", "configuration", "seed", "outcome", "floor", "score", "decisions",
-        "forced", "invalid", "card skips", "tokens", "cost", "reward"].map((name, i) =>
-        el("th", { class: i < 3 ? "left" : null }, name)));
-    const rows = DATA.runs.filter((r) => store.selected.has(r.config)).map((run) => el("tr", {},
-      el("td", { class: "left" }, run.page
-        ? el("a", { href: run.page }, run.run_id)
-        : el("span", { class: "no-page" }, run.run_id)),
-      el("td", { class: "left" }, configDot(run.config), run.config),
-      el("td", { class: "left" }, run.seed),
-      el("td", {}, el("span", { class: "outcome " + run.outcome.toLowerCase() }, run.outcome)),
-      el("td", {}, num(run.floor)),
-      el("td", {}, num(run.score)),
-      el("td", {}, num(run.decisions)),
-      el("td", {}, num(run.forced)),
-      el("td", {}, num(run.invalid)),
-      el("td", {}, pct(run.skip_rate)),
-      el("td", {}, tokensText(run.prompt_tokens, run.completion_tokens)),
-      el("td", {}, money(run.cost)),
-      el("td", {}, dec1(run.reward))));
+    const rs = store.runsSort;
+    const head = el("tr", {}, RUN_COLS.map((col) => {
+      const active = rs.key === col.key;
+      return el("th", {
+        class: (col.left ? "left " : "") + "sortable" + (active ? " sorted" : ""),
+        // first click sorts numbers high-first, strings A-first; click again flips.
+        onclick: () => { if (rs.key === col.key) rs.desc = !rs.desc; else { rs.key = col.key; rs.desc = !col.str; } rerender(); },
+      }, col.name + sortMark(active, rs.desc));
+    }));
+    let runs = DATA.runs.filter((r) => store.selected.has(r.config));
+    if (rs.key) {
+      const col = RUN_COLS.find((c) => c.key === rs.key);
+      runs = [...runs].sort((a, b) => cmpBy(col.val(a), col.val(b), rs.desc));
+    }
+    const rows = runs.map((run) => el("tr", {}, RUN_COLS.map((col) => el("td", { class: col.left ? "left" : null }, col.cell(run)))));
     return el("table", { class: "runs" }, head, ...rows);
   });
 }

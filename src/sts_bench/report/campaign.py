@@ -52,7 +52,6 @@ def _floor_point(floor: FloorRecord) -> dict[str, Any]:
         "hp": floor.exit.hp,
         "max_hp": floor.exit.max_hp,
         "gold": floor.exit.gold,
-        "reward": floor.reward.total if floor.reward is not None else None,
     }
 
 
@@ -129,7 +128,6 @@ def _config(agg: SuiteAggregate, pricing: Pricing) -> dict[str, Any]:
         "mean_floor": agg.mean_floor,
         "median_floor": agg.median_floor,
         "best_floor": agg.best_floor,
-        "mean_reward": agg.mean_reward,
         "skip_rate": agg.skip_rate,
         "potion_use_rate": agg.potion_use_rate,
         "gold_spent_ratio": agg.gold_spent_ratio,
@@ -182,7 +180,6 @@ def _run(run: CampaignRun, config_label: str, pricing: Pricing) -> dict[str, Any
         "prompt_tokens": m.prompt_tokens,
         "completion_tokens": m.completion_tokens,
         "cost": _run_cost(m, pricing),
-        "reward": m.reward_total,
         "page": run.page,
         "start": run.start,
         "floors": run.floors,
