@@ -177,9 +177,10 @@ class AnthropicProvider(OpenAICompatProvider):
             message["reasoning_content"] = reasoning
 
         usage = data.get("usage") or {}
+        cache_read_tokens = usage.get("cache_read_input_tokens") or 0
         prompt_tokens = (
             (usage.get("input_tokens") or 0)
-            + (usage.get("cache_read_input_tokens") or 0)
+            + cache_read_tokens
             + (usage.get("cache_creation_input_tokens") or 0)
         )
         return ModelResponse(
@@ -189,6 +190,7 @@ class AnthropicProvider(OpenAICompatProvider):
             usage=Usage(
                 prompt_tokens=prompt_tokens,
                 completion_tokens=usage.get("output_tokens") or 0,
+                cache_read_tokens=cache_read_tokens,
             ),
             reasoning=reasoning,
         )

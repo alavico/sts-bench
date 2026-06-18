@@ -50,6 +50,7 @@ class TokenUsage(Base):
             prompt_tokens=usage.prompt_tokens,
             completion_tokens=usage.completion_tokens,
             reasoning_tokens=usage.reasoning_tokens,
+            cache_read_tokens=usage.cache_read_tokens,
         )
 
 

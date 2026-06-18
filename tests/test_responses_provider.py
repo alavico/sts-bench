@@ -58,6 +58,7 @@ def test_parses_reasoning_summary_calls_text_and_usage():
                 "input_tokens": 900,
                 "output_tokens": 300,
                 "output_tokens_details": {"reasoning_tokens": 280},
+                "input_tokens_details": {"cached_tokens": 640},
             },
         )
     )
@@ -67,6 +68,8 @@ def test_parses_reasoning_summary_calls_text_and_usage():
     assert (call.id, call.name, call.arguments) == ("c1", "play_card", {"card_index": 3, "target_index": 1})
     assert (result.usage.prompt_tokens, result.usage.completion_tokens) == (900, 300)
     assert result.usage.reasoning_tokens == 280
+    # cached prompt tokens are a sub-count of prompt_tokens, not added on top
+    assert result.usage.cache_read_tokens == 640
     # the chat-shaped mirror feeds the existing transcript/log machinery
     assert result.message["reasoning_content"] == "low HP, kill the Taskmaster first"
     assert result.message["tool_calls"][0]["function"]["name"] == "play_card"

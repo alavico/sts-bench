@@ -24,12 +24,18 @@ class Usage:
     # completion_tokens_details). Already counted inside completion_tokens;
     # tracked separately to tell terse models from quietly thinking ones.
     reasoning_tokens: int = 0
+    # Prompt tokens served from the provider's cache (OpenAI's
+    # input/prompt_tokens_details.cached_tokens, Anthropic's
+    # cache_read_input_tokens). Already counted inside prompt_tokens; tracked
+    # separately because they bill at a fraction of the full input rate.
+    cache_read_tokens: int = 0
 
     def __add__(self, other: "Usage") -> "Usage":
         return Usage(
             prompt_tokens=self.prompt_tokens + other.prompt_tokens,
             completion_tokens=self.completion_tokens + other.completion_tokens,
             reasoning_tokens=self.reasoning_tokens + other.reasoning_tokens,
+            cache_read_tokens=self.cache_read_tokens + other.cache_read_tokens,
         )
 
 

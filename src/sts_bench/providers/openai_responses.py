@@ -142,6 +142,7 @@ class ResponsesProvider(OpenAICompatProvider):
 
         usage = data.get("usage") or {}
         details = usage.get("output_tokens_details") or {}
+        input_details = usage.get("input_tokens_details") or {}
         return ModelResponse(
             message=message,
             text=text,
@@ -150,6 +151,7 @@ class ResponsesProvider(OpenAICompatProvider):
                 prompt_tokens=usage.get("input_tokens") or 0,
                 completion_tokens=usage.get("output_tokens") or 0,
                 reasoning_tokens=details.get("reasoning_tokens") or 0,
+                cache_read_tokens=input_details.get("cached_tokens") or 0,
             ),
             reasoning=reasoning,
         )

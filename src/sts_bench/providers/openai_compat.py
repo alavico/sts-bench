@@ -184,6 +184,7 @@ def _parse_response(data: dict[str, Any]) -> ModelResponse:
     tool_calls = tuple(_parse_tool_call(tc) for tc in message.get("tool_calls") or [])
     usage = data.get("usage") or {}
     details = usage.get("completion_tokens_details") or {}
+    prompt_details = usage.get("prompt_tokens_details") or {}
     reasoning = next(
         (message[k] for k in REASONING_KEYS if isinstance(message.get(k), str) and message[k]),
         None,
@@ -196,6 +197,7 @@ def _parse_response(data: dict[str, Any]) -> ModelResponse:
             prompt_tokens=usage.get("prompt_tokens") or 0,
             completion_tokens=usage.get("completion_tokens") or 0,
             reasoning_tokens=details.get("reasoning_tokens") or 0,
+            cache_read_tokens=prompt_details.get("cached_tokens") or 0,
         ),
         reasoning=reasoning,
     )

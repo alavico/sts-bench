@@ -82,6 +82,8 @@ def test_parses_text_thinking_and_structured_tool_input():
     # prompt cost includes the cached portions
     assert result.usage.prompt_tokens == 3000
     assert result.usage.completion_tokens == 120
+    # cache reads stay folded into prompt_tokens, and are also reported on their own
+    assert result.usage.cache_read_tokens == 2000
     # chat-shaped mirror feeds the existing transcript/log machinery
     assert result.message["reasoning_content"] == result.reasoning
     assert result.message["tool_calls"][0]["function"]["name"] == "play_card"
