@@ -19,7 +19,7 @@ from .schema import (
     ReturnBack,
     UsePotion,
 )
-from .validate import PROCEED_ALIASES, RETURN_ALIASES
+from .validate import PROCEED_ALIASES, RETURN_ALIASES, card_reward_skip_index
 
 
 def translate(action: Action, message: StateMessage) -> str:
@@ -31,6 +31,10 @@ def translate(action: Action, message: StateMessage) -> str:
         case EndTurn():
             return "end"
         case Choose():
+            # The slot past the last card is the Skip button; it reaches the
+            # wire as return_back, so spend/skip metrics still read it as a skip.
+            if action.choice_index == card_reward_skip_index(message):
+                return _first_available(RETURN_ALIASES, commands)
             return f"choose {action.choice_index}"
         case UsePotion():
             cmd = f"potion use {action.slot_index}"

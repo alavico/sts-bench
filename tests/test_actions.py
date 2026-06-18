@@ -13,6 +13,7 @@ from sts_bench.actions import (
     Proceed,
     ReturnBack,
     UsePotion,
+    card_reward_skip_index,
     translate,
     validate,
 )
@@ -23,6 +24,18 @@ FIXTURES = Path(__file__).parent / "fixtures" / "states"
 
 def load(name):
     return parse_message(json.loads((FIXTURES / f"{name}.json").read_text()))
+
+
+def card_reward_with(num_cards, skip_available=True):
+    """A card-reward message resized to `num_cards` -- stands in for relics that
+    change the reward count (Question Card -> 4, Busted Crown -> 1)."""
+    raw = json.loads((FIXTURES / "card_reward-1.json").read_text())
+    gs = raw["game_state"]
+    template = gs["screen_state"]["cards"][0]
+    gs["screen_state"]["cards"] = [dict(template) for _ in range(num_cards)]
+    gs["choice_list"] = [f"card{i}" for i in range(num_cards)]
+    gs["screen_state"]["skip_available"] = skip_available
+    return parse_message(raw)
 
 
 @pytest.fixture(scope="module")
@@ -174,3 +187,42 @@ def test_belt_capacity_comes_from_the_wire_not_a_constant():
     verdict = validate(Choose(choice_index=1), parse_message(raw))
     assert not verdict.ok
     assert "(2/2)" in verdict.reason
+
+
+def test_skip_pseudo_index_skips_the_card_reward():
+    # The slot past the last card is the Skip button: it validates and reaches
+    # the wire as a return/skip alias, not `choose`, so skip metrics stay honest.
+    message = card_reward_with(3)
+    assert card_reward_skip_index(message) == 3
+    assert validate(Choose(choice_index=3), message).ok
+    assert translate(Choose(choice_index=3), message) == "skip"
+
+
+def test_skip_index_tracks_the_reward_size():
+    # Relics resize the reward (Question Card -> 4 cards, Busted Crown -> 1), so
+    # the skip slot is derived from the live list, never hardcoded to 3.
+    assert card_reward_skip_index(card_reward_with(4)) == 4
+    assert validate(Choose(choice_index=4), card_reward_with(4)).ok
+    assert card_reward_skip_index(card_reward_with(1)) == 1
+    assert validate(Choose(choice_index=1), card_reward_with(1)).ok
+
+
+def test_index_past_the_skip_slot_still_rejects():
+    message = card_reward_with(3)  # cards 0-2, skip 3
+    verdict = validate(Choose(choice_index=4), message)
+    assert not verdict.ok
+    assert "out of range" in verdict.reason
+
+
+def test_no_skip_slot_when_skip_unavailable():
+    # An unskippable reward (Busted Crown can force a pick) has no skip index;
+    # choosing past the last card is then plainly out of range.
+    message = card_reward_with(3, skip_available=False)
+    assert card_reward_skip_index(message) is None
+    assert not validate(Choose(choice_index=3), message).ok
+
+
+def test_skip_index_only_applies_to_card_rewards(map_screen):
+    # On a map (not a card reward), choosing past the last node is out of range,
+    # never a silent skip.
+    assert card_reward_skip_index(map_screen) is None

@@ -307,16 +307,17 @@ def test_run_line_reports_keys_when_the_wire_sends_them():
 
 
 def test_card_reward_choices_offer_skip_as_a_peer_of_the_cards():
-    # The Skip button sits next to the cards on the real screen; if the
-    # choices menu lists only cards, the model reads it as "must take one".
-    raw = load_raw("card_reward-1.json")  # skip_available: true
+    # The Skip button sits next to the cards on the real screen; numbering it as
+    # the slot past the last card puts it in the same choose namespace, so it is
+    # weighed head-to-head with the cards instead of read as "must take one".
+    raw = load_raw("card_reward-1.json")  # skip_available: true, 3 cards
     text = cursory_view(parse_message(raw))
     choices = text[text.index("<choices>") : text.index("</choices>")]
-    assert "or skip -- take no card (return_back)" in choices
+    assert "[3] skip -- take no card" in choices
 
     raw["game_state"]["screen_state"]["skip_available"] = False
     text = cursory_view(parse_message(raw))
-    assert "or skip" not in text
+    assert "skip -- take no card" not in text
 
 
 def test_shop_cards_show_printed_text():

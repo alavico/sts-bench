@@ -9,7 +9,7 @@ from .schema import (
     UsePotion,
 )
 from .translate import translate
-from .validate import Verdict, validate
+from .validate import Verdict, card_reward_skip_index, validate
 
 __all__ = [
     "Action",
@@ -21,6 +21,7 @@ __all__ = [
     "ReturnBack",
     "UsePotion",
     "Verdict",
+    "card_reward_skip_index",
     "translate",
     "validate",
 ]

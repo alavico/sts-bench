@@ -23,7 +23,7 @@ from collections import Counter
 from dataclasses import dataclass, field
 from typing import Callable
 
-from ..actions import Action, translate
+from ..actions import Action, card_reward_skip_index, translate
 from ..agents.heuristic import scripted_action
 from ..env import CommunicationModEnv, RawState, StepResult
 from ..protocol_log import ProtocolLog, model_traffic, reasoning_note
@@ -93,6 +93,8 @@ def describe_action(action: Action, message: StateMessage) -> str:
             )
             return f"play_card {action.card_index} ({card}){target}"
         case "choose":
+            if action.choice_index == card_reward_skip_index(message):
+                return f"choose {action.choice_index} (skip)"
             choices = state.choice_list if state else []
             label = f" ({choices[action.choice_index]})" if action.choice_index < len(choices) else ""
             return f"choose {action.choice_index}{label}"

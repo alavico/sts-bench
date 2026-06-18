@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..state.schema import CombatRewardScreen, ShopScreen, StateMessage
+from ..state.schema import CardRewardScreen, CombatRewardScreen, ShopScreen, StateMessage
 from .schema import (
     Action,
     Choose,
@@ -23,6 +23,27 @@ from .schema import (
 
 PROCEED_ALIASES = ("proceed", "confirm")
 RETURN_ALIASES = ("return", "skip", "cancel", "leave")
+
+
+def card_reward_skip_index(message: StateMessage) -> int | None:
+    """The `choose` index that means "skip this card reward".
+
+    Skip lives in the choose namespace as the slot just past the last card, so
+    the model declines a card the same way it takes one -- one verb, one index --
+    instead of switching to return_back, which buries skip outside the numbered
+    comparison. The reward size varies (Question Card adds a choice, Busted
+    Crown removes two, Singing Bowl adds a +2 Max HP option), so the index is
+    derived from the live choice list, never hardcoded. None when this screen
+    has no skippable card reward.
+    """
+    state = message.game_state
+    if state is None or not isinstance(state.screen, CardRewardScreen):
+        return None
+    if not state.screen.skip_available:
+        return None
+    if not set(message.available_commands).intersection(RETURN_ALIASES):
+        return None
+    return len(state.choice_list)
 
 
 @dataclass(frozen=True)
@@ -91,6 +112,9 @@ def _validate_play(action: PlayCard, message: StateMessage, commands: set[str]) 
 def _validate_choose(action: Choose, message: StateMessage, commands: set[str]) -> Verdict:
     if "choose" not in commands:
         return Verdict.reject("cannot choose now: there is no choice list on this screen")
+    # The skip pseudo-index declines the reward -- no card, so no potion check.
+    if action.choice_index == card_reward_skip_index(message):
+        return Verdict.accept()
     state = message.game_state
     choices = state.choice_list if state else []
     if not 0 <= action.choice_index < len(choices):

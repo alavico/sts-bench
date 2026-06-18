@@ -96,11 +96,13 @@ def cursory_view(message: StateMessage) -> str:
         # same items in keyword form only invites misreads.
         if state.choice_list and not isinstance(state.screen, CombatRewardScreen):
             lines = [f"[{i}] {choice}" for i, choice in enumerate(state.choice_list)]
-            # The Skip button is part of the card-pick menu on the real
-            # screen; a choices list without it reads as "you must take one",
-            # and skipping is often the right play.
+            # The Skip button is part of the card-pick menu on the real screen.
+            # Number it as the slot past the last card so it competes head-to-head
+            # in the same choose namespace: an un-numbered "or skip" sits outside
+            # the indexed comparison the model runs and is rarely weighed against
+            # the cards. choose <this index> is translated to the skip action.
             if isinstance(state.screen, CardRewardScreen) and state.screen.skip_available:
-                lines.append("or skip -- take no card (return_back)")
+                lines.append(f"[{len(state.choice_list)}] skip -- take no card")
             sections.append("<choices>\n" + "\n".join(lines) + "\n</choices>")
     visible = [c for c in message.available_commands if c not in HIDDEN_COMMANDS]
     # Observation tools ride along explicitly: a model inferring "what may I
