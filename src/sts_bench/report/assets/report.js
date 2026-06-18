@@ -784,10 +784,12 @@ function potionPanel() {
   }
   const used = DATA.potions.filter((p) => p.fate === "used").length;
   const discarded = DATA.potions.filter((p) => p.fate === "discarded").length;
-  const unused = DATA.potions.length - used - discarded;
+  const triggered = DATA.potions.filter((p) => p.fate === "triggered").length;
+  const unused = DATA.potions.length - used - discarded - triggered;
   return panel("Potions", el("div", { class: "big-stat" },
     el("div", {}, el("b", {}, used), " used"),
     discarded ? el("div", {}, el("b", {}, discarded), " discarded") : null,
+    triggered ? el("div", {}, el("b", {}, triggered), " triggered") : null,
     el("div", {}, el("b", {}, unused), " never used")));
 }
 

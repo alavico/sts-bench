@@ -232,6 +232,42 @@ def test_potions_carry_their_fate_matched_earliest_gained_first():
     assert all("fate" not in r for r in data["relics"])
 
 
+def test_fairy_in_a_bottle_reads_as_triggered_from_the_belt_emptying():
+    # Fairy auto-fires on lethal damage with no use_potion action; its fate must
+    # come from the belt going empty, not from a (never-emitted) action.
+    fairy = [{"name": "Fairy in a Bottle"}]
+    gained = make_floor_record(
+        floor=1,
+        scorecard=FloorScorecard(potions_gained=["Fairy in a Bottle"]),
+        exit_state={"floor": 2, "potions": fairy},
+    )
+    carried = make_floor_record(
+        floor=2, entry_state={"floor": 2, "potions": fairy}, exit_state={"floor": 3, "potions": fairy},
+    )
+    died = make_floor_record(
+        floor=3, entry_state={"floor": 3, "potions": fairy}, exit_state={"floor": 4, "potions": []},
+    )
+    data = build_report_data([make_run_record(), gained, carried, died])
+    assert [(p["name"], p["fate"], p["fate_floor"]) for p in data["potions"]] == [
+        ("Fairy in a Bottle", "triggered", 3),
+    ]
+
+
+def test_unconsumed_fairy_still_reads_as_unused():
+    # Still in the belt at the end -> no trigger, fate stays None ("never used").
+    fairy = [{"name": "Fairy in a Bottle"}]
+    gained = make_floor_record(
+        floor=1,
+        scorecard=FloorScorecard(potions_gained=["Fairy in a Bottle"]),
+        exit_state={"floor": 2, "potions": fairy},
+    )
+    end = make_floor_record(
+        floor=2, entry_state={"floor": 2, "potions": fairy}, exit_state={"floor": 3, "potions": fairy},
+    )
+    data = build_report_data([make_run_record(), gained, end])
+    assert data["potions"][0]["fate"] is None
+
+
 def test_rendered_page_is_self_contained_and_script_safe(tmp_path):
     records = list(read_records(record_two_floor_run(tmp_path)))
     data = build_report_data(records)

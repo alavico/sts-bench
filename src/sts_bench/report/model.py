@@ -282,6 +282,17 @@ def _collected(
 # "use_potion 2 (Fire Potion)" / "discard_potion 0 (Block Potion)".
 _POTION_EVENT = re.compile(r"^(use_potion|discard_potion) \d+ \((.+)\)$")
 
+# Fairy in a Bottle is the one potion that leaves the belt with no action: it
+# triggers automatically on lethal damage and is consumed. Every other potion
+# departs through a use/discard action attributed above, so the belt-delta
+# fallback is scoped to this one name -- a blanket "vanished = triggered" would
+# misread potions an event consumed as a side effect of a choose.
+_AUTO_TRIGGER_POTIONS = {"Fairy in a Bottle"}
+
+
+def _belt(state: dict[str, Any]) -> list[str]:
+    return [p.get("name") for p in (state.get("potions") or [])]
+
 
 def _potions(
     floors: list[FloorRecord], decisions: dict[int | None, list[DecisionRecord]]
@@ -308,6 +319,19 @@ def _potions(
                     item["fate"] = "used" if kind == "use_potion" else "discarded"
                     item["fate_floor"] = floor.floor
                     break
+    # Recover auto-triggered potions (Fairy in a Bottle) from the belt emptying,
+    # since they leave no action: a still-unfated one that was in the belt at a
+    # floor's entry and gone by its exit fired there.
+    for item in items:
+        if item["fate"] is not None or item["name"] not in _AUTO_TRIGGER_POTIONS:
+            continue
+        for floor in floors:
+            if (floor.floor or 0) < (item["floor"] or 0):
+                continue
+            if item["name"] in _belt(floor.entry_state) and item["name"] not in _belt(floor.exit_state):
+                item["fate"] = "triggered"
+                item["fate_floor"] = floor.floor
+                break
     return items
 
 
