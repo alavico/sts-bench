@@ -20,6 +20,25 @@ from .seeds import Suite
 # than a stale guess.
 Pricing = dict[str, tuple[float, float]]
 
+# Cached prompt tokens bill at a fraction of the input rate; 0.1x is the
+# representative discount (confirm the provider's exact multiplier). cache_read
+# tokens are a subset of prompt_tokens, so only the uncached remainder pays full
+# input rate -- ignoring this overstates cost on cache-heavy agent runs.
+CACHE_READ_MULT = 0.1
+
+
+def run_cost(
+    prompt_tokens: int, completion_tokens: int, cache_read_tokens: int, rates: tuple[float, float]
+) -> float:
+    """Dollar cost of one run, crediting cached input at CACHE_READ_MULT."""
+    rate_in, rate_out = rates
+    uncached = prompt_tokens - cache_read_tokens
+    return (
+        uncached * rate_in
+        + cache_read_tokens * rate_in * CACHE_READ_MULT
+        + completion_tokens * rate_out
+    ) / 1e6
+
 
 def comparison_report(
     runs: list[RunMetrics], *, suite: Suite | None = None, pricing: Pricing | None = None
@@ -184,9 +203,8 @@ def _cost(agg: SuiteAggregate, pricing: Pricing) -> str:
     rates = pricing.get(agg.key.model)
     if rates is None:
         return "-"
-    rate_in, rate_out = rates
     costs = [
-        (run.prompt_tokens * rate_in + run.completion_tokens * rate_out) / 1e6
+        run_cost(run.prompt_tokens, run.completion_tokens, run.cache_read_tokens, rates)
         for run in agg.runs
     ]
     return f"${sum(costs) / len(costs):.2f}" if costs else "-"

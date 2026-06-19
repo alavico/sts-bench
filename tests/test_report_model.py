@@ -3,6 +3,7 @@ page stay faithful to the records they were built from."""
 
 from sts_bench.report import build_report_data, render_html
 from sts_bench.trajectory import FloorScorecard, read_records
+from sts_bench.trajectory.schema import RunTotals, TokenUsage
 
 from test_replay import record_two_floor_run
 from test_trajectory_schema import (
@@ -266,6 +267,27 @@ def test_unconsumed_fairy_still_reads_as_unused():
     )
     data = build_report_data([make_run_record(), gained, end])
     assert data["potions"][0]["fate"] is None
+
+
+def test_run_cost_credits_cached_tokens_at_the_reduced_rate():
+    # 1M prompt of which 0.8M cached, 0.1M completion, at $5 in / $30 out.
+    # cache-aware: 0.2M*5 + 0.8M*5*0.1 + 0.1M*30 = 1.0 + 0.4 + 3.0 = $4.40
+    # (the naive 1M*5 + 0.1M*30 = $8.00 overstates it).
+    totals = RunTotals(
+        decisions=1,
+        usage=TokenUsage(prompt_tokens=1_000_000, cache_read_tokens=800_000, completion_tokens=100_000),
+    )
+    run = make_run_record(model="gpt-5.5", totals=totals)
+    data = build_report_data([run, make_floor_record()], {"gpt-5.5": (5.0, 30.0)})
+    assert round(data["run"]["cost"], 2) == 4.40
+
+
+def test_run_cost_is_none_for_an_unpriced_model():
+    run = make_run_record(model="some-unlisted-model")
+    data = build_report_data([run, make_floor_record()], {"gpt-5.5": (5.0, 30.0)})
+    assert data["run"]["cost"] is None
+    # and with no pricing at all
+    assert build_report_data([run, make_floor_record()])["run"]["cost"] is None
 
 
 def test_rendered_page_is_self_contained_and_script_safe(tmp_path):

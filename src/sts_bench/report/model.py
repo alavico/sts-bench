@@ -16,6 +16,7 @@ from dataclasses import asdict
 from typing import Any
 
 from ..replay import group, verify_floor
+from ..runner.reports import Pricing, run_cost
 from ..state.schema import Card, Potion, Relic
 from ..tools.card_db import card_text
 from ..tools.potion_db import potion_text
@@ -25,7 +26,7 @@ from ..trajectory.schema import TokenUsage
 from .digest import MapChoice, combat_snapshot, map_choice
 
 
-def build_report_data(records: list) -> dict[str, Any]:
+def build_report_data(records: list, pricing: Pricing | None = None) -> dict[str, Any]:
     run, floors, decisions = group(records)
     known = {floor.floor for floor in floors}
     orphans = [
@@ -36,7 +37,7 @@ def build_report_data(records: list) -> dict[str, Any]:
         if floor_no not in known
     ]
     return {
-        "run": _run(run, floors),
+        "run": _run(run, floors, pricing or {}),
         "system_prompt": _system_prompt(floors),
         "floors": [_floor(floor, decisions.get(floor.floor, [])) for floor in floors],
         "acts": _acts(floors, decisions),
@@ -47,7 +48,16 @@ def build_report_data(records: list) -> dict[str, Any]:
     }
 
 
-def _run(run: RunRecord | None, floors: list[FloorRecord]) -> dict[str, Any]:
+def _cost(run: RunRecord, pricing: Pricing) -> float | None:
+    """Cache-aware dollar cost, or None when the model has no listed price."""
+    rates = pricing.get(run.model)
+    if rates is None:
+        return None
+    u = run.totals.usage
+    return run_cost(u.prompt_tokens, u.completion_tokens, u.cache_read_tokens, rates)
+
+
+def _run(run: RunRecord | None, floors: list[FloorRecord], pricing: Pricing) -> dict[str, Any]:
     if run is None:
         # The run died mid-flight: no run record was ever written. The floors
         # that completed still tell their story.
@@ -91,6 +101,7 @@ def _run(run: RunRecord | None, floors: list[FloorRecord]) -> dict[str, Any]:
         "forced": run.totals.forced,
         "unparsed": run.totals.unparsed_states,
         "usage": _usage(run.totals.usage),
+        "cost": _cost(run, pricing),
     }
 
 

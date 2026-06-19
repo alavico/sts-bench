@@ -277,8 +277,10 @@ function header() {
       chip("decisions", num(decisions)),
       run.forced ? chip("forced", num(run.forced)) : null,
       chip("prompt tokens", num(usage.prompt)),
+      usage.cached ? chip("cached tokens", num(usage.cached)) : null,
       chip("completion tokens", num(usage.completion)),
       usage.reasoning ? chip("reasoning tokens", num(usage.reasoning)) : null,
+      run.cost != null ? chip("est. cost", "$" + run.cost.toFixed(2)) : null,
       chip("model time", modelTime)));
 
   if (run.missing) {

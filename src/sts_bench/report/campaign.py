@@ -17,7 +17,7 @@ from typing import Any
 
 from ..replay import group
 from ..runner.metrics import RunMetrics, SuiteAggregate, aggregate, hash_drift
-from ..runner.reports import Pricing
+from ..runner.reports import Pricing, run_cost
 from ..runner.seeds import Suite
 from ..trajectory import FloorRecord
 from .page import render_html
@@ -146,8 +146,7 @@ def _run_cost(m: RunMetrics, pricing: Pricing) -> float | None:
     rates = pricing.get(m.model)
     if rates is None:
         return None
-    rate_in, rate_out = rates
-    return (m.prompt_tokens * rate_in + m.completion_tokens * rate_out) / 1e6
+    return run_cost(m.prompt_tokens, m.completion_tokens, m.cache_read_tokens, rates)
 
 
 def _cost_per_run(agg: SuiteAggregate, pricing: Pricing) -> float | None:
