@@ -10,3 +10,6 @@ logs/
 
 .env
 
+# Personal run-tracking sheet (not part of the project)
+docs/blog-runs.md
+
