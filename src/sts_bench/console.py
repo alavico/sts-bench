@@ -1,9 +1,9 @@
 """Interactive brain. Runs in YOUR terminal; drives the game over a socket.
 
-This is the long-lived process the relay connects to. Two modes:
+This is the long-lived process the relay connects to. You type raw
+CommunicationMod commands and read a compact digest of each state back:
 
-    uv run python -m sts_bench.console            # manual: you type commands
-    uv run python -m sts_bench.console --auto     # spirecomm's SimpleAgent plays
+    uv run python -m sts_bench.console
 
 Workflow: start this first (it listens), then trigger CommunicationMod's
 external process in-game. The mod launches relay.py, which connects here.
@@ -118,36 +118,11 @@ def manual(conn):
         f.write(((cmd or "state") + "\n").encode("utf-8"))
 
 
-def auto(conn):
-    import itertools
-
-    from spirecomm.communication.coordinator import Coordinator
-    from spirecomm.ai.agent import SimpleAgent
-    from spirecomm.spire.character import PlayerClass
-
-    # Route the protocol over the socket; logging via stderr stays in the terminal.
-    sys.stdin = conn.makefile("r", encoding="utf-8")
-    sys.stdout = conn.makefile("w", encoding="utf-8")
-
-    agent = SimpleAgent()
-    coordinator = Coordinator()
-    coordinator.signal_ready()
-    coordinator.register_command_error_callback(agent.handle_error)
-    coordinator.register_state_change_callback(agent.get_next_action_in_game)
-    coordinator.register_out_of_game_callback(agent.get_next_action_out_of_game)
-    for chosen_class in itertools.cycle(PlayerClass):
-        agent.change_class(chosen_class)
-        coordinator.play_one_game(chosen_class)
-
-
 def main():
-    parser = argparse.ArgumentParser(description="Interactive Slay the Spire brain.")
-    parser.add_argument("--auto", action="store_true", help="let SimpleAgent play instead of you")
-    args = parser.parse_args()
-
+    argparse.ArgumentParser(description="Interactive Slay the Spire brain.").parse_args()
     conn = serve_one()
     try:
-        (auto if args.auto else manual)(conn)
+        manual(conn)
     finally:
         conn.close()
 

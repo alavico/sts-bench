@@ -40,10 +40,8 @@ import sys
 from dataclasses import replace
 from pathlib import Path
 
-from dotenv import dotenv_values, load_dotenv
-
 from .agents import SCAFFOLDS
-from .play import DEFAULT_ENV_FILE
+from .cli import add_env_file_arg, apply_env_file
 from .providers import PROVIDERS, ProviderError, auto_api
 from .report.campaign import CampaignRun, build_campaign_data, render_campaign_html
 from .report.model import build_report_data
@@ -127,14 +125,7 @@ def run(args: argparse.Namespace) -> int:
         print(report)
         return 0
 
-    env_file = Path(args.env_file)
-    if env_file.exists():
-        applied = [key for key in dotenv_values(env_file) if key not in os.environ]
-        load_dotenv(env_file)
-        if applied:
-            say(f"loaded {', '.join(applied)} from {env_file}")
-    elif args.env_file != DEFAULT_ENV_FILE:
-        say(f"env file {env_file} not found")
+    if not apply_env_file(args.env_file, say):
         return 1
 
     suite = SUITES.get(args.suite or "smoke")
@@ -255,7 +246,7 @@ def main() -> None:
     parser.add_argument("--instances", type=int, default=1, help="connected game instances (workers)")
     parser.add_argument("--port", type=int, default=9999)
     parser.add_argument("--pricing", default=None, help="JSON file: model -> [input, output] $ per Mtok")
-    parser.add_argument("--env-file", default=DEFAULT_ENV_FILE, help="env file with keys/config (real env vars win)")
+    add_env_file_arg(parser)
     args = parser.parse_args()
     raise SystemExit(run(args))
 

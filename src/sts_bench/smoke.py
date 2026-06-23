@@ -26,6 +26,7 @@ from pathlib import Path
 
 from .actions import translate, validate
 from .agents.heuristic import scripted_action
+from .cli import add_character_ascension_args
 from .env import CommunicationModEnv, HarnessServer, RawState, StepResult
 from .protocol_log import ProtocolLog
 from .state import StateParseError, parse_message
@@ -193,8 +194,7 @@ def run(args: argparse.Namespace) -> int:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--seed", default="STSBENCH1", help="run seed (alphanumeric); empty string for random")
-    parser.add_argument("--character", default="ironclad")
-    parser.add_argument("--ascension", type=int, default=0)
+    add_character_ascension_args(parser)
     parser.add_argument("--floors", type=int, default=0, help="stop once this floor is reached (0 = play to the end)")
     parser.add_argument("--port", type=int, default=9999)
     args = parser.parse_args()

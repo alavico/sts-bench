@@ -6,17 +6,11 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.13.4",
-    # Reference-only since M1 (our own connection layer talks to CommunicationMod);
-    # still imported by main.py and `console.py --auto`. Not on PyPI; pinned by git ref.
     "python-dotenv>=1.2.2",
-    "spirecomm",
 ]
 
 [dependency-groups]
 dev = ["pytest>=8"]
-
-[tool.uv.sources]
-spirecomm = { git = "https://github.com/ForgottenArbiter/spirecomm.git" }
 
 [build-system]
 requires = ["hatchling"]

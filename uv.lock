@@ -199,18 +199,12 @@ wheels = [
 ]
 
 [[package]]
-name = "spirecomm"
-version = "0.6.0"
-source = { git = "https://github.com/ForgottenArbiter/spirecomm.git#f308452dcdef1e4813e5a78fa7a36f9a779058f9" }
-
-[[package]]
 name = "sts-bench"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },
     { name = "python-dotenv" },
-    { name = "spirecomm" },
 ]
 
 [package.dev-dependencies]
@@ -222,7 +216,6 @@ dev = [
 requires-dist = [
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "python-dotenv", specifier = ">=1.2.2" },
-    { name = "spirecomm", git = "https://github.com/ForgottenArbiter/spirecomm.git" },
 ]
 
 [package.metadata.requires-dev]

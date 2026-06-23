@@ -20,11 +20,9 @@ import hashlib
 import json
 import os
 import sys
-from pathlib import Path
-
-from dotenv import dotenv_values, load_dotenv
 
 from .agents import SCAFFOLDS
+from .cli import add_character_ascension_args, add_env_file_arg, apply_env_file
 from .env import CommunicationModEnv, HarnessServer
 from .protocol_log import ProtocolLog, reasoning_note
 from .providers import PROVIDERS, ProviderError, auto_api
@@ -32,8 +30,6 @@ from .runner.session import RunTally, play_run
 from .smoke import session_dir
 from .tools import ToolRegistry
 from .trajectory import RunRecorder, TrajectoryStore
-
-DEFAULT_ENV_FILE = ".env"
 
 
 def run(args: argparse.Namespace) -> int:
@@ -48,15 +44,7 @@ def run(args: argparse.Namespace) -> int:
         if log is not None:
             log.line("--", msg)
 
-    env_file = Path(args.env_file)
-    if env_file.exists():
-        # Report names (never values) of what the file contributes; shell env wins.
-        applied = [key for key in dotenv_values(env_file) if key not in os.environ]
-        load_dotenv(env_file)
-        if applied:
-            say(f"loaded {', '.join(applied)} from {env_file}")
-    elif args.env_file != DEFAULT_ENV_FILE:
-        say(f"env file {env_file} not found")
+    if not apply_env_file(args.env_file, say):
         return 1
 
     api = args.api or os.environ.get("STS_BENCH_API") or "auto"
@@ -184,11 +172,10 @@ def main() -> None:
         "which for gpt-5-class models means almost no reasoning.",
     )
     parser.add_argument("--seed", default="STSBENCH1", help="run seed (alphanumeric); empty string for random")
-    parser.add_argument("--character", default="ironclad")
-    parser.add_argument("--ascension", type=int, default=0)
+    add_character_ascension_args(parser)
     parser.add_argument("--max-rounds", type=int, default=10, help="provider calls per decision point")
     parser.add_argument("--port", type=int, default=9999)
-    parser.add_argument("--env-file", default=DEFAULT_ENV_FILE, help="env file with keys/config (real env vars win)")
+    add_env_file_arg(parser)
     args = parser.parse_args()
     raise SystemExit(run(args))
 
