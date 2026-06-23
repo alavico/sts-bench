@@ -1,6 +1,28 @@
-# Implementation Plan
+# Implementation Plan & Build Log
 
-Companion to `spec.md`. Milestones are ordered so every one ends with something runnable; each lists its files, tasks, and an acceptance check. Target layout is `src/sts_bench/` per the spec's architecture section.
+Companion to `spec.md`. This began as the forward schedule and is now mostly a build
+log: milestones M0–M6 shipped, and each section's *Status* note records what actually
+landed and the surprises found on the way. Sections **without** a status note — M7, the
+"Parked" section, and anything tagged *future* — are **not built**; they're the planned
+next iterations, kept here for direction.
+
+**Status (2026-06-22):**
+
+- **M0–M5 — complete & accepted.** Env layer, typed state/action schemas, the provider
+  trio, the floor-conversation scaffold + trajectory logging, and the runner / baselines
+  / report. The MVP (per the spec) is done.
+- **M6 — partially complete.** The state-representation work (card / relic / potion /
+  powers DBs, serialization v1→v3, map self-location, hover text in the observation
+  tools) landed, and that surface is now **frozen** as the benchmark surface. The
+  stateless-vs-floor and reasoning-effort ablations are runnable and in active use.
+  *Not built:* the turn-script agent (item 2), the reflection / planning scaffold
+  (item 4), and the per-experiment config system (item 5).
+- **M7 and beyond — not started.** Training exports, RLVR, and act-4 / heart runs are
+  future iterations; see the *future* sections at the bottom.
+
+Milestones are ordered so every one ends with something runnable; each lists its files,
+tasks, and an acceptance check. Target layout is `src/sts_bench/` per the spec's
+architecture section.
 
 ## Current state (M0 — done)
 
@@ -139,7 +161,9 @@ Files: `runner/async_runner.py`, `runner/seeds.py`, `runner/metrics.py`, `runner
 
 **Accept:** same seed suite run under ≥2 scaffolds produces a report separating scaffold effect from model effect.
 
-## M7 — Training exports (pre-RLVR)
+*Status: partial. Item 1 (stateless vs floor-stateful, reasoning-effort sweeps) and item 3 (the DBs + serialization v1→v3, now the frozen benchmark surface) landed — see their notes above; the Accept criterion is met for these via the stateless-vs-floor report. **Not built:** item 2 (turn-script agent), item 4 (reflection/planning scaffold + advisor tools), item 5 (per-experiment config system). These are the natural next scaffold experiments — for now runs are pinned by CLI flags + the prompt/tool hashes recorded in each trajectory, which is enough to keep configurations from being averaged together; a config-hash system formalizes that.*
+
+## M7 — Training exports (pre-RLVR) — *future, not built*
 
 **Goal:** trajectories → training data; close the loop described in the spec.
 
@@ -149,12 +173,19 @@ Files: `runner/async_runner.py`, `runner/seeds.py`, `runner/metrics.py`, `runner
 
 RLVR itself (gym wrapper, simulator promotion) is the next project iteration, per the spec — M1's `Env` and M4's versioned rewards are the prep work.
 
-## Parked — act 4 / heart runs (revisit when any model reliably reaches act 3)
+## Parked — act 4 / heart runs — *future* (revisit when any model reliably reaches act 3)
 
-Decided 2026-06-11, during M4 live-run review: the MVP scores an act-3 boss kill as a win (the game itself calls it victory without keys); heart runs become a later suite dimension. Information groundwork is in: rest options carry their button text (recall = Ruby Key), key rewards explain themselves, the run line shows held keys when the wire sends them. Two blockers wait at the mod boundary, both confirmed against CommunicationMod master:
+Decided 2026-06-11, during M4 live-run review: the MVP scores an act-3 boss kill as a win (the game itself calls it victory without keys); heart runs become a later suite dimension.
 
-1. **Installed CommunicationMod predates `keys` serialization** — master sends `keys` (ruby/emerald/sapphire) in every state, our 2026-06-11 run never did. Upgrading the jar lights up the existing `keys 2/3 (...)` run-line support with no harness change.
-2. **Burning elites are invisible on the wire** — map nodes serialize only symbol/x/y/edges; the game's `MapRoomNode.hasEmeraldKey` is never sent, so no model can deliberately route to the emerald key (a parity violation in the mod: the flame is plainly visible to a human). Fix is a one-line fork of `convertMapRoomNodeToJson`; the spec blesses Java at the mod boundary. **Grow the `MapNode` schema (optional field) in the same change** — it is `extra="forbid"`, so a patched mod fails parsing until the schema knows the field.
+**The one hard blocker is the emerald key.** A heart run needs all three keys before the act-3 boss. Two of the three are reliably reachable already: the **ruby key** is the Recall option at a rest site, the **sapphire key** is the take-the-key-instead-of-the-relic option at a treasure chest — both are ordinary choices the model already sees and the surface already labels. The **emerald key** is different: it is awarded only for defeating the act's *burning elite*, which the game shows as a literally on-fire elite node on the map — and **CommunicationMod does not serialize that flame.** Map nodes carry only `symbol/x/y/edges`; `MapRoomNode.hasEmeraldKey` is never sent, so the model cannot tell which elite to route to and cannot deliberately collect the emerald key (a parity violation: the flame is plainly visible to a human). Until we can communicate the burning elite, we can't fairly ask a model to get all three keys, so act 4 stays parked.
+
+Note (confirmed live 2026-06-22, the A10 STSBENCH1 run): the emerald key *reward* itself is already on the wire and already handled — beating the floor-7 burning elite produced a `reward_type":"EMERALD_KEY"` item, which `serialize.py` rendered as a claimable `[N] emerald key (...)` line. The model **skipped it correctly**, because the current win condition makes keys worthless and `KEY_NOTE` says so ("NOT needed to win this run"). So *opportunistic* pickup works today; only *routing* to the burning elite is blind. Reward-screen handling is not a blocker.
+
+What a heart suite would take, then:
+
+1. **Expose the burning elite on the map** — the actual blocker. A one-line fork of `convertMapRoomNodeToJson` to emit `hasEmeraldKey`; the spec blesses Java at the mod boundary. **Grow the `MapNode` schema (optional field) in the same change** — it is `extra="forbid"`, so a patched mod fails parsing until the schema knows the field.
+2. **Change the objective** — flip the win condition to require the heart, and tell the model up front it must collect all three keys before the act-3 boss; relax `KEY_NOTE` so keys read as required, not skippable.
+3. **Upgrade the mod jar for run-level `keys`** — the installed CommunicationMod predates `keys` serialization (the 2026-06-22 run sends `"keys"` 0×), so the run line can't yet show which keys are held. Upgrading lights up the existing `keys 2/3 (...)` run-line support with no harness change.
 
 Also waiting there: act 4 door/entry screens are unmodeled (designed recovery path: unparsed capture → fixture → schema), and the reward spec can grow a `heart_kill` component when heart runs are scored.
 

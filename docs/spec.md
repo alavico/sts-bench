@@ -6,6 +6,8 @@ The core interaction loop: at each decision point the agent receives a compact, 
 
 Python + `uv` is the right default. The benchmark harness, model adapters, trajectory logging, eval runner, and training exports are naturally Python. Keep Java only at the game/mod boundary.
 
+**Status (2026-06-22):** design doc, current through M6 — it reflects the shipped harness (env layer, typed state/action schemas, the provider trio, the floor-conversation scaffold, full trajectory logging, and the runner / baselines / report). The **Training Loop** and **RLVR** sections describe the next iteration and are *not built*. `docs/plan.md` is the build log and holds per-milestone status; this doc is the source of truth for design intent.
+
 ## Locked Decisions
 
 | Question | Decision |
@@ -201,8 +203,10 @@ The mod's `command=` points at `relay.py`, which forwards protocol bytes unmodif
 
 ### Status
 
-- Done: CommunicationMod + spirecomm integration proven end to end (`main.py` runs spirecomm's `SimpleAgent` through full runs); relay/console socket tooling for interactive protocol driving (`relay.py`, `console.py`); protocol logging to `logs/latest.log`.
-- Next: the `Env` layer (build-order steps 3+), per `docs/plan.md`.
+*This subsection captured the M0 starting point; left for posterity. Current per-milestone status lives in `docs/plan.md` — as of 2026-06-22 the relay pattern below is shipped and everything built on it through M6 is in place.*
+
+- Done at M0: CommunicationMod + spirecomm integration proven end to end (`main.py` runs spirecomm's `SimpleAgent` through full runs); relay/console socket tooling for interactive protocol driving (`relay.py`, `console.py`); protocol logging to `logs/latest.log`.
+- Since: the `Env` layer and everything downstream (M1–M6) shipped — see `docs/plan.md`.
 
 ## Architecture
 
@@ -363,7 +367,7 @@ Baselines:
 
 Do not compare models from one run. Compare model/scaffold/tool configurations across fixed seed suites.
 
-## Training Loop
+## Training Loop — *future, not built*
 
 The longer-term loop is:
 
@@ -414,6 +418,8 @@ Real-game parallelism means multiple JVM/game processes, each with its own Commu
 The practical ceiling on parallelism may be local memory, not Python.
 
 ## Build Order
+
+*Status: steps 1–11 are done (M1–M6 — the MVP); step 12 is partial (tool/effort ablations done, the reflection/planning scaffold not); steps 13–14 are future. See `docs/plan.md` for details.*
 
 1. ~~Install/run one real game through CommunicationMod and `spirecomm`.~~ Done.
 2. ~~Confirm an example/scripted AI can make decisions in a single combat.~~ Done (`main.py` + SimpleAgent).
