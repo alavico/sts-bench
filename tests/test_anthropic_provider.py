@@ -3,7 +3,7 @@
 import pytest
 
 from sts_bench.providers import AnthropicProvider, ProviderError
-from sts_bench.providers.anthropic_messages import BLOCKS_KEY
+from sts_bench.providers.anthropic_messages import BLOCKS_KEY, _AnthropicInputLimiter
 
 
 def make_provider(transport, **kwargs):
@@ -175,6 +175,63 @@ def test_reasoning_effort_implies_thinking_and_sets_output_config():
     make_provider(transport, reasoning_effort="high").complete([])
     assert seen["thinking"] == {"type": "adaptive", "display": "summarized"}
     assert seen["output_config"] == {"effort": "high"}
+
+
+def test_sonnet_gets_default_input_token_limiter(monkeypatch):
+    monkeypatch.delenv("STS_BENCH_ANTHROPIC_INPUT_TPM", raising=False)
+    assert _AnthropicInputLimiter.from_env("claude-sonnet-4-6") is not None
+    assert _AnthropicInputLimiter.from_env("claude-haiku-4-5") is None
+
+
+def test_input_token_limiter_can_be_disabled(monkeypatch):
+    monkeypatch.setenv("STS_BENCH_ANTHROPIC_INPUT_TPM", "0")
+    assert _AnthropicInputLimiter.from_env("claude-sonnet-4-6") is None
+
+
+def test_input_limiter_counts_cached_prefix_once():
+    costs = []
+
+    class Limiter:
+        def acquire(self, estimated_tokens):
+            costs.append(estimated_tokens)
+
+    provider = make_provider(lambda p: response(text_block("ok")))
+    provider._input_limiter = Limiter()
+    provider.complete(
+        [
+            {"role": "system", "content": "stable system prompt" * 50},
+            {"role": "user", "content": "state"},
+        ],
+        tools=[
+            {
+                "type": "function",
+                "function": {
+                    "name": "lookup",
+                    "description": "stable tool schema" * 50,
+                    "parameters": {"type": "object"},
+                },
+            }
+        ],
+    )
+    provider.complete(
+        [
+            {"role": "system", "content": "stable system prompt" * 50},
+            {"role": "user", "content": "state"},
+        ],
+        tools=[
+            {
+                "type": "function",
+                "function": {
+                    "name": "lookup",
+                    "description": "stable tool schema" * 50,
+                    "parameters": {"type": "object"},
+                },
+            }
+        ],
+    )
+
+    assert len(costs) == 2
+    assert costs[1] < costs[0]
 
 
 def test_from_env_requires_a_key(monkeypatch):

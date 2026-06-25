@@ -3,7 +3,7 @@
 import pytest
 
 from sts_bench.providers import OpenAICompatProvider, ProviderError
-from sts_bench.providers.openai_compat import RetryableError
+from sts_bench.providers.openai_compat import RetryableError, _retry_after
 
 
 def completion(message, usage=None):
@@ -152,7 +152,8 @@ def test_malformed_tool_arguments_surface_as_error_not_crash():
 
 
 def test_retries_transient_failures_then_succeeds(monkeypatch):
-    monkeypatch.setattr("sts_bench.providers.openai_compat.time.sleep", lambda s: None)
+    sleeps = []
+    monkeypatch.setattr("sts_bench.providers.openai_compat.time.sleep", sleeps.append)
     attempts = []
 
     def flaky(payload):
@@ -164,6 +165,36 @@ def test_retries_transient_failures_then_succeeds(monkeypatch):
     response = make_provider(flaky, max_retries=3).complete([])
     assert response.text == "ok"
     assert len(attempts) == 3
+    assert sleeps == [1, 2]
+
+
+def test_retryable_error_retry_after_controls_sleep(monkeypatch):
+    sleeps = []
+    monkeypatch.setattr("sts_bench.providers.openai_compat.time.sleep", sleeps.append)
+    attempts = []
+
+    def flaky(payload):
+        attempts.append(1)
+        if len(attempts) == 1:
+            raise RetryableError("HTTP 429: slow down", retry_after=12.5)
+        return completion({"role": "assistant", "content": "ok"})
+
+    response = make_provider(flaky, max_retries=1).complete([])
+    assert response.text == "ok"
+    assert sleeps == [12.5]
+
+
+def test_retry_after_parses_anthropic_reset_headers():
+    headers = {"anthropic-ratelimit-input-tokens-reset": "2026-06-25T12:00:05Z"}
+    assert _retry_after(headers, now=1_782_388_800.0) == 5.0
+
+
+def test_retry_after_header_wins_over_reset_headers():
+    headers = {
+        "retry-after": "3",
+        "anthropic-ratelimit-input-tokens-reset": "2026-06-25T12:00:30Z",
+    }
+    assert _retry_after(headers, now=1_782_388_800.0) == 3
 
 
 def test_gives_up_after_retry_budget(monkeypatch):

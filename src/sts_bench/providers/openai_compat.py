@@ -16,6 +16,8 @@ import os
 import time
 import urllib.error
 import urllib.request
+from datetime import datetime
+from email.utils import parsedate_to_datetime
 from typing import Any, Callable
 
 from .base import ModelResponse, ProviderError, ToolCall, Usage
@@ -38,6 +40,10 @@ Transport = Callable[[dict[str, Any]], dict[str, Any]]
 
 class RetryableError(Exception):
     """Transient failure (rate limit, 5xx, network); worth retrying."""
+
+    def __init__(self, message: str, retry_after: float | None = None):
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 class OpenAICompatProvider:
@@ -111,15 +117,26 @@ class OpenAICompatProvider:
         payload = self._payload(messages, tools)
         last_error: Exception | None = None
         for attempt in range(self._max_retries + 1):
-            if attempt:
-                time.sleep(min(2 ** (attempt - 1), 30))
+            if attempt == 0:
+                self._before_request(payload)
             try:
-                return self._parse(self._transport(payload))
+                data = self._transport(payload)
+                response = self._parse(data)
+                self._after_success(payload, data)
+                return response
             except RetryableError as exc:
                 last_error = exc
+                if attempt < self._max_retries:
+                    time.sleep(_retry_delay(exc, attempt))
         raise ProviderError(
             f"completion failed after {self._max_retries + 1} attempts: {last_error}"
         ) from last_error
+
+    def _before_request(self, payload: dict[str, Any]) -> None:
+        """Hook for provider-specific local rate protection."""
+
+    def _after_success(self, payload: dict[str, Any], data: dict[str, Any]) -> None:
+        """Hook for provider-specific local rate bookkeeping."""
 
     def _payload(
         self, messages: list[dict[str, Any]], tools: list[dict[str, Any]] | None
@@ -159,7 +176,9 @@ class OpenAICompatProvider:
         except urllib.error.HTTPError as exc:
             detail = exc.read().decode("utf-8", errors="replace")[:500]
             if exc.code == 429 or exc.code >= 500:
-                raise RetryableError(f"HTTP {exc.code}: {detail}") from exc
+                raise RetryableError(
+                    f"HTTP {exc.code}: {detail}", retry_after=_retry_after(exc.headers)
+                ) from exc
             raise ProviderError(f"HTTP {exc.code}: {detail}") from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise RetryableError(str(exc)) from exc
@@ -167,6 +186,70 @@ class OpenAICompatProvider:
             return json.loads(body)
         except json.JSONDecodeError as exc:
             raise ProviderError(f"non-JSON response: {body[:500]!r}") from exc
+
+
+def _retry_delay(exc: RetryableError, attempt: int) -> float:
+    if exc.retry_after is not None:
+        return max(0.0, exc.retry_after)
+    return min(2 ** attempt, 30)
+
+
+def _retry_after(headers: Any, now: float | None = None) -> float | None:
+    """Best-effort retry delay from standard and Anthropic rate-limit headers."""
+
+    now = time.time() if now is None else now
+    retry_after = _header(headers, "retry-after")
+    if retry_after:
+        delay = _parse_delay_or_date(retry_after, now)
+        if delay is not None:
+            return delay
+
+    reset_delays = [
+        delay
+        for name in (
+            "anthropic-ratelimit-requests-reset",
+            "anthropic-ratelimit-tokens-reset",
+            "anthropic-ratelimit-input-tokens-reset",
+            "anthropic-ratelimit-output-tokens-reset",
+            "anthropic-priority-input-tokens-reset",
+            "anthropic-priority-output-tokens-reset",
+        )
+        if (delay := _parse_reset_header(_header(headers, name), now)) is not None
+    ]
+    return max(reset_delays) if reset_delays else None
+
+
+def _header(headers: Any, name: str) -> str | None:
+    if headers is None:
+        return None
+    try:
+        value = headers.get(name)
+    except AttributeError:
+        value = None
+    if value is None and isinstance(headers, dict):
+        value = next((v for k, v in headers.items() if k.lower() == name), None)
+    return str(value).strip() if value is not None else None
+
+
+def _parse_delay_or_date(value: str, now: float) -> float | None:
+    try:
+        return max(0.0, float(value))
+    except ValueError:
+        return _parse_reset_header(value, now)
+
+
+def _parse_reset_header(value: str | None, now: float) -> float | None:
+    if not value:
+        return None
+    text = value.strip()
+    try:
+        stamp = parsedate_to_datetime(text)
+    except (TypeError, ValueError):
+        try:
+            stamp = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return None
+    return max(0.0, stamp.timestamp() - now)
 
 
 def _without_reasoning(message: dict[str, Any]) -> dict[str, Any]:

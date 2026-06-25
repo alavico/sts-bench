@@ -36,6 +36,8 @@ The default scaffold keeps one conversation per floor, so the model sees its ear
 
 Precedence: CLI flags > shell environment > `.env`. `STS_BENCH_API`, `STS_BENCH_MODEL`, `STS_BENCH_BASE_URL`, and `STS_BENCH_API_KEY` pin a default backend in the environment when you'd otherwise retype flags.
 
+For Anthropic Sonnet models, sts-bench applies a local 30,000 input-token-per-minute guard before requests and honors Anthropic 429 retry headers. Set `STS_BENCH_ANTHROPIC_INPUT_TPM` to your org/workspace limit, or `0` to disable the local guard.
+
 ## Logs
 
 Logs are grouped one folder per day, `logs/<date>/`: protocol logs at the session root, with `trajectories/`, `reports/`, and `html/` subfolders separating the data, the markdown reports, and the rendered pages. Each run writes `logs/<date>/play-<timestamp>.log` (`logs/<date>/latest.log` symlinks the newest): game wire traffic verbatim (`>>`/`<<`), model traffic (`>m`/`<m`, including reasoning), and a readable narrative (`--`). States the schema can't parse are captured to `logs/unparsed/` (a cross-session harvest queue) — they're schema gaps; promote them to fixtures once fixed.

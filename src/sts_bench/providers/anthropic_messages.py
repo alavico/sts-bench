@@ -19,6 +19,8 @@ from __future__ import annotations
 
 import json
 import os
+import threading
+import time
 from typing import Any
 
 from .base import ModelResponse, ProviderError, ToolCall, Usage
@@ -27,6 +29,8 @@ from .openai_compat import ANTHROPIC_BASE_URL, OpenAICompatProvider
 ANTHROPIC_VERSION = "2023-06-01"
 DEFAULT_ANTHROPIC_MODEL = "claude-haiku-4-5"
 DEFAULT_MAX_TOKENS = 4096
+DEFAULT_SONNET_INPUT_TPM = 30_000
+CHARS_PER_TOKEN = 4
 
 BLOCKS_KEY = "_blocks"
 
@@ -47,6 +51,8 @@ class AnthropicProvider(OpenAICompatProvider):
         # off by default to keep the zero-shot baseline untouched. A
         # reasoning_effort (low/medium/high/max here) implies thinking on.
         self._thinking = thinking or self._reasoning_effort is not None
+        self._cache_warmed = False
+        self._input_limiter = _AnthropicInputLimiter.from_env(self.model)
 
     @classmethod
     def from_env(
@@ -130,6 +136,15 @@ class AnthropicProvider(OpenAICompatProvider):
         if self._reasoning_effort is not None:
             payload["output_config"] = {"effort": self._reasoning_effort}
         return payload
+
+    def _before_request(self, payload: dict[str, Any]) -> None:
+        if self._input_limiter is not None:
+            self._input_limiter.acquire(
+                _estimate_uncached_input_tokens(payload, self._cache_warmed)
+            )
+
+    def _after_success(self, payload: dict[str, Any], data: dict[str, Any]) -> None:
+        self._cache_warmed = True
 
     def _parse(self, data: dict[str, Any]) -> ModelResponse:
         content = data.get("content")
@@ -221,3 +236,59 @@ def _merge_user_runs(native: list[dict[str, Any]]) -> list[dict[str, Any]]:
 def _blocks(content: Any) -> list[dict[str, Any]]:
     return content if isinstance(content, list) else [{"type": "text", "text": content}]
 
+
+class _AnthropicInputLimiter:
+    """Process-local token bucket for Anthropic ITPM protection.
+
+    Anthropic computes exact input token usage server-side. This client-side
+    bucket uses a conservative character estimate to avoid preventable local
+    bursts, while 429 handling still obeys the authoritative response headers.
+    """
+
+    def __init__(self, tokens_per_minute: int):
+        self._capacity = float(tokens_per_minute)
+        self._fill_rate = self._capacity / 60.0
+        self._tokens = self._capacity
+        self._updated = time.monotonic()
+        self._lock = threading.Lock()
+
+    @classmethod
+    def from_env(cls, model: str) -> "_AnthropicInputLimiter | None":
+        raw = os.environ.get("STS_BENCH_ANTHROPIC_INPUT_TPM")
+        if raw is None:
+            limit = DEFAULT_SONNET_INPUT_TPM if "sonnet" in model.lower() else 0
+        else:
+            try:
+                limit = int(raw.replace("_", ""))
+            except ValueError as exc:
+                raise ProviderError(
+                    "STS_BENCH_ANTHROPIC_INPUT_TPM must be an integer token-per-minute limit"
+                ) from exc
+        return cls(limit) if limit > 0 else None
+
+    def acquire(self, estimated_tokens: int) -> None:
+        cost = min(float(max(estimated_tokens, 1)), self._capacity)
+        while True:
+            with self._lock:
+                now = time.monotonic()
+                elapsed = now - self._updated
+                self._tokens = min(self._capacity, self._tokens + elapsed * self._fill_rate)
+                self._updated = now
+                if self._tokens >= cost:
+                    self._tokens -= cost
+                    return
+                wait = (cost - self._tokens) / self._fill_rate
+            time.sleep(wait)
+
+
+def _estimate_uncached_input_tokens(
+    payload: dict[str, Any], cache_warmed: bool
+) -> int:
+    counted = {"messages": payload.get("messages", [])}
+    if not cache_warmed:
+        if "system" in payload:
+            counted["system"] = payload["system"]
+        if "tools" in payload:
+            counted["tools"] = payload["tools"]
+    text = json.dumps(counted, ensure_ascii=False, separators=(",", ":"))
+    return max(1, len(text) // CHARS_PER_TOKEN)
