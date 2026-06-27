@@ -114,7 +114,7 @@ class AnthropicProvider(OpenAICompatProvider):
         payload: dict[str, Any] = {
             "model": self.model,
             "max_tokens": self._max_tokens,
-            "messages": _merge_user_runs(native),
+            "messages": _cache_last_turn(_merge_user_runs(native)),
         }
         if system is not None:
             # Breakpoint on the system block caches tools+system -- the part
@@ -209,6 +209,40 @@ class AnthropicProvider(OpenAICompatProvider):
             ),
             reasoning=reasoning,
         )
+
+
+def _cache_last_turn(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Put a cache breakpoint on the final content block.
+
+    The system block already caches the byte-identical tools+system prefix.
+    This second breakpoint caches the conversation, which grows cumulatively
+    across the decisions of a segment -- a late decision re-sends the whole
+    prior transcript (state digests plus the thinking blocks the API makes us
+    echo back). Marking the last block lets that prefix bill at cache-read
+    rates on the next round and the next decision instead of full input.
+
+    Consecutive requests append only a few blocks, so the fresh breakpoint
+    always lands within the API's 20-block lookback of the previous one. The
+    last message is normally a user turn (tool_result or the state digest);
+    the block dict is copied rather than mutated so the stored transcript --
+    assistant turns share their block list by reference -- is left untouched.
+    """
+    if not messages:
+        return messages
+    last = messages[-1]
+    content = last.get("content")
+    if isinstance(content, str):
+        if not content:
+            return messages
+        new_content: list[dict[str, Any]] = [
+            {"type": "text", "text": content, "cache_control": {"type": "ephemeral"}}
+        ]
+    elif isinstance(content, list) and content:
+        new_content = list(content)
+        new_content[-1] = {**new_content[-1], "cache_control": {"type": "ephemeral"}}
+    else:
+        return messages
+    return [*messages[:-1], {**last, "content": new_content}]
 
 
 def _merge_user_runs(native: list[dict[str, Any]]) -> list[dict[str, Any]]:

@@ -237,7 +237,7 @@ def main() -> None:
     parser.add_argument("--base-url", default=None, help="chat-completions base URL (default: from env)")
     parser.add_argument(
         "--api",
-        choices=("auto", "chat", "responses", "anthropic"),
+        choices=("auto", *PROVIDERS),
         default=None,
         help="wire format for LLM agents (see sts_bench.play --help)",
     )

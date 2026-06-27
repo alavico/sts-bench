@@ -44,6 +44,41 @@ def test_from_env_explicit_known_base_url_picks_that_vendors_key(monkeypatch):
     assert provider._api_key == "sk-openai-test"
 
 
+def test_from_env_picks_compat_vendor_key_by_base_url(monkeypatch):
+    from sts_bench.providers import OpenAICompatProvider
+
+    for var in ("STS_BENCH_BASE_URL", "STS_BENCH_MODEL", "STS_BENCH_API_KEY"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("GOOGLE_API_KEY", "g-key")
+    monkeypatch.setenv("MOONSHOT_API_KEY", "m-key")
+    monkeypatch.setenv("ZAI_API_KEY", "z-key")
+
+    cases = {
+        "https://generativelanguage.googleapis.com/v1beta/openai": "g-key",
+        "https://api.moonshot.ai/v1": "m-key",
+        "https://api.z.ai/api/paas/v4": "z-key",
+    }
+    for base_url, expected in cases.items():
+        provider = OpenAICompatProvider.from_env(model="m", base_url=base_url)
+        assert provider._api_key == expected
+
+
+def test_from_env_empty_key_prefix_still_auto_picks_vendor(monkeypatch):
+    # A `STS_BENCH_API_KEY=$VENDOR_KEY` prefix that expands to nothing must not
+    # block the base-url auto-pick (it would otherwise send empty auth).
+    from sts_bench.providers import OpenAICompatProvider
+
+    for var in ("STS_BENCH_BASE_URL", "STS_BENCH_MODEL"):
+        monkeypatch.delenv(var, raising=False)
+    monkeypatch.setenv("STS_BENCH_API_KEY", "")
+    monkeypatch.setenv("GOOGLE_API_KEY", "g-key")
+
+    provider = OpenAICompatProvider.from_env(
+        model="m", base_url="https://generativelanguage.googleapis.com/v1beta/openai"
+    )
+    assert provider._api_key == "g-key"
+
+
 def test_reasoning_effort_is_sent_only_when_configured():
     seen = {}
 
@@ -87,6 +122,22 @@ def test_reasoning_token_count_is_parsed():
     assert usage.completion_tokens == 250  # reasoning is a subset, not extra
     total = usage + usage
     assert total.reasoning_tokens == 480
+
+
+def test_hidden_thinking_in_total_tokens_is_recovered():
+    # Gemini's compat endpoint bills thinking inside total_tokens without adding
+    # it to completion_tokens or a details breakdown -> recover the gap so output
+    # and cost aren't undercounted.
+    provider = make_provider(
+        lambda p: completion(
+            {"role": "assistant", "content": "0.05"},
+            usage={"prompt_tokens": 32, "completion_tokens": 349, "total_tokens": 836},
+        )
+    )
+    usage = provider.complete([]).usage
+    assert usage.prompt_tokens == 32
+    assert usage.completion_tokens == 804  # 349 visible + 455 hidden thinking
+    assert usage.reasoning_tokens == 455
 
 
 def test_reasoning_content_is_captured_and_kept_in_message():
@@ -205,6 +256,19 @@ def test_gives_up_after_retry_budget(monkeypatch):
 
     with pytest.raises(ProviderError, match="after 3 attempts"):
         make_provider(always_down, max_retries=2).complete([])
+
+
+def test_max_retries_defaults_high_and_env_overrides(monkeypatch):
+    from sts_bench.providers.openai_compat import DEFAULT_MAX_RETRIES
+
+    monkeypatch.delenv("STS_BENCH_MAX_RETRIES", raising=False)
+    assert make_provider(lambda p: None)._max_retries == DEFAULT_MAX_RETRIES
+    assert DEFAULT_MAX_RETRIES >= 8  # generous budget to ride out demand spikes
+
+    monkeypatch.setenv("STS_BENCH_MAX_RETRIES", "2")
+    assert make_provider(lambda p: None)._max_retries == 2
+    # an explicit argument still wins over the env override
+    assert make_provider(lambda p: None, max_retries=5)._max_retries == 5
 
 
 def test_malformed_completion_raises():

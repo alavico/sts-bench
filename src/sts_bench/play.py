@@ -150,11 +150,12 @@ def main() -> None:
     parser.add_argument("--base-url", default=None, help="chat-completions base URL (default: from env)")
     parser.add_argument(
         "--api",
-        choices=("auto", "chat", "responses", "anthropic"),
+        choices=("auto", *PROVIDERS),
         default=None,
-        help="wire format: auto (default; native messages for Anthropic backends, "
-        "chat elsewhere), chat (works everywhere), responses (OpenAI reasoning "
-        "models), anthropic (Claude native); env STS_BENCH_API",
+        help="wire format: auto (default; native messages for Anthropic/Gemini "
+        "backends, chat elsewhere), chat (works everywhere), responses (OpenAI "
+        "reasoning models), anthropic (Claude native), gemini (Gemini native: "
+        "thought summaries); env STS_BENCH_API",
     )
     parser.add_argument(
         "--agent",

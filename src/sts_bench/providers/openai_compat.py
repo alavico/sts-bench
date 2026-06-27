@@ -26,8 +26,24 @@ ANTHROPIC_BASE_URL = "https://api.anthropic.com/v1"
 OPENAI_BASE_URL = "https://api.openai.com/v1"
 OLLAMA_BASE_URL = "http://localhost:11434/v1"
 
+# An explicit base URL for a known vendor picks up that vendor's key from the
+# environment -- no per-command STS_BENCH_API_KEY prefix needed. Matched by host
+# substring against the base URL.
+VENDOR_API_KEY_ENV: tuple[tuple[str, str], ...] = (
+    ("api.anthropic.com", "ANTHROPIC_API_KEY"),
+    ("api.openai.com", "OPENAI_API_KEY"),
+    ("generativelanguage.googleapis.com", "GOOGLE_API_KEY"),
+    ("api.moonshot.ai", "MOONSHOT_API_KEY"),
+    ("api.z.ai", "ZAI_API_KEY"),
+)
+
 DEFAULT_TIMEOUT = 120.0
-DEFAULT_MAX_RETRIES = 3
+# Retries ride out transient provider errors (429 / 5xx / network). Demand
+# spikes ("HTTP 503: high demand") can last minutes, so the budget is generous:
+# 8 retries with exponential backoff capped at 60s/attempt waits ~3 min total
+# before giving up. Override per run with STS_BENCH_MAX_RETRIES.
+DEFAULT_MAX_RETRIES = 8
+MAX_RETRY_WAIT = 60.0
 
 # Visible-reasoning message keys used across OpenAI-compatible backends:
 # `reasoning_content` (DeepSeek convention; vLLM, SGLang, LiteLLM) and
@@ -55,7 +71,7 @@ class OpenAICompatProvider:
         model: str,
         api_key: str | None = None,
         timeout: float = DEFAULT_TIMEOUT,
-        max_retries: int = DEFAULT_MAX_RETRIES,
+        max_retries: int | None = None,
         transport: Transport | None = None,
         reasoning_effort: str | None = None,
     ):
@@ -63,7 +79,12 @@ class OpenAICompatProvider:
         self.model = model
         self._api_key = api_key
         self._timeout = timeout
-        self._max_retries = max_retries
+        # Explicit arg wins; otherwise the env override, otherwise the default.
+        self._max_retries = (
+            max_retries
+            if max_retries is not None
+            else _env_int("STS_BENCH_MAX_RETRIES", DEFAULT_MAX_RETRIES)
+        )
         self._transport = transport or self._http_post
         # Reasoning models accept an effort level; left unset, gpt-5-class
         # models barely deliberate at all. Only sent when configured.
@@ -86,7 +107,10 @@ class OpenAICompatProvider:
         """
         base_url = base_url or os.environ.get("STS_BENCH_BASE_URL")
         model = model or os.environ.get("STS_BENCH_MODEL")
-        api_key = api_key or os.environ.get("STS_BENCH_API_KEY")
+        # `or None` folds an empty STS_BENCH_API_KEY (e.g. a `=$VENDOR_KEY`
+        # prefix that expanded to nothing) back to None, so the vendor auto-pick
+        # below still fires instead of sending an empty Authorization header.
+        api_key = api_key or os.environ.get("STS_BENCH_API_KEY") or None
 
         if base_url is None:
             if api_key is None and os.environ.get("ANTHROPIC_API_KEY"):
@@ -98,11 +122,10 @@ class OpenAICompatProvider:
             else:
                 base_url = OLLAMA_BASE_URL
         elif api_key is None:
-            # An explicit base URL for a known vendor picks up that vendor's key.
-            if "api.anthropic.com" in base_url:
-                api_key = os.environ.get("ANTHROPIC_API_KEY")
-            elif "api.openai.com" in base_url:
-                api_key = os.environ.get("OPENAI_API_KEY")
+            for host, env_var in VENDOR_API_KEY_ENV:
+                if host in base_url:
+                    api_key = os.environ.get(env_var)
+                    break
         if model is None:
             raise ProviderError(
                 f"no model configured for {base_url}: pass --model or set STS_BENCH_MODEL"
@@ -163,9 +186,14 @@ class OpenAICompatProvider:
             headers["Authorization"] = f"Bearer {self._api_key}"
         return headers
 
+    def _endpoint_url(self) -> str:
+        """Full request URL. Overridable for backends that route differently
+        (e.g. Gemini puts the model and method in the path)."""
+        return f"{self.base_url}{self.ENDPOINT}"
+
     def _http_post(self, payload: dict[str, Any]) -> dict[str, Any]:
         request = urllib.request.Request(
-            f"{self.base_url}{self.ENDPOINT}",
+            self._endpoint_url(),
             data=json.dumps(payload).encode("utf-8"),
             headers=self._headers(),
             method="POST",
@@ -188,10 +216,20 @@ class OpenAICompatProvider:
             raise ProviderError(f"non-JSON response: {body[:500]!r}") from exc
 
 
+def _env_int(name: str, default: int) -> int:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw.replace("_", ""))
+    except ValueError as exc:
+        raise ProviderError(f"{name} must be an integer") from exc
+
+
 def _retry_delay(exc: RetryableError, attempt: int) -> float:
     if exc.retry_after is not None:
         return max(0.0, exc.retry_after)
-    return min(2 ** attempt, 30)
+    return min(2 ** attempt, MAX_RETRY_WAIT)
 
 
 def _retry_after(headers: Any, now: float | None = None) -> float | None:
@@ -272,14 +310,27 @@ def _parse_response(data: dict[str, Any]) -> ModelResponse:
         (message[k] for k in REASONING_KEYS if isinstance(message.get(k), str) and message[k]),
         None,
     )
+    prompt_tokens = usage.get("prompt_tokens") or 0
+    completion_tokens = usage.get("completion_tokens") or 0
+    reasoning_tokens = details.get("reasoning_tokens") or 0
+    # Gemini's OpenAI-compat endpoint bills hidden thinking inside total_tokens
+    # without folding it into completion_tokens or exposing a details breakdown.
+    # Recover the gap so output (providers bill thinking as output) and the cost
+    # report aren't undercounted. For backends where total == prompt + completion
+    # this is a no-op; reasoning_tokens stays a subset of completion_tokens.
+    total_tokens = usage.get("total_tokens") or 0
+    hidden = total_tokens - prompt_tokens - completion_tokens
+    if hidden > 0:
+        completion_tokens += hidden
+        reasoning_tokens = reasoning_tokens or hidden
     return ModelResponse(
         message=message,
         text=message.get("content"),
         tool_calls=tool_calls,
         usage=Usage(
-            prompt_tokens=usage.get("prompt_tokens") or 0,
-            completion_tokens=usage.get("completion_tokens") or 0,
-            reasoning_tokens=details.get("reasoning_tokens") or 0,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            reasoning_tokens=reasoning_tokens,
             cache_read_tokens=prompt_details.get("cached_tokens") or 0,
         ),
         reasoning=reasoning,

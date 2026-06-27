@@ -50,7 +50,21 @@ def test_payload_translates_chat_conversation_to_native():
     assert seen["system"] == [
         {"type": "text", "text": "you are playing", "cache_control": {"type": "ephemeral"}}
     ]
-    assert seen["messages"] == [{"role": "user", "content": "<run>floor 1</run>"}]
+    # the final turn carries the conversation cache breakpoint -- string content
+    # is promoted to a marked text block; no SDK-only top-level cache_control
+    assert seen["messages"] == [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text",
+                    "text": "<run>floor 1</run>",
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
+        }
+    ]
+    assert "cache_control" not in seen
     assert seen["tools"] == [
         {"name": "play_card", "description": "play", "input_schema": {"type": "object"}}
     ]
@@ -113,9 +127,17 @@ def test_next_round_echoes_blocks_and_translates_tool_results():
         "role": "assistant",
         "content": [thinking_block("check the deck"), tool_use_block("toolu_1", "get_deck", {})],
     }
+    # the last turn's final block carries the conversation cache breakpoint
     assert second[2] == {
         "role": "user",
-        "content": [{"type": "tool_result", "tool_use_id": "toolu_1", "content": "10 cards"}],
+        "content": [
+            {
+                "type": "tool_result",
+                "tool_use_id": "toolu_1",
+                "content": "10 cards",
+                "cache_control": {"type": "ephemeral"},
+            }
+        ],
     }
     # and the private _blocks key never goes over the wire
     assert all(BLOCKS_KEY not in m for m in second)
@@ -142,7 +164,7 @@ def test_tool_result_and_followup_digest_share_one_user_turn():
     assert [m["role"] for m in seen["messages"]] == ["user", "assistant", "user"]
     assert seen["messages"][2]["content"] == [
         {"type": "tool_result", "tool_use_id": "toolu_1", "content": "executed"},
-        {"type": "text", "text": "<run>floor 2</run>"},
+        {"type": "text", "text": "<run>floor 2</run>", "cache_control": {"type": "ephemeral"}},
     ]
 
 
