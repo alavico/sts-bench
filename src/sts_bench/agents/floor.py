@@ -19,6 +19,8 @@ are built for.
 
 from __future__ import annotations
 
+from typing import Any
+
 from ..state.schema import StateMessage
 from ..state.serialize import combat_briefing, cursory_view, power_definitions
 from .base import ACTION_PROTOCOL, GOAL_AND_RULES, READING_THE_VIEW, Decision, ToolLoopAgent, tool_result
@@ -56,6 +58,35 @@ class FloorAgent(ToolLoopAgent):
         """
         self._outcome = line
         self._floor_outcomes.append(line)
+
+    def resume(
+        self,
+        *,
+        floor: int | None,
+        conversation: list[dict[str, Any]],
+        pending_call_id: str | None,
+        outcome: str | None,
+        floor_outcomes: list[str],
+        in_combat: bool,
+    ) -> None:
+        """Restore the cross-decision state needed to continue a floor.
+
+        A resumed run has already replayed the wire commands into the live
+        game. The agent still needs its provider conversation and the result
+        line for the last executed action so the next model request closes the
+        pending action tool call exactly like uninterrupted play would.
+        """
+        self._conversation = [dict(m) for m in conversation]
+        self._floor = floor
+        self._pending_call_id = pending_call_id
+        self._outcome = outcome
+        self._floor_outcomes = list(floor_outcomes)
+        self._combat_briefed = in_combat and any(
+            "<deck_reference>" in str(m.get("content") or "")
+            for m in self._conversation
+            if m.get("role") == "user"
+        )
+        self._powers_defined = frozenset()
 
     def decide(self, message: StateMessage) -> Decision:
         state = message.game_state

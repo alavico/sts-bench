@@ -10,6 +10,7 @@ baseline; the default scaffold is the floor agent.
 from __future__ import annotations
 
 from collections import deque
+from typing import Iterable
 
 from ..state.schema import StateMessage
 from ..state.serialize import cursory_view
@@ -40,6 +41,10 @@ class ZeroShotAgent(ToolLoopAgent):
         a fresh conversation; this trail is its only cross-decision context.
         """
         self._recent.append(line)
+
+    def resume(self, recent: Iterable[str]) -> None:
+        self._recent.clear()
+        self._recent.extend(recent)
 
     def decide(self, message: StateMessage) -> Decision:
         character = message.game_state.character if message.game_state else "adventurer"

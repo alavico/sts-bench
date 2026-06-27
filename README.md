@@ -53,6 +53,14 @@ uv run python -m sts_bench.replay <file> --floor 14   # just the floor that went
 
 Every replay verifies the packet property: each floor's decisions tile its stored conversation exactly — no message stored twice, none orphaned.
 
+Resume a stopped run from its trajectory, preserving the original model/API/scaffold config and continuing the same JSONL after a successful replay to the checkpoint:
+
+```bash
+uv run python -m sts_bench.resume logs/<date>/trajectories/play-<timestamp>.jsonl
+```
+
+`resume` uses the structured trajectory rather than the protocol log: it replays the recorded commands into the live game, backs up the JSONL, removes the old closeout records, restores the current floor conversation, and appends the continuation.
+
 Or render the run as a self-contained HTML report — HP and spend charts across the floors, the route walked on each act map, turn-by-turn tables for every fight, and each decision's full conversation, browsable offline in one file:
 
 ```bash

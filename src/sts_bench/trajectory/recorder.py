@@ -113,6 +113,55 @@ class RunRecorder:
         self._usage = Usage()
         self._finished = False
 
+    @classmethod
+    def resume(
+        cls,
+        store: TrajectoryStore,
+        *,
+        run: RunRecord,
+        decisions: list[DecisionRecord],
+        current_floor: FloorRecord | None,
+        checkpoint_state: dict[str, Any],
+    ) -> "RunRecorder":
+        """Build a recorder that continues an existing trajectory.
+
+        The caller is responsible for pruning the old terminal run record and
+        any partial floor closeout before appending new records. Decision
+        records remain the source of truth for counts and token totals.
+        """
+        recorder = cls(
+            store,
+            run_id=run.run_id,
+            seed=run.seed,
+            character=run.character,
+            ascension=run.ascension,
+            model=run.model,
+            provider_base_url=run.provider_base_url,
+            api=run.api,
+            reasoning_effort=run.reasoning_effort,
+            agent=run.agent,
+            prompt_hash=run.prompt_hash,
+            tool_schema_hash=run.tool_schema_hash,
+        )
+        recorder._run.started_at = run.started_at
+        recorder._decisions = max((d.decision_index for d in decisions), default=0)
+        recorder._forced = sum(1 for d in decisions if d.forced_reason is not None)
+        recorder._unparsed = run.totals.unparsed_states
+        recorder._usage = Usage(
+            prompt_tokens=sum(d.usage.prompt_tokens for d in decisions),
+            completion_tokens=sum(d.usage.completion_tokens for d in decisions),
+            reasoning_tokens=sum(d.usage.reasoning_tokens for d in decisions),
+            cache_read_tokens=sum(d.usage.cache_read_tokens for d in decisions),
+        )
+        if current_floor is not None:
+            recorder._entry_state = current_floor.entry_state
+            recorder._messages = [dict(m) for m in current_floor.conversation]
+            recorder._combat_turns = current_floor.scorecard.combat_turns
+        else:
+            recorder._entry_state = checkpoint_state
+        recorder._last_state = checkpoint_state
+        return recorder
+
     def observe(self, game_state: dict[str, Any]) -> None:
         """Every state the loop sees comes through here, before its decision."""
         if not game_state:
