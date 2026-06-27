@@ -95,9 +95,18 @@ const genTime = (iso) => {
 
 /* ---------- config colors + run lookup ---------- */
 
-const PALETTE = ["#5bc0de", "#e8c860", "#e06c5b", "#7ed87e", "#b07cf0", "#f0a850", "#6f87c0", "#d87ec5"];
+const PALETTE = [
+  "var(--series-1)",
+  "var(--series-2)",
+  "var(--series-3)",
+  "var(--series-4)",
+  "var(--series-5)",
+  "var(--series-6)",
+  "var(--series-7)",
+  "var(--series-8)",
+];
 const CONFIG_COLOR = new Map(DATA.configs.map((c, i) => [c.label, PALETTE[i % PALETTE.length]]));
-const color = (label) => CONFIG_COLOR.get(label) || "#9aa0a6";
+const color = (label) => CONFIG_COLOR.get(label) || "var(--dim)";
 
 const RUNS_OF = new Map(DATA.configs.map((c) => [c.label, []]));
 for (const run of DATA.runs) (RUNS_OF.get(run.config) || []).push(run);
@@ -126,16 +135,15 @@ const signed = (metric, d) =>
 /* Diverging tint, calm and colorblind-safe (blue ahead of the pack, amber
    behind), painted as a translucent overlay so the number leads and the cell
    reads in both themes. t is oriented [0,1], 0.5 = middle of the field. */
-const AHEAD = [96, 165, 230], BEHIND = [223, 150, 74];
 function heatBg(t) {
   if (t == null) return null;
   const m = t - 0.5;
-  const [r, g, b] = m >= 0 ? AHEAD : BEHIND;
-  return `rgba(${r},${g},${b},${(Math.min(0.5, Math.abs(m) * 0.85 + 0.05)).toFixed(3)})`;
+  const rgb = m >= 0 ? "var(--ahead-rgb)" : "var(--behind-rgb)";
+  return `rgba(${rgb}, ${(Math.min(0.5, Math.abs(m) * 0.85 + 0.05)).toFixed(3)})`;
 }
 function deltaBg(better, mag) {
-  const [r, g, b] = better ? AHEAD : BEHIND;
-  return `rgba(${r},${g},${b},${(0.12 + 0.42 * mag).toFixed(3)})`;
+  const rgb = better ? "var(--ahead-rgb)" : "var(--behind-rgb)";
+  return `rgba(${rgb}, ${(0.12 + 0.42 * mag).toFixed(3)})`;
 }
 
 /* Sort helpers shared by the grid and the runs table: nulls sink, strings

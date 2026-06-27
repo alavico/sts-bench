@@ -146,7 +146,7 @@ def _run_cost(m: RunMetrics, pricing: Pricing) -> float | None:
     rates = pricing.get(m.model)
     if rates is None:
         return None
-    return run_cost(m.prompt_tokens, m.completion_tokens, m.cache_read_tokens, rates)
+    return run_cost(m.prompt_tokens, m.completion_tokens, m.cache_read_tokens, rates, m.model)
 
 
 def _cost_per_run(agg: SuiteAggregate, pricing: Pricing) -> float | None:

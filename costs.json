@@ -5,8 +5,8 @@
   "claude-opus-4-8": [5.00, 25.00],
   "claude-sonnet-4-6": [3.00, 15.00],
   "claude-haiku-4-5": [1.00, 5.00],
-  "gemini-3.1-pro": [2.00, 12.00],
-  "gemini-3-flash": [0.50, 3.00],
+  "gemini-3.1-pro-preview": [2.00, 12.00],
+  "gemini-3.5-flash": [1.50, 9.00],
   "kimi-k2.6": [0.95, 4.00],
   "glm-5.2": [1.40, 4.40]
 }

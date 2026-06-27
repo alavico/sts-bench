@@ -282,6 +282,19 @@ def test_run_cost_credits_cached_tokens_at_the_reduced_rate():
     assert round(data["run"]["cost"], 2) == 4.40
 
 
+def test_run_cost_uses_geminis_shallower_cache_discount():
+    # Same tokens as above, but Gemini's implicit cache only discounts 75%, so a
+    # hit bills at 0.25x not 0.1x: 0.2M*5 + 0.8M*5*0.25 + 0.1M*30 = 1.0 + 1.0 + 3.0
+    # = $5.00 -- charging it at the Anthropic/OpenAI 0.1x would understate by $0.60.
+    totals = RunTotals(
+        decisions=1,
+        usage=TokenUsage(prompt_tokens=1_000_000, cache_read_tokens=800_000, completion_tokens=100_000),
+    )
+    run = make_run_record(model="gemini-3.5-flash", totals=totals)
+    data = build_report_data([run, make_floor_record()], {"gemini-3.5-flash": (5.0, 30.0)})
+    assert round(data["run"]["cost"], 2) == 5.00
+
+
 def test_run_cost_is_none_for_an_unpriced_model():
     run = make_run_record(model="some-unlisted-model")
     data = build_report_data([run, make_floor_record()], {"gpt-5.5": (5.0, 30.0)})

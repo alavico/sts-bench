@@ -20,22 +20,43 @@ from .seeds import Suite
 # than a stale guess.
 Pricing = dict[str, tuple[float, float]]
 
-# Cached prompt tokens bill at a fraction of the input rate; 0.1x is the
-# representative discount (confirm the provider's exact multiplier). cache_read
+# Cached prompt tokens bill at a fraction of the input rate, and that fraction
+# is provider-specific. Anthropic and OpenAI credit a cache read at 0.1x the
+# input rate (90% off); Gemini's implicit cache only discounts ~75%, so a hit
+# still pays 0.25x -- charging it at 0.1x understated every Gemini run. cache_read
 # tokens are a subset of prompt_tokens, so only the uncached remainder pays full
-# input rate -- ignoring this overstates cost on cache-heavy agent runs.
-CACHE_READ_MULT = 0.1
+# input rate. Unknown backends default to the shallower 0.25x discount: a deeper
+# discount is the exception, so this never surprises us by costing more than the
+# estimate. Keyed by model-name prefix since pricing is already model-keyed.
+DEFAULT_CACHE_READ_MULT = 0.25
+_CACHE_READ_MULT = (
+    ("claude-", 0.1),
+    ("gpt-", 0.1),
+    ("gemini-", 0.25),
+)
+
+
+def cache_read_mult(model: str) -> float:
+    """The fraction of the input rate a cached prompt token bills at, by provider."""
+    for prefix, mult in _CACHE_READ_MULT:
+        if model.startswith(prefix):
+            return mult
+    return DEFAULT_CACHE_READ_MULT
 
 
 def run_cost(
-    prompt_tokens: int, completion_tokens: int, cache_read_tokens: int, rates: tuple[float, float]
+    prompt_tokens: int,
+    completion_tokens: int,
+    cache_read_tokens: int,
+    rates: tuple[float, float],
+    model: str,
 ) -> float:
-    """Dollar cost of one run, crediting cached input at CACHE_READ_MULT."""
+    """Dollar cost of one run, crediting cached input at the model's cache rate."""
     rate_in, rate_out = rates
     uncached = prompt_tokens - cache_read_tokens
     return (
         uncached * rate_in
-        + cache_read_tokens * rate_in * CACHE_READ_MULT
+        + cache_read_tokens * rate_in * cache_read_mult(model)
         + completion_tokens * rate_out
     ) / 1e6
 
@@ -204,7 +225,7 @@ def _cost(agg: SuiteAggregate, pricing: Pricing) -> str:
     if rates is None:
         return "-"
     costs = [
-        run_cost(run.prompt_tokens, run.completion_tokens, run.cache_read_tokens, rates)
+        run_cost(run.prompt_tokens, run.completion_tokens, run.cache_read_tokens, rates, run.model)
         for run in agg.runs
     ]
     return f"${sum(costs) / len(costs):.2f}" if costs else "-"

@@ -2,7 +2,7 @@
    chart frame, warning banner, and tooltip that both pages share. */
 
 .config-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 7px; vertical-align: -1px; }
-.hashes { color: var(--dim); font-size: 10.5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.hashes { color: var(--dim); font-size: 10.5px; font-family: var(--font-mono); }
 .ctl-label { color: var(--dim); font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
 
 /* ---------- controls (metric selector, selection, delta) ---------- */

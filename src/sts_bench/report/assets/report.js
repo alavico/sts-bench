@@ -69,26 +69,26 @@ const title = (s) => (s ? s[0].toUpperCase() + s.slice(1).toLowerCase() : s);
 /* ---------- room styling ---------- */
 
 const ROOM = {
-  MonsterRoom: ["Monster", "#e06c5b", "M"],
-  MonsterRoomElite: ["Elite", "#b07cf0", "E"],
-  MonsterRoomBoss: ["Boss", "#ff5757", "B"],
-  EventRoom: ["Event", "#5bc0de", "?"],
-  NeowRoom: ["Start", "#9aa0a6", "N"],
-  ShopRoom: ["Shop", "#e8c860", "$"],
-  RestRoom: ["Rest", "#7ed87e", "R"],
-  TreasureRoom: ["Chest", "#f0a850", "T"],
-  TreasureRoomBoss: ["Boss chest", "#f0a850", "T"],
+  MonsterRoom: ["Monster", "var(--red)", "M", "var(--ink-on-red)"],
+  MonsterRoomElite: ["Elite", "var(--series-5)", "E", "var(--ink-on-purple)"],
+  MonsterRoomBoss: ["Boss", "var(--bright-red)", "B", "var(--ink-on-red)"],
+  EventRoom: ["Event", "var(--blue)", "?", "var(--ink-on-blue)"],
+  NeowRoom: ["Start", "var(--dim)", "N", "var(--ink-on-dim)"],
+  ShopRoom: ["Shop", "var(--gold)", "$", "var(--ink-on-gold)"],
+  RestRoom: ["Rest", "var(--green)", "R", "var(--ink-on-green)"],
+  TreasureRoom: ["Chest", "var(--orange)", "T", "var(--ink-on-orange)"],
+  TreasureRoomBoss: ["Boss chest", "var(--orange)", "T", "var(--ink-on-orange)"],
 };
 
 function room(type) {
   const entry = ROOM[type];
-  if (entry) return { label: entry[0], color: entry[1], symbol: entry[2] };
-  return { label: type || "?", color: "#9aa0a6", symbol: "?" };
+  if (entry) return { label: entry[0], color: entry[1], symbol: entry[2], ink: entry[3] };
+  return { label: type || "?", color: "var(--dim)", symbol: "?", ink: "var(--ink-on-dim)" };
 }
 
-const SYMBOL_COLOR = {};
-for (const [, color, symbol] of Object.values(ROOM)) {
-  if (!(symbol in SYMBOL_COLOR)) SYMBOL_COLOR[symbol] = color;
+const SYMBOL_STYLE = {};
+for (const [, color, symbol, ink] of Object.values(ROOM)) {
+  if (!(symbol in SYMBOL_STYLE)) SYMBOL_STYLE[symbol] = { color, ink };
 }
 
 const FLOOR_BY_NO = new Map(DATA.floors.map((f) => [f.floor, f]));
@@ -136,12 +136,11 @@ function tipCard(floor, exit = false) {
   if (sc.combat_turns) row("Combat", `${sc.combat_turns} turns`);
   row("Decisions", String(floor.decisions.length));
   row("Tokens", num(floor.usage.prompt + floor.usage.completion));
-  if (floor.reward) row("Reward", floor.reward.total > 0 ? "+" + floor.reward.total : String(floor.reward.total));
 
   const gains = [...sc.cards_gained, ...sc.relics_gained, ...sc.potions_gained];
   return el("div", { class: "tipcard" },
     el("div", { class: "tip-head" },
-      el("span", { class: "sym", style: "background:" + info.color }, info.symbol),
+      el("span", { class: "sym", style: `background:${info.color};color:${info.ink}` }, info.symbol),
       el("b", {}, exit ? "End of run" : "Floor " + floor.floor),
       el("span", { class: "dim" }, exit ? ` · after floor ${floor.floor}` : ` · ${info.label}`)),
     el("div", { class: "tip-rows" }, rows),
@@ -315,8 +314,8 @@ function overview() {
     el("div", { class: "glance" },
       el("div", { class: "glance-charts" },
         hpChart(floors),
-        toggledStrip(floors),
-        legendRow()),
+        legendRow(),
+        toggledStrip(floors)),
       actMaps()));
 }
 
@@ -604,12 +603,13 @@ function actMapBody(act) {
     ? sv("polyline", { points: routePts.join(" "), class: "route" })
     : null;
 
-  const mapNode = (cx, cy, symbol, color, step) => {
+  const mapNode = (cx, cy, symbol, style, step) => {
     const node = sv("g", { class: "map-node" + (step ? " visited" : "") },
-      sv("circle", { cx, cy, r: step ? 10 : 7, fill: step ? color : null, stroke: color }),
+      sv("circle", { cx, cy, r: step ? 10 : 7, fill: step ? style.color : null, stroke: style.color }),
       sv("text", {
         x: cx, y: cy + 3.5, "text-anchor": "middle",
         class: "map-symbol" + (step ? " on" : ""),
+        style: step ? "fill:" + style.ink : null,
       }, symbol));
     if (step) linkFloor(node, step.floor, () => floorTipFor(step.floor));
     return node;
@@ -617,11 +617,11 @@ function actMapBody(act) {
 
   const nodes = act.nodes.map((node) =>
     mapNode(px(node.x), py(node.y), node.symbol || "?",
-      SYMBOL_COLOR[node.symbol] || "#9aa0a6",
+      SYMBOL_STYLE[node.symbol] || { color: "var(--dim)", ink: "var(--ink-on-dim)" },
       visited.get(node.x + "," + node.y)));
 
   const bossNode = [
-    mapNode(boss.x, boss.y, "B", SYMBOL_COLOR.B, bossStep),
+    mapNode(boss.x, boss.y, "B", SYMBOL_STYLE.B, bossStep),
     sv("text", {
       x: boss.x, y: boss.y - 16, "text-anchor": "middle",
       class: "boss-name" + (bossStep ? " taken" : ""),
@@ -699,7 +699,7 @@ function deckView() {
         el("div", { class: "panel-note" },
           "Edge color marks the card type:",
           [["var(--red)", "attack"], ["var(--green)", "skill"], ["var(--blue)", "power"],
-            ["#b07cf0", "curse"], ["var(--dim)", "status"]].map(([color, type]) => [
+            ["var(--series-5)", "curse"], ["var(--dim)", "status"]].map(([color, type]) => [
             el("span", { class: "dot", style: "background:" + color }), type]))) : null,
       el("div", { class: "items" },
         DATA.relics.length ? panel("Relics",
@@ -821,7 +821,7 @@ function floorsView() {
 function floorHeading(floor) {
   const info = room(floor.type);
   return el("span", { class: "floor-heading" },
-    el("span", { class: "sym", style: "background:" + info.color }, info.symbol),
+    el("span", { class: "sym", style: `background:${info.color};color:${info.ink}` }, info.symbol),
     el("b", {}, `Floor ${floor.floor}`), `· ${info.label}`);
 }
 
@@ -829,8 +829,7 @@ function floorMeta(floor) {
   const sc = floor.scorecard;
   return ` HP ${floor.entry.hp}→${floor.exit.hp} (${signed(sc.hp_delta)}) · gold ${floor.entry.gold}→${floor.exit.gold}` +
     (sc.combat_turns ? ` · ${sc.combat_turns} turns` : "") +
-    ` · ${floor.decisions.length} decisions · ${num(floor.usage.prompt + floor.usage.completion)} tok` +
-    (floor.reward ? ` · reward ${floor.reward.total > 0 ? "+" : ""}${floor.reward.total}` : "");
+    ` · ${floor.decisions.length} decisions · ${num(floor.usage.prompt + floor.usage.completion)} tok`;
 }
 
 function floorBody(floor) {
@@ -850,12 +849,6 @@ function floorBody(floor) {
       gains.map(([kind, name]) => gainChip(kind, "+", name, title(kind) + " gained")),
       changes ? changes.removed.map((name) => gainChip("card", "−", name, "Card removed from the deck")) : null,
       changes ? changes.upgraded.map((name) => gainChip("card", "↑", name, "Card upgraded")) : null));
-  }
-  if (floor.reward && Object.keys(floor.reward.components || {}).length) {
-    body.append(el("div", { class: "dim small" },
-      `reward ${floor.reward.spec}: ` +
-      Object.entries(floor.reward.components)
-        .map(([k, v]) => `${k} ${v > 0 ? "+" : ""}${v}`).join(", ")));
   }
   if (floor.turns) body.append(fightsView(floor.turns));
   body.append(el("div", { class: "decisions" }, floor.decisions.map(decisionView)));

@@ -1,8 +1,8 @@
 """Shape one run's trajectory records into the report's data: plain dicts,
 ready to embed as JSON.
 
-The structured records carry the economics directly -- scorecards, rewards,
-token spend, decision costs. What they hold only as conversation text -- the
+The structured records carry the economics directly -- scorecards, token
+spend, decision costs. What they hold only as conversation text -- the
 turn-by-turn course of each fight, the route walked across the act maps -- is
 mined from the stored digests (see digest). Everything is shaped here, in
 Python, so the page script stays a renderer.
@@ -54,7 +54,7 @@ def _cost(run: RunRecord, pricing: Pricing) -> float | None:
     if rates is None:
         return None
     u = run.totals.usage
-    return run_cost(u.prompt_tokens, u.completion_tokens, u.cache_read_tokens, rates)
+    return run_cost(u.prompt_tokens, u.completion_tokens, u.cache_read_tokens, rates, run.model)
 
 
 def _run(run: RunRecord | None, floors: list[FloorRecord], pricing: Pricing) -> dict[str, Any]:
@@ -145,15 +145,6 @@ def _floor(floor: FloorRecord, decisions: list[DecisionRecord]) -> dict[str, Any
             "potions_gained": scorecard.potions_gained,
             "combat_turns": scorecard.combat_turns,
         },
-        "reward": (
-            {
-                "spec": floor.reward.spec_version,
-                "total": floor.reward.total,
-                "components": floor.reward.components,
-            }
-            if floor.reward is not None
-            else None
-        ),
         "deck_changes": _deck_changes(floor.entry_state, floor.exit_state),
         "violations": verify_floor(floor, decisions),
         "usage": _usage(totals),
