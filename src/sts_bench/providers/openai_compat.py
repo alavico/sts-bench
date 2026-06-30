@@ -35,6 +35,7 @@ VENDOR_API_KEY_ENV: tuple[tuple[str, str], ...] = (
     ("generativelanguage.googleapis.com", "GOOGLE_API_KEY"),
     ("api.moonshot.ai", "MOONSHOT_API_KEY"),
     ("api.z.ai", "ZAI_API_KEY"),
+    ("openrouter.ai", "OPENROUTER_API_KEY"),
 )
 
 DEFAULT_TIMEOUT = 120.0
