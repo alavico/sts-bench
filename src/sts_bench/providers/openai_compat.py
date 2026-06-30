@@ -174,6 +174,12 @@ class OpenAICompatProvider:
         }
         if tools:
             payload["tools"] = tools
+            # Some chat-path models (e.g. GLM) narrate the action in prose
+            # instead of emitting the tool call when the move is obvious
+            # (end_turn with no energy), stalling the decision until the
+            # forced fallback. Requiring a tool call holds them to the
+            # protocol: exactly one action commits the turn.
+            payload["tool_choice"] = "required"
         if self._reasoning_effort is not None:
             payload["reasoning_effort"] = self._reasoning_effort
         return payload
