@@ -180,6 +180,11 @@ class OpenAICompatProvider:
             # forced fallback. Requiring a tool call holds them to the
             # protocol: exactly one action commits the turn.
             payload["tool_choice"] = "required"
+            # ...and the same models can degenerate into emitting the same
+            # tool call dozens of times in one response, which both stalls on
+            # the giant generation and bloats the floor transcript on replay.
+            # One action commits a decision here, so disallow the batch.
+            payload["parallel_tool_calls"] = False
         if self._reasoning_effort is not None:
             payload["reasoning_effort"] = self._reasoning_effort
         return payload
