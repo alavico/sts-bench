@@ -11,6 +11,7 @@ POST, and urllib is enough.
 
 from __future__ import annotations
 
+import http.client
 import json
 import os
 import time
@@ -222,10 +223,18 @@ class OpenAICompatProvider:
             raise ProviderError(f"HTTP {exc.code}: {detail}") from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise RetryableError(str(exc)) from exc
+        except http.client.HTTPException as exc:
+            # A connection dropped mid-body (IncompleteRead on a chunked
+            # response, RemoteDisconnected) surfaces as HTTPException, not
+            # OSError -- as transient as a 503, so retry it.
+            raise RetryableError(f"{type(exc).__name__}: {exc}") from exc
         try:
             return json.loads(body)
         except json.JSONDecodeError as exc:
-            raise ProviderError(f"non-JSON response: {body[:500]!r}") from exc
+            # APIs answer JSON even for errors; a body that doesn't parse is
+            # transport debris -- e.g. OpenRouter's keep-alive whitespace
+            # padding with the actual payload never delivered.
+            raise RetryableError(f"non-JSON response: {body[:500]!r}") from exc
 
 
 def _env_int(name: str, default: int) -> int:
@@ -309,6 +318,20 @@ def _without_reasoning(message: dict[str, Any]) -> dict[str, Any]:
 
 
 def _parse_response(data: dict[str, Any]) -> ModelResponse:
+    # Gateways (OpenRouter) report upstream failures inside an HTTP 200 body:
+    # an "error" object, or a completion with no content and no usage at all.
+    # Both are outages wearing a success status -- retry them like a 5xx.
+    # The code inside the error is the *upstream's* status passed through
+    # ("Provider returned error", code 400), and a retry can route to a
+    # different upstream host, so even 4xx is worth the retry budget; only
+    # auth, credits, and moderation are terminal for the whole gateway.
+    error = data.get("error")
+    if error:
+        detail = json.dumps(error)[:500]
+        code = error.get("code") if isinstance(error, dict) else None
+        if code in (401, 402, 403):
+            raise ProviderError(f"error in completion body: {detail}")
+        raise RetryableError(f"error in completion body: {detail}")
     try:
         message = data["choices"][0]["message"]
     except (KeyError, IndexError, TypeError) as exc:
@@ -335,6 +358,11 @@ def _parse_response(data: dict[str, Any]) -> ModelResponse:
     if hidden > 0:
         completion_tokens += hidden
         reasoning_tokens = reasoning_tokens or hidden
+    if not tool_calls and not message.get("content") and not reasoning and completion_tokens == 0:
+        # No model emitted this: nothing was said and nothing was billed.
+        # Seen from OpenRouter as a run of instant empty 200s -- each one
+        # burned a scaffold round and 10 of them forced a fallback action.
+        raise RetryableError("empty completion: no content, no tool calls, zero usage")
     return ModelResponse(
         message=message,
         text=message.get("content"),

@@ -27,7 +27,13 @@ def test_payload_carries_model_messages_and_tools():
     messages = [{"role": "user", "content": "hello"}]
     tools = [{"type": "function", "function": {"name": "f", "parameters": {}}}]
     provider.complete(messages, tools=tools)
-    assert seen == {"model": "test-model", "messages": messages, "tools": tools}
+    assert seen == {
+        "model": "test-model",
+        "messages": messages,
+        "tools": tools,
+        "tool_choice": "required",
+        "parallel_tool_calls": False,
+    }
 
 
 def test_from_env_explicit_known_base_url_picks_that_vendors_key(monkeypatch):
@@ -246,6 +252,98 @@ def test_retry_after_header_wins_over_reset_headers():
         "anthropic-ratelimit-input-tokens-reset": "2026-06-25T12:00:30Z",
     }
     assert _retry_after(headers, now=1_782_388_800.0) == 3
+
+
+def test_error_in_200_body_is_retryable():
+    def gateway_error(payload):
+        return {"error": {"message": "upstream provider unavailable", "code": 502}}
+
+    with pytest.raises(ProviderError, match="upstream provider unavailable"):
+        make_provider(gateway_error, max_retries=0).complete([])
+
+
+def test_client_error_in_200_body_is_not_retried():
+    attempts = []
+
+    def bad_key(payload):
+        attempts.append(1)
+        return {"error": {"message": "invalid api key", "code": 401}}
+
+    with pytest.raises(ProviderError, match="invalid api key"):
+        make_provider(bad_key, max_retries=3).complete([])
+    assert len(attempts) == 1
+
+
+def test_upstream_400_passthrough_is_retried(monkeypatch):
+    monkeypatch.setattr("sts_bench.providers.openai_compat.time.sleep", lambda s: None)
+    attempts = []
+
+    def reroutes(payload):
+        attempts.append(1)
+        if len(attempts) == 1:
+            return {"error": {"message": "Provider returned error", "code": 400}}
+        return completion({"role": "assistant", "content": "ok"})
+
+    response = make_provider(reroutes, max_retries=2).complete([])
+    assert response.text == "ok"
+    assert len(attempts) == 2
+
+
+def test_empty_completion_is_retryable(monkeypatch):
+    monkeypatch.setattr("sts_bench.providers.openai_compat.time.sleep", lambda s: None)
+    attempts = []
+
+    def flaky(payload):
+        attempts.append(1)
+        if len(attempts) == 1:
+            return completion({"role": "assistant", "content": None, "refusal": None})
+        return completion({"role": "assistant", "content": "ok"})
+
+    response = make_provider(flaky, max_retries=1).complete([])
+    assert response.text == "ok"
+    assert len(attempts) == 2
+
+
+def test_non_json_body_is_retryable(monkeypatch):
+    class PaddedResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc_info):
+            return False
+
+        def read(self):
+            return b"\n         \n\n         \n"
+
+    monkeypatch.setattr(
+        "sts_bench.providers.openai_compat.urllib.request.urlopen",
+        lambda request, timeout: PaddedResponse(),
+    )
+    provider = OpenAICompatProvider(base_url="http://test.local/v1", model="test-model")
+    with pytest.raises(RetryableError, match="non-JSON response"):
+        provider._http_post({"model": "test-model", "messages": []})
+
+
+def test_connection_dropped_mid_body_is_retryable(monkeypatch):
+    import http.client
+
+    class DroppedResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc_info):
+            return False
+
+        def read(self):
+            raise http.client.IncompleteRead(b"partial")
+
+    monkeypatch.setattr(
+        "sts_bench.providers.openai_compat.urllib.request.urlopen",
+        lambda request, timeout: DroppedResponse(),
+    )
+    provider = OpenAICompatProvider(base_url="http://test.local/v1", model="test-model")
+    with pytest.raises(RetryableError, match="IncompleteRead"):
+        provider._http_post({"model": "test-model", "messages": []})
 
 
 def test_gives_up_after_retry_budget(monkeypatch):
