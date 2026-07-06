@@ -165,6 +165,7 @@ def _run(run: CampaignRun, config_label: str, pricing: Pricing) -> dict[str, Any
         "run_id": m.run_id,
         "config": config_label,
         "seed": m.seed or "(random)",
+        "ascension": m.ascension,
         "outcome": outcome,
         "floor": m.floor_reached,
         "score": m.score,

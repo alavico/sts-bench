@@ -36,7 +36,11 @@ def render_html(
     title: str | None = None,
 ) -> str:
     page = (_ASSETS / template).read_text()
-    title = str(title or data.get("run", {}).get("run_id") or "run")
+    # A run's tab is named by what a reader knows it as -- model and seed --
+    # never the internal run id (which only survives as a last resort).
+    run = data.get("run") or {}
+    named = " · ".join(s for s in (run.get("model"), run.get("seed")) if s)
+    title = str(title or named or run.get("run_id") or "run")
     # The data payload is substituted last so nothing inside it is ever
     # subject to the other replacements.
     return (

@@ -50,12 +50,14 @@ def make_floor(
     *,
     gold_delta=0,
     potions_gained=(),
+    entry_gold: int | None = None,
     exit_gold: int | None = None,
 ):
     return FloorRecord(
         run_id=run_id,
         floor=floor,
         scorecard=FloorScorecard(gold_delta=gold_delta, potions_gained=list(potions_gained)),
+        entry=StateSummary(gold=entry_gold),
         exit=StateSummary(gold=exit_gold),
         reward=Reward(spec_version="v1", total=reward_total, components={"floor_advanced": reward_total}),
     )
@@ -152,6 +154,51 @@ def test_strategic_metrics_from_records():
     assert metrics.gold_final == 139
 
 
+def test_gold_spent_ratio_counts_the_starting_purse():
+    # The run opens with 99 gold; spending it is not overspending, so the
+    # ratio is spent over everything available, never more than 100%.
+    records = [
+        make_floor(floor=1, gold_delta=-50, entry_gold=99, exit_gold=49),
+        make_run(floor_reached=2),
+    ]
+    metrics = RunMetrics.from_records(records)
+    assert metrics.gold_start == 99
+    assert metrics.gold_spent == 50
+    assert metrics.gold_spent_ratio == 50 / 99
+
+
+def test_potion_used_without_a_recorded_gain_counts_as_gained():
+    # Entropic Brew's products are born and drunk within a single floor, so
+    # they never cross a floor boundary into a scorecard. The use itself
+    # proves the potion existed; the rate must never exceed 100%.
+    records = [
+        make_decision(index=1, floor=1, action="use_potion 0 (Attack Potion)", command="potion use 0"),
+        make_floor(floor=1),
+        make_run(floor_reached=2),
+    ]
+    metrics = RunMetrics.from_records(records)
+    assert metrics.potions_used == 1
+    assert metrics.potions_gained == 1
+    assert metrics.potion_use_rate == 1.0
+
+
+def test_starting_belt_potions_count_as_gained():
+    # A potion held before floor 1 (a Neow gift) is in no scorecard diff, but
+    # drinking it must not read as using more potions than were ever owned.
+    floor = FloorRecord(
+        run_id="run-1",
+        floor=1,
+        entry_state={"potions": [{"name": "Fire Potion"}, {"name": "Potion Slot"}]},
+        scorecard=FloorScorecard(),
+        exit=StateSummary(),
+    )
+    drink = make_decision(index=1, floor=1, action="use_potion 0 (Fire Potion)")
+    metrics = RunMetrics.from_records([drink, floor, make_run()])
+    assert metrics.potions_gained == 1
+    assert metrics.potions_used == 1
+    assert metrics.potion_use_rate == 1.0
+
+
 def test_strategic_metrics_default_to_none_without_data():
     metrics = RunMetrics.from_records([make_run()])
     assert metrics.skip_rate is None
@@ -226,7 +273,7 @@ def test_prompt_hash_change_splits_the_row_and_warns():
     assert len(aggregates) == 2
     warnings = hash_drift(aggregates)
     assert len(warnings) == 1
-    assert "test-model / floor" in warnings[0]
+    assert "test-model" in warnings[0]
 
 
 def test_comparison_report_renders():
@@ -244,9 +291,9 @@ def test_comparison_report_renders():
     )
     assert "Suite **smoke**" in report
     assert "STSBENCH1, STSBENCH2" in report
-    assert "| test-model / floor | 2 | 1 |" in report
+    assert "| test-model | 2 | 1 |" in report
     assert "**51 W**" in report  # the win, marked in the by-seed grid
-    assert "baseline-random / random" in report
+    assert "baseline-random" in report  # labels name the model, never the agent
     assert "$" in report  # priced model gets a cost
     assert "VICTORY" in report and "DEFEAT" in report
 
@@ -275,7 +322,7 @@ def test_report_from_files_combines_sessions(tmp_path):
 
     report = report_from_files(paths, suite=SUITES["smoke"])
     assert "| scripted | 1 |" in report  # baseline label collapses model/agent
-    assert "| test-model / floor | 1 |" in report
+    assert "| test-model | 1 |" in report
     assert "Suite **smoke**" in report
 
 
@@ -285,7 +332,7 @@ def test_effort_distinguishes_configurations():
     aggregates = aggregate([low, high])
     assert len(aggregates) == 2
     assert {agg.key.label for agg in aggregates} == {
-        "test-model / floor effort=low",
-        "test-model / floor effort=high",
+        "test-model effort=low",
+        "test-model effort=high",
     }
     assert not hash_drift(aggregates)  # different efforts are different configs, not drift

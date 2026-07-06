@@ -45,13 +45,14 @@ def test_campaign_data_groups_configs_and_links_runs():
     assert data["seeds"][:2] == ["STSBENCH1", "STSBENCH2"]  # suite order kept
 
     labels = [config["label"] for config in data["configs"]]
-    assert labels == ["test-model / floor", "random"]
+    assert labels == ["test-model", "random"]
     model = data["configs"][0]
     assert model["n"] == 2 and model["wins"] == 1
     assert model["mean_floor"] == 31.5 and model["best_floor"] == 51
 
     runs = data["runs"]
-    assert [run["config"] for run in runs] == ["test-model / floor", "test-model / floor", "random"]
+    assert [run["config"] for run in runs] == ["test-model", "test-model", "random"]
+    assert all(run["ascension"] == 0 for run in runs)  # runs join their config on (label, ascension)
     assert runs[0]["page"] == "../trajectories/model-1.html"
     assert runs[2]["page"] is None  # no per-run page generated for this one
     assert runs[1]["outcome"] == "VICTORY"
@@ -97,7 +98,7 @@ def test_campaign_cost_only_for_priced_models():
 def test_campaign_per_run_cost_tracks_pricing():
     # The grid pivots cost per cell, so every run carries its own dollar figure.
     data = build_campaign_data(campaign_runs(), pricing={"test-model": (0.25, 2.0)})
-    model_runs = [r for r in data["runs"] if r["config"] == "test-model / floor"]
+    model_runs = [r for r in data["runs"] if r["config"] == "test-model"]
     assert model_runs and all(r["cost"] is not None and r["cost"] > 0 for r in model_runs)
     random_run = next(r for r in data["runs"] if r["config"] == "random")
     assert random_run["cost"] is None  # unpriced model -> unknown, not a guessed zero
@@ -120,6 +121,6 @@ def test_campaign_page_is_self_contained_and_script_safe():
     page = render_campaign_html(data)
     assert page.startswith("<!doctype html")
     assert "Campaign Report" in page.split("</head>")[0]
-    assert '"label":"test-model / floor"' in page
+    assert '"label":"test-model"' in page
     assert page.count("</script>") == 2  # the data tag and the renderer, nothing injected
     assert "http://" not in page.split("</head>")[0]  # no external assets in the head

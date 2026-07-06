@@ -10,6 +10,7 @@ average over runs that played the same benchmark.
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from statistics import mean, median
@@ -21,6 +22,39 @@ from ..trajectory import read_records
 # Wire commands that decline a card reward (return_back translates to
 # whichever of these the screen offers); "choose N" takes a card.
 _SKIP_COMMANDS = ("skip", "return", "cancel", "leave")
+
+# The action narration names the potion as it left its slot:
+# "use_potion 2 (Fire Potion)".
+_POTION_USE = re.compile(r"^use_potion \d+ \((.+)\)$")
+
+
+def _potions_gained(floors: list, decisions: list) -> int:
+    """Potions the run obtained: the scorecards' floor-boundary belt diffs,
+    plus the starting belt, plus one for every drunk potion no recorded gain
+    accounts for. A potion born and consumed within a single floor (Entropic
+    Brew's products, a reward swigged mid-fight) never crosses a boundary,
+    so the scorecards alone undercount -- but drinking it is proof enough
+    that it was obtained, and the use rate must never exceed 100%."""
+    gains: list[tuple[int, str]] = []
+    if floors:
+        for potion in floors[0].entry_state.get("potions") or []:
+            name = str(potion.get("name") or "")
+            if name and name != "Potion Slot":
+                gains.append((0, name))
+    for floor in floors:
+        gains.extend((floor.floor, name) for name in floor.scorecard.potions_gained)
+    total = len(gains)
+    for decision in decisions:
+        used = _POTION_USE.match(decision.action or "")
+        if used is None:
+            continue
+        floor_no = decision.floor if decision.floor is not None else float("inf")
+        hit = next((g for g in gains if g[1] == used.group(1) and g[0] <= floor_no), None)
+        if hit is not None:
+            gains.remove(hit)
+        else:
+            total += 1
+    return total
 
 
 @dataclass(frozen=True)
@@ -42,11 +76,11 @@ class ConfigKey:
 
     @property
     def label(self) -> str:
+        # The agent stays out of the label: it is part of a configuration's
+        # identity, not its name. Reports show model and effort; how decisions
+        # were scaffolded is the methodology's story.
         effort = f" effort={self.reasoning_effort}" if self.reasoning_effort else ""
-        # Baselines record their own name as the model; "random / random" says
-        # it once.
-        scaffold = "" if self.agent == self.model else f" / {self.agent}"
-        return f"{self.model}{scaffold}{effort}"
+        return f"{self.model}{effort}"
 
 
 @dataclass
@@ -82,6 +116,7 @@ class RunMetrics:
     potions_used: int = 0
     gold_earned: int = 0
     gold_spent: int = 0
+    gold_start: int = 0  # the purse at floor 1; spending it is not overspending
     gold_final: int | None = None
     prompt_tokens: int = 0
     completion_tokens: int = 0
@@ -135,10 +170,12 @@ class RunMetrics:
 
     @property
     def gold_spent_ratio(self) -> float | None:
-        """Gold spent per gold earned; dying rich shows as a low ratio."""
-        if not self.gold_earned:
+        """Gold spent per gold available -- the starting purse plus all
+        earnings; dying rich shows as a low ratio."""
+        available = self.gold_start + self.gold_earned
+        if not available:
             return None
-        return self.gold_spent / self.gold_earned
+        return self.gold_spent / available
 
     @classmethod
     def from_records(cls, records: list) -> "RunMetrics":
@@ -204,14 +241,15 @@ class RunMetrics:
             if decision.latency_ms is not None:
                 metrics.latencies_ms.append(decision.latency_ms)
 
+        metrics.potions_gained = _potions_gained(floors, decisions)
         for floor in floors:
-            metrics.potions_gained += len(floor.scorecard.potions_gained)
             delta = floor.scorecard.gold_delta
             if delta > 0:
                 metrics.gold_earned += delta
             else:
                 metrics.gold_spent -= delta
         if floors:
+            metrics.gold_start = floors[0].entry.gold or 0
             metrics.gold_final = floors[-1].exit.gold
 
         rewards = [floor.reward.total for floor in floors if floor.reward is not None]
@@ -304,10 +342,10 @@ class SuiteAggregate:
 
     @property
     def gold_spent_ratio(self) -> float | None:
-        earned = sum(run.gold_earned for run in self.runs)
-        if not earned:
+        available = sum(run.gold_start + run.gold_earned for run in self.runs)
+        if not available:
             return None
-        return sum(run.gold_spent for run in self.runs) / earned
+        return sum(run.gold_spent for run in self.runs) / available
 
     @property
     def mean_tokens_per_run(self) -> tuple[float, float]:

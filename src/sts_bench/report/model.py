@@ -26,7 +26,9 @@ from ..trajectory.schema import TokenUsage
 from .digest import MapChoice, combat_snapshot, map_choice
 
 
-def build_report_data(records: list, pricing: Pricing | None = None) -> dict[str, Any]:
+def build_report_data(
+    records: list, pricing: Pricing | None = None, campaign: str | None = None
+) -> dict[str, Any]:
     run, floors, decisions = group(records)
     known = {floor.floor for floor in floors}
     orphans = [
@@ -38,6 +40,9 @@ def build_report_data(records: list, pricing: Pricing | None = None) -> dict[str
     ]
     return {
         "run": _run(run, floors, pricing or {}),
+        # Where the campaign page that spawned this report lives, so the
+        # reader can climb back up to the comparison. None for standalone runs.
+        "campaign": campaign,
         "system_prompt": _system_prompt(floors),
         "floors": [_floor(floor, decisions.get(floor.floor, [])) for floor in floors],
         "acts": _acts(floors, decisions),
@@ -321,6 +326,17 @@ def _potions(
                     item["fate"] = "used" if kind == "use_potion" else "discarded"
                     item["fate_floor"] = floor.floor
                     break
+            else:
+                # A potion born and consumed on one floor (Entropic Brew's
+                # products) never reaches a boundary snapshot; this action is
+                # its only trace, so it joins the list here.
+                items.append({
+                    "name": name,
+                    "floor": floor.floor,
+                    "text": _potion_text({"name": name}),
+                    "fate": "used" if kind == "use_potion" else "discarded",
+                    "fate_floor": floor.floor,
+                })
     # Recover auto-triggered potions (Fairy in a Bottle) from the belt emptying,
     # since they leave no action: a still-unfated one that was in the belt at a
     # floor's entry and gone by its exit fired there.

@@ -6,6 +6,10 @@ localhost. Every page load re-renders from the asset files on disk, so editing
 no rebuild and no trajectory re-read. A small injected poller watches the assets'
 modification times and reloads the page for you the moment they change.
 
+Run links work here too: each run's page points at /runs/<run_id>.html, which
+renders that trajectory's single-run report on demand from the records already
+in memory.
+
     uv run python -m sts_bench.report.dev logs/2026-06-12/trajectories/*.jsonl
 
 This is a development entry point: it never writes a file and shares nothing with
@@ -23,10 +27,14 @@ import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
+from urllib.parse import unquote
+
 from ..runner import SUITES
 from ..runner.reports import Pricing
 from ..trajectory import read_records
 from .campaign import CampaignRun, build_campaign_data, render_campaign_html
+from .model import build_report_data
+from .page import render_html
 
 _ASSETS = Path(__file__).parent / "assets"
 
@@ -68,7 +76,9 @@ def _load_pricing(arg: str | None) -> Pricing | None:
     }
 
 
-def serve(data: dict, host: str, port: int) -> None:
+def serve(
+    data: dict, records_by_run: dict[str, list], pricing: Pricing | None, host: str, port: int
+) -> None:
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):  # noqa: N802 (http.server's casing)
             if self.path == "/rev":
@@ -76,6 +86,12 @@ def serve(data: dict, host: str, port: int) -> None:
             if self.path in ("/", "/index.html"):
                 page = render_campaign_html(data).replace("</body>", _RELOAD + "</body>")
                 return self._send(page, "text/html")
+            if self.path.startswith("/runs/") and self.path.endswith(".html"):
+                run_id = unquote(self.path[len("/runs/") : -len(".html")])
+                records = records_by_run.get(run_id)
+                if records is not None:
+                    page = render_html(build_report_data(records, pricing, campaign="../"))
+                    return self._send(page, "text/html")
             self.send_error(404)
 
         def _send(self, body: str, mime: str) -> None:
@@ -128,9 +144,16 @@ def main() -> None:
         print(f"[dev] no such trajectory: {', '.join(missing)}", file=sys.stderr)
         raise SystemExit(1)
 
-    runs = [CampaignRun.from_records(list(read_records(path))) for path in paths]
-    data = build_campaign_data(runs, suite=suite, pricing=_load_pricing(args.pricing))
-    serve(data, args.host, args.port)
+    pricing = _load_pricing(args.pricing)
+    runs, records_by_run = [], {}
+    for path in paths:
+        records = list(read_records(path))
+        run = CampaignRun.from_records(records)
+        records_by_run[run.metrics.run_id] = records
+        run.page = f"runs/{run.metrics.run_id}.html"
+        runs.append(run)
+    data = build_campaign_data(runs, suite=suite, pricing=pricing)
+    serve(data, records_by_run, pricing, args.host, args.port)
 
 
 if __name__ == "__main__":

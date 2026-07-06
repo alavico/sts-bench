@@ -233,6 +233,28 @@ def test_potions_carry_their_fate_matched_earliest_gained_first():
     assert all("fate" not in r for r in data["relics"])
 
 
+def test_potion_used_without_a_recorded_gain_still_appears():
+    # Entropic Brew fills the belt mid-fight; a product drunk on the same
+    # floor never crosses a boundary snapshot, so its use action is the only
+    # trace it existed. It must still show up in the potion list.
+    floor = make_floor_record(floor=1)
+    drink = make_decision_record(
+        floor=1, decision_index=1, message_start=0, message_end=0,
+        action="use_potion 0 (Attack Potion)",
+    )
+    data = build_report_data([make_run_record(), floor, drink])
+    assert [(p["name"], p["floor"], p["fate"], p["fate_floor"]) for p in data["potions"]] == [
+        ("Attack Potion", 1, "used", 1),
+    ]
+
+
+def test_campaign_link_rides_the_payload():
+    records = [make_run_record()]
+    assert build_report_data(records)["campaign"] is None
+    data = build_report_data(records, campaign="../bench-smoke.html")
+    assert data["campaign"] == "../bench-smoke.html"
+
+
 def test_fairy_in_a_bottle_reads_as_triggered_from_the_belt_emptying():
     # Fairy auto-fires on lethal damage with no use_potion action; its fate must
     # come from the belt going empty, not from a (never-emitted) action.

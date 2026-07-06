@@ -67,32 +67,39 @@ def _write_reports(
     The markdown comparison lands in today's `reports/`; every run's
     single-run html page lands in the `html/` folder of its own session
     (beside the trajectory's data, separated from it); the campaign html
-    joins the markdown's session and links across to those pages. Html stays
-    out of the data and markdown folders, dated runs keep their renderings."""
+    joins the markdown's session, links across to those pages, and each of
+    them links back up. Html stays out of the data and markdown folders,
+    dated runs keep their renderings."""
     today = session_dir()
     report_dir = today / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
     campaign_html_dir = today / "html"
     campaign_html_dir.mkdir(parents=True, exist_ok=True)
 
+    # The campaign page's path is fixed up front so every run page can carry
+    # a link back to it.
+    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    name = suite.name if suite else "combined"
+    html_path = campaign_html_dir / f"bench-{name}-{stamp}.html"
+
     campaign_runs = []
     for path in paths:
         records = list(read_records(path))
         page = run_html_path(path)
-        page.write_text(render_html(build_report_data(records)), encoding="utf-8")
+        data = build_report_data(
+            records, pricing, campaign=os.path.relpath(html_path, page.parent)
+        )
+        page.write_text(render_html(data), encoding="utf-8")
         href = os.path.relpath(page, campaign_html_dir)
         campaign_runs.append(CampaignRun.from_records(records, page=href))
 
     report = comparison_report(
         [run.metrics for run in campaign_runs], suite=suite, pricing=pricing
     )
-    stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    name = suite.name if suite else "combined"
     md_path = report_dir / f"bench-{name}-{stamp}.md"
     md_path.write_text(report, encoding="utf-8")
 
     data = build_campaign_data(campaign_runs, suite=suite, pricing=pricing)
-    html_path = campaign_html_dir / f"bench-{name}-{stamp}.html"
     html_path.write_text(render_campaign_html(data), encoding="utf-8")
     return report, md_path, html_path
 
