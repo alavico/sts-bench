@@ -10,9 +10,10 @@ Logs are grouped one folder per day (logs/<date>/), with protocol logs at the
 session root and trajectories, reports, and rendered html each in their own
 subfolder. Every job writes its own protocol log and trajectory file; when all
 jobs have run, the comparison report lands in logs/<date>/reports/ as markdown
-(printed to stdout) and the interactive campaign HTML page in logs/<date>/html/
-beside the single-run report rendered for each trajectory, which its run rows
-link to.
+(printed to stdout), the single-run report for each trajectory in that day's
+html/ subfolder, and the one consolidated campaign HTML page at logs/campaign.html
+-- a fixed spot the next run overwrites, its run rows linking to those per-run
+reports.
 
 Baselines (`random`, `scripted`) need no model. LLM scaffolds (`floor`,
 `stepwise`) take the same backend selection as sts_bench.play: --model /
@@ -24,7 +25,8 @@ mapping model name to [input, output] dollars per million tokens.
 
 Sessions are composable: every run's trajectory is self-contained, so
 baselines recorded one day and model runs another combine into one table
-without replaying anything (the report lands under today's date folder):
+without replaying anything (the markdown lands under today's date folder, the
+campaign page overwrites logs/campaign.html):
 
     uv run python -m sts_bench.bench --report-from logs/*/trajectories/bench-*.jsonl
 """
@@ -49,7 +51,7 @@ from .report.page import render_html
 from .runner import SUITES, comparison_report
 from .runner.async_runner import BASELINES, BenchConfig, run_suite
 from .runner.seeds import Suite
-from .smoke import run_html_path, session_dir
+from .smoke import CAMPAIGN_HTML, run_html_path, session_dir
 from .trajectory import read_records
 
 
@@ -66,21 +68,20 @@ def _write_reports(
 
     The markdown comparison lands in today's `reports/`; every run's
     single-run html page lands in the `html/` folder of its own session
-    (beside the trajectory's data, separated from it); the campaign html
-    joins the markdown's session, links across to those pages, and each of
-    them links back up. Html stays out of the data and markdown folders,
-    dated runs keep their renderings."""
+    (beside the trajectory's data, separated from it); the campaign html is
+    the one consolidated view over all of them, so it lives at a fixed spot
+    at the logs root and is overwritten each run rather than dated. It links
+    across to the run pages, and each of them links back up."""
     today = session_dir()
     report_dir = today / "reports"
     report_dir.mkdir(parents=True, exist_ok=True)
-    campaign_html_dir = today / "html"
-    campaign_html_dir.mkdir(parents=True, exist_ok=True)
 
     # The campaign page's path is fixed up front so every run page can carry
-    # a link back to it.
+    # a link back to it; being date-independent, a regeneration replaces the
+    # previous consolidated report instead of adding another beside it.
+    html_path = CAMPAIGN_HTML
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     name = suite.name if suite else "combined"
-    html_path = campaign_html_dir / f"bench-{name}-{stamp}.html"
 
     campaign_runs = []
     for path in paths:
@@ -90,7 +91,7 @@ def _write_reports(
             records, pricing, campaign=os.path.relpath(html_path, page.parent)
         )
         page.write_text(render_html(data), encoding="utf-8")
-        href = os.path.relpath(page, campaign_html_dir)
+        href = os.path.relpath(page, html_path.parent)
         campaign_runs.append(CampaignRun.from_records(records, page=href))
 
     report = comparison_report(

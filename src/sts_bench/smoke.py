@@ -35,6 +35,10 @@ LOG_DIR = Path(__file__).resolve().parents[2] / "logs"
 # Unparsed captures are a cross-session harvest queue, not a session artifact,
 # so they stay flat at the logs root rather than under a date folder.
 UNPARSED_DIR = LOG_DIR / "unparsed"
+# The campaign report aggregates every run across every session, so it is not a
+# session artifact either: one file at the logs root, overwritten on each
+# regeneration rather than dated and piling up per run.
+CAMPAIGN_HTML = LOG_DIR / "campaign.html"
 MAX_STEPS = 3000
 
 
