@@ -369,20 +369,31 @@ def aggregate(runs: Iterable[RunMetrics]) -> list[SuiteAggregate]:
 
 
 def hash_drift(aggregates: list[SuiteAggregate]) -> list[str]:
-    """Configurations that look alike but saw different benchmarks.
+    """Identical setups whose prompt or tool schema was revised between runs.
 
-    Two aggregates sharing (model, agent, effort) while differing in prompt or
-    tool-schema hash are listed in separate rows of the report; these warnings
-    say why the rows did not merge.
+    Most row splits need no comment: different ascension, character, or
+    scaffold are simply different configurations. The one split worth a note
+    is a prompt or tool-schema revision inside an otherwise identical setup --
+    runs from while the scaffold was still being refined. Each version keeps
+    its own row, so no number ever averages across revisions; the note records
+    that provenance without casting doubt on the runs themselves.
     """
-    by_label: dict[str, list[ConfigKey]] = {}
+    setups: dict[tuple, list[ConfigKey]] = {}
     for agg in aggregates:
-        by_label.setdefault(agg.key.label, []).append(agg.key)
+        k = agg.key
+        setup = (k.model, k.agent, k.reasoning_effort, k.character, k.ascension)
+        setups.setdefault(setup, []).append(k)
     warnings = []
-    for label, keys in by_label.items():
-        if len(keys) > 1:
-            warnings.append(
-                f"{label}: {len(keys)} distinct prompt/tool-schema versions; "
-                "rows are kept separate because the model saw different surfaces"
-            )
+    for keys in setups.values():
+        versions = {(k.prompt_hash, k.tool_schema_hash) for k in keys}
+        if len(versions) < 2:
+            continue
+        prompts = len({k.prompt_hash for k in keys}) > 1
+        tools = len({k.tool_schema_hash for k in keys}) > 1
+        what = "prompt" if prompts and not tools else "tool schema" if tools and not prompts else "prompt and tool schema"
+        warnings.append(
+            f"{keys[0].label}: the {what} was revised while the scaffold was being "
+            f"refined ({len(versions)} versions); each version keeps its own row, "
+            "so results are never averaged across revisions"
+        )
     return warnings

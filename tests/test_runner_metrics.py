@@ -24,6 +24,7 @@ def make_run(
     tool_hash: str | None = "t1",
     victory=False,
     floor_reached=12,
+    ascension=0,
 ):
     return RunRecord(
         run_id=run_id,
@@ -31,7 +32,7 @@ def make_run(
         finished_at="2026-06-12T00:30:00+00:00",
         seed=seed,
         character="ironclad",
-        ascension=0,
+        ascension=ascension,
         model=model,
         provider_base_url="http://test",
         api="chat",
@@ -274,6 +275,24 @@ def test_prompt_hash_change_splits_the_row_and_warns():
     warnings = hash_drift(aggregates)
     assert len(warnings) == 1
     assert "test-model" in warnings[0]
+    assert "the prompt was revised" in warnings[0]
+    assert "2 versions" in warnings[0]
+
+
+def test_ascension_split_is_a_configuration_not_drift():
+    low = RunMetrics.from_records([make_run(run_id="a", ascension=0)])
+    high = RunMetrics.from_records([make_run(run_id="b", ascension=10)])
+    aggregates = aggregate([low, high])
+    assert len(aggregates) == 2
+    assert not hash_drift(aggregates)  # same prompt and tools; nothing was revised
+
+
+def test_tool_schema_change_names_what_changed():
+    before = RunMetrics.from_records([make_run(run_id="a", tool_hash="t1")])
+    after = RunMetrics.from_records([make_run(run_id="b", tool_hash="t2")])
+    warnings = hash_drift(aggregate([before, after]))
+    assert len(warnings) == 1
+    assert "the tool schema was revised" in warnings[0]
 
 
 def test_comparison_report_renders():
