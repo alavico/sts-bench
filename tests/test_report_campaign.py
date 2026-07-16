@@ -56,6 +56,8 @@ def test_campaign_data_groups_configs_and_links_runs():
     assert runs[0]["page"] == "../trajectories/model-1.html"
     assert runs[2]["page"] is None  # no per-run page generated for this one
     assert runs[1]["outcome"] == "VICTORY"
+    assert runs[0]["prompt_hash"] == "p1"
+    assert runs[0]["tool_schema_hash"] == "t1"
 
 
 def test_campaign_floor_series_is_small_and_conversation_free():
@@ -85,7 +87,13 @@ def test_campaign_data_warns_on_hash_drift():
     data = build_campaign_data(runs)
     assert len(data["configs"]) == 2
     assert len(data["warnings"]) == 1
-    assert "different surfaces" in data["warnings"][0]
+    assert "never averaged across revisions" in data["warnings"][0]
+
+
+def test_campaign_data_discloses_excluded_pilot_runs():
+    excluded = [{"run_id": "pilot-1", "reason": "preliminary prompt v1"}]
+    data = build_campaign_data(campaign_runs(), excluded_runs=excluded)
+    assert data["excluded_runs"] == excluded
 
 
 def test_campaign_cost_only_for_priced_models():

@@ -68,7 +68,11 @@ def _start_point(floors: list[FloorRecord]) -> dict[str, Any] | None:
 
 
 def build_campaign_data(
-    runs: list[CampaignRun], *, suite: Suite | None = None, pricing: Pricing | None = None
+    runs: list[CampaignRun],
+    *,
+    suite: Suite | None = None,
+    pricing: Pricing | None = None,
+    excluded_runs: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     aggregates = aggregate(run.metrics for run in runs)
     by_config = {agg.key: agg.key.label for agg in aggregates}
@@ -86,6 +90,7 @@ def build_campaign_data(
             else None
         ),
         "warnings": hash_drift(aggregates),
+        "excluded_runs": excluded_runs or [],
         "seeds": _seed_order(suite, runs),
         "configs": [_config(agg, pricing or {}) for agg in aggregates],
         "runs": [_run(run, by_config[run.metrics.config], pricing or {}) for run in runs],
@@ -166,6 +171,8 @@ def _run(run: CampaignRun, config_label: str, pricing: Pricing) -> dict[str, Any
         "config": config_label,
         "seed": m.seed or "(random)",
         "ascension": m.ascension,
+        "prompt_hash": m.prompt_hash,
+        "tool_schema_hash": m.tool_schema_hash,
         "outcome": outcome,
         "floor": m.floor_reached,
         "score": m.score,

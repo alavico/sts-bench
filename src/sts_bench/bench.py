@@ -55,6 +55,17 @@ from .smoke import CAMPAIGN_HTML, run_html_path, session_dir
 from .trajectory import read_records
 
 
+# These prompt-development pilots are useful evidence for the technical write-up,
+# but they predate the frozen benchmark surface and are not benchmark observations.
+# Keep the trajectories and their existing run pages; exclude them only from the
+# consolidated public report and its aggregates.
+PUBLIC_REPORT_EXCLUSIONS = {
+    "play-20260611-165404": "preliminary prompt v1",
+    "bench-floor-STSBENCH1-20260612-151309": "preliminary prompt v2",
+    "bench-floor-STSBENCH2-20260612-152701": "preliminary prompt v2",
+}
+
+
 def say(msg: str) -> None:
     print(f"[bench] {msg}", file=sys.stderr)
 
@@ -63,7 +74,7 @@ def _write_reports(
     paths: list[Path],
     suite: Suite | None,
     pricing: dict[str, tuple[float, float]] | None,
-) -> tuple[str, Path, Path]:
+) -> tuple[str, Path, Path, int, int]:
     """All three report artifacts from one pass over the trajectories.
 
     The markdown comparison lands in today's `reports/`; every run's
@@ -83,8 +94,15 @@ def _write_reports(
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     name = suite.name if suite else "combined"
 
+    included_paths = [path for path in paths if path.stem not in PUBLIC_REPORT_EXCLUSIONS]
+    excluded_runs = [
+        {"run_id": path.stem, "reason": PUBLIC_REPORT_EXCLUSIONS[path.stem]}
+        for path in paths
+        if path.stem in PUBLIC_REPORT_EXCLUSIONS
+    ]
+
     campaign_runs = []
-    for path in paths:
+    for path in included_paths:
         records = list(read_records(path))
         page = run_html_path(path)
         data = build_report_data(
@@ -100,9 +118,14 @@ def _write_reports(
     md_path = report_dir / f"bench-{name}-{stamp}.md"
     md_path.write_text(report, encoding="utf-8")
 
-    data = build_campaign_data(campaign_runs, suite=suite, pricing=pricing)
+    data = build_campaign_data(
+        campaign_runs,
+        suite=suite,
+        pricing=pricing,
+        excluded_runs=excluded_runs,
+    )
     html_path.write_text(render_campaign_html(data), encoding="utf-8")
-    return report, md_path, html_path
+    return report, md_path, html_path, len(campaign_runs), len(excluded_runs)
 
 
 def _load_pricing(arg: str | None) -> dict[str, tuple[float, float]] | None:
@@ -127,8 +150,11 @@ def run(args: argparse.Namespace) -> int:
         if missing:
             say(f"no such trajectory: {', '.join(missing)}")
             return 1
-        report, md_path, html_path = _write_reports(paths, suite, _load_pricing(args.pricing))
-        say(f"report over {len(paths)} runs: {md_path}")
+        report, md_path, html_path, included, excluded = _write_reports(
+            paths, suite, _load_pricing(args.pricing)
+        )
+        suffix = f" ({excluded} pilot runs excluded)" if excluded else ""
+        say(f"report over {included} runs{suffix}: {md_path}")
         say(f"campaign page: {html_path}")
         print(report)
         return 0
@@ -202,7 +228,7 @@ def run(args: argparse.Namespace) -> int:
     if not paths:
         say("no trajectories recorded; nothing to report")
         return 1
-    report, md_path, html_path = _write_reports(paths, suite, pricing)
+    report, md_path, html_path, _, _ = _write_reports(paths, suite, pricing)
     say(f"report: {md_path}")
     say(f"campaign page: {html_path}")
     print(report)
