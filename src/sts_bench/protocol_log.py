@@ -24,8 +24,18 @@ class ProtocolLog:
     def __init__(self, directory: Path, name: str = "session"):
         directory.mkdir(parents=True, exist_ok=True)
         stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        self.path = directory / f"{name}-{stamp}.log"
-        self._fh = self.path.open("a", encoding="utf-8")
+        # The stamp resolves to a second; runs starting inside the same one
+        # (queued jobs over a fast game, parallel instances) must not share a
+        # run_id, so creation is exclusive and collisions take a counter.
+        serial = 1
+        while True:
+            suffix = f"-{serial}" if serial > 1 else ""
+            self.path = directory / f"{name}-{stamp}{suffix}.log"
+            try:
+                self._fh = self.path.open("x", encoding="utf-8")
+                break
+            except FileExistsError:
+                serial += 1
         self._lock = threading.Lock()
 
         latest = directory / "latest.log"

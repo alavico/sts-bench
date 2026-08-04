@@ -1,10 +1,9 @@
-"""The comparison report: one markdown table set per seed suite.
+"""The comparison report: one markdown table set over a set of runs.
 
 Rows are configurations (model / scaffold / effort), never single runs --
-the suite is the unit of comparison, and runs whose prompt or tool-schema
-hashes differ stay in separate rows with a warning saying why. Everything
-renders from `RunMetrics`, so a report is recomputable from the trajectory
-files alone.
+runs whose prompt or tool-schema hashes differ stay in separate rows with a
+warning saying why. Everything renders from `RunMetrics`, so a report is
+recomputable from the trajectory files alone.
 """
 
 from __future__ import annotations
@@ -12,8 +11,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Iterable
 
-from .metrics import RunMetrics, SuiteAggregate, aggregate, hash_drift
-from .seeds import Suite
+from .metrics import ConfigAggregate, RunMetrics, aggregate, hash_drift
 
 # $ per million tokens (input, output), keyed by exact model name. Cost is
 # reported only for models listed here; everything else shows "-" rather
@@ -62,16 +60,10 @@ def run_cost(
 
 
 def comparison_report(
-    runs: list[RunMetrics], *, suite: Suite | None = None, pricing: Pricing | None = None
+    runs: list[RunMetrics], *, pricing: Pricing | None = None
 ) -> str:
     aggregates = aggregate(runs)
     lines: list[str] = ["# Benchmark report", ""]
-    if suite is not None:
-        lines += [
-            f"Suite **{suite.name}**: {suite.character} ascension {suite.ascension}, "
-            f"seeds {', '.join(suite.seeds)}.",
-            "",
-        ]
     for warning in hash_drift(aggregates):
         lines.append(f"> ⚠ {warning}")
     if hash_drift(aggregates):
@@ -84,23 +76,22 @@ def comparison_report(
 
 
 def report_from_files(
-    paths: Iterable[Path], *, suite: Suite | None = None, pricing: Pricing | None = None
+    paths: Iterable[Path], *, pricing: Pricing | None = None
 ) -> str:
     """One report over any set of trajectory files, in the order given.
 
     Runs are sessions' artifacts, the report is a view: rerun it over any
-    mix of bench and play trajectories -- baselines recorded last week,
-    model runs from today -- and configurations aggregate exactly as if they
-    had run in one session.
+    mix of trajectories -- baselines recorded last week, model runs from
+    today -- and configurations aggregate exactly as if they had run in one
+    session.
     """
     return comparison_report(
         [RunMetrics.from_file(Path(path)) for path in paths],
-        suite=suite,
         pricing=pricing,
     )
 
 
-def _config_table(aggregates: list[SuiteAggregate], pricing: Pricing) -> list[str]:
+def _config_table(aggregates: list[ConfigAggregate], pricing: Pricing) -> list[str]:
     header = (
         "| configuration | runs | wins | floor mean | floor median | floor best | reward mean "
         "| card skips | potions used | gold spent "
@@ -134,8 +125,8 @@ def _config_table(aggregates: list[SuiteAggregate], pricing: Pricing) -> list[st
     return rows + [""]
 
 
-def _floor_by_seed(aggregates: list[SuiteAggregate]) -> list[str]:
-    """Floor reached, configuration x seed: the suite's results at a glance.
+def _floor_by_seed(aggregates: list[ConfigAggregate]) -> list[str]:
+    """Floor reached, configuration x seed: the results at a glance.
     A win is marked alongside its floor; unfinished runs show "?"."""
     seeds = []
     for agg in aggregates:
@@ -220,7 +211,7 @@ def _latency(ms: float | None) -> str:
     return f"{ms / 1000:.1f}s" if ms is not None else "-"
 
 
-def _cost(agg: SuiteAggregate, pricing: Pricing) -> str:
+def _cost(agg: ConfigAggregate, pricing: Pricing) -> str:
     rates = pricing.get(agg.key.model)
     if rates is None:
         return "-"

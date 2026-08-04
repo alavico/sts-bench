@@ -1,6 +1,6 @@
 "use strict";
-/* Pure renderer for the campaign payload: configurations compared over a seed
-   suite. All numbers were computed before embedding (RunMetrics / aggregate);
+/* Pure renderer for the campaign payload: configurations compared over shared
+   seeds. All numbers were computed before embedding (RunMetrics / aggregate);
    this script only lays them out.
 
    The page reads top-down: the leaderboard ranks configurations, the cost
@@ -387,8 +387,7 @@ function contextBar() {
 
 /* ---------- header ---------- */
 
-const CHARACTER = (DATA.suite && DATA.suite.character)
-  || (DATA.configs[0] || {}).character || "ironclad";
+const CHARACTER = (DATA.configs[0] || {}).character || "ironclad";
 
 function header() {
   const character = CHARACTER.charAt(0).toUpperCase() + CHARACTER.slice(1);

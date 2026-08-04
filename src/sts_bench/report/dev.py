@@ -29,7 +29,6 @@ from pathlib import Path
 
 from urllib.parse import unquote
 
-from ..runner import SUITES
 from ..runner.reports import Pricing
 from ..trajectory import read_records
 from .campaign import CampaignRun, build_campaign_data, render_campaign_html
@@ -124,19 +123,10 @@ def main() -> None:
         "trajectories", nargs="+", metavar="JSONL",
         help="trajectory files to load (globs are shell-expanded)",
     )
-    parser.add_argument(
-        "--suite", default=None,
-        help=f"label the header and order seeds: {', '.join(SUITES)}",
-    )
     parser.add_argument("--pricing", default=None, help="JSON file: model -> [input, output] $ per Mtok")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     args = parser.parse_args()
-
-    suite = SUITES.get(args.suite) if args.suite else None
-    if args.suite and suite is None:
-        print(f"[dev] unknown suite {args.suite!r}: expected {', '.join(SUITES)}", file=sys.stderr)
-        raise SystemExit(1)
 
     paths = [Path(p) for p in args.trajectories]
     missing = [str(p) for p in paths if not p.exists()]
@@ -152,7 +142,7 @@ def main() -> None:
         records_by_run[run.metrics.run_id] = records
         run.page = f"runs/{run.metrics.run_id}.html"
         runs.append(run)
-    data = build_campaign_data(runs, suite=suite, pricing=pricing)
+    data = build_campaign_data(runs, pricing=pricing)
     serve(data, records_by_run, pricing, args.host, args.port)
 
 

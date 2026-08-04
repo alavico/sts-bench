@@ -67,21 +67,33 @@ Or render the run as a self-contained HTML report — HP and spend charts across
 uv run python -m sts_bench.report logs/<date>/trajectories/play-<timestamp>.jsonl   # writes to the session's html/ folder
 ```
 
-## Benchmarking
+## Queueing runs
 
-One command runs a whole seed suite — baselines and LLM scaffolds back to back over the same game instance — and emits a comparison report:
-
-```bash
-uv run python -m sts_bench.bench --suite smoke --agents random,scripted,floor
-```
-
-`random` (uniform over validator-accepted actions) and `scripted` (play the first playable card, otherwise advance) are the free baselines that calibrate the scale: a model has to beat `scripted` before its floor count means strategy. LLM agents (`floor`, `stepwise`) take the same backend flags as `sts_bench.play`. Each job starts from the main menu with its seed, plays to game over, and writes its own protocol log and trajectory; the comparison report lands under today's date folder in two forms — markdown in `logs/<date>/reports/` (one row per model/scaffold/effort configuration, floor-by-seed grid, per-run table; printed to stdout) and an interactive campaign HTML page in `logs/<date>/html/` (sortable configuration table with strategic columns like card-skip rate and potion use, floor-by-seed heatmap, floor-reached dot plot, HP-over-the-run overlay, spend bars) whose every run links down to a single-run HTML report rendered in that session's `html/` folder. `--pricing costs.json` (model → `[input, output]` dollars per Mtok) adds the cost column. Runs whose prompt or tool schemas differ are never averaged together — the report keeps them in separate rows and says why.
-
-Sessions compose: every trajectory is self-contained, so baselines recorded one day and model runs another regenerate into one report without replaying anything —
+`queue` plays a whole list of runs back to back over the same game instance, unattended — each job starts from the main menu with its seed, plays to game over, and dismisses the death screen so the next can begin:
 
 ```bash
-uv run python -m sts_bench.bench --report-from logs/*/trajectories/bench-*.jsonl
+uv run python -m sts_bench.queue runs.txt
 ```
+
+The file lists one run per line with the same flags as `sts_bench.play` (blank lines and `#` comments are skipped), so queued jobs need not share anything — model, effort, ascension, and seed all vary per line:
+
+```
+--model gpt-5.6-luna --api responses --reasoning-effort medium --seed STSBENCH1
+--model gpt-5.6-terra --api responses --reasoning-effort medium --ascension 5 --seed STSBENCH1
+--agent random --seed STSBENCH1
+```
+
+`--agent random` (uniform over validator-accepted actions) and `--agent scripted` (play the first playable card, otherwise advance) are the free baselines that calibrate the scale: a model has to beat `scripted` before its floor count means strategy. Every job's provider is built — key resolved, backend named — before the first run starts, so a typo on line 7 fails the queue immediately, not an hour in. Each job writes the same protocol log and trajectory a manual `play` session would, and the queue ends with a one-line outcome summary per run; there is no queue-level artifact.
+
+## Reports
+
+Reporting is a separate pass over whatever trajectories you point it at — every trajectory is self-contained, so baselines recorded one day and model runs another combine into one report without replaying anything:
+
+```bash
+uv run python -m sts_bench.bench --report-from logs/*/trajectories/*.jsonl --pricing costs.json
+```
+
+The report lands in two forms — markdown in `logs/<date>/reports/` (one row per model/scaffold/effort configuration, floor-by-seed grid, per-run table; printed to stdout) and the consolidated campaign HTML page at `logs/campaign.html` (sortable configuration table with strategic columns like card-skip rate and potion use, floor-by-seed heatmap, floor-reached dot plot, HP-over-the-run overlay, spend bars) whose every run links down to a single-run HTML report rendered in that session's `html/` folder. `--pricing costs.json` (model → `[input, output]` dollars per Mtok) adds the cost column. Runs whose prompt or tool schemas differ are never averaged together — the report keeps them in separate rows and says why.
 
 ## Development
 

@@ -1,16 +1,19 @@
-"""Suite runner: every (agent, seed) job of a benchmark suite, back to back.
+"""Job-queue runner: a list of fully-specified runs, played back to back.
 
 One harness server; every connected game instance becomes a worker pulling
 jobs off a shared queue, so scaling to more instances is a count, not a new
 runner. v1 runs one instance -- strictly sequential -- but the seams are
 already async.
 
-A job is one full run: from the main menu, `start` with the job's seed, play
-to game over, dismiss the death screen back to the menu, where the next job
-begins. Each job gets its own protocol log and trajectory file (paired by
-name), so a failed job costs exactly one run -- unless the game itself is
-left wedged mid-run, in which case the worker stops rather than corrupt
-every following job.
+A job is one full run, and carries everything that identifies it: agent,
+model provider, reasoning effort, character, ascension, seed. Queued jobs
+need not share anything -- a cheap model at ascension 0 can be followed by a
+frontier model at ascension 10. From the main menu, `start` with the job's
+seed, play to game over, dismiss the death screen back to the menu, where
+the next job begins. Each job gets its own protocol log and trajectory file
+(paired by name, exactly as a single `play` run writes them), so a failed
+job costs exactly one run -- unless the game itself is left wedged mid-run,
+in which case the worker stops rather than corrupt every following job.
 """
 
 from __future__ import annotations
@@ -18,7 +21,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
@@ -29,7 +32,6 @@ from ..providers import ModelProvider
 from ..smoke import LOG_DIR
 from ..tools import ToolRegistry
 from ..trajectory import RunRecorder, TrajectoryStore
-from .seeds import Suite
 from .session import RunTally, play_run
 
 BASELINES = ("random", "scripted")
@@ -37,13 +39,29 @@ Say = Callable[[str], None]
 
 
 @dataclass
-class BenchConfig:
-    suite: Suite
-    agents: list[str]  # baseline names and/or SCAFFOLDS keys, in run order
-    provider: ModelProvider | None = None  # required when any scaffold runs
+class JobSpec:
+    """One queued run, self-contained: who plays, and which game they play."""
+
+    agent: str  # a baseline name or a SCAFFOLDS key
+    seed: str
+    character: str = "ironclad"
+    ascension: int = 0
+    provider: ModelProvider | None = None  # required when the agent is a scaffold
     api: str | None = None
     reasoning_effort: str | None = None
     max_rounds: int = 10
+
+    @property
+    def name(self) -> str:
+        """How the job reads in narration and summaries."""
+        who = self.provider.model if self.provider is not None else self.agent
+        effort = f" effort={self.reasoning_effort}" if self.reasoning_effort else ""
+        return f"{who}{effort} a{self.ascension} {self.seed}"
+
+
+@dataclass
+class QueueConfig:
+    jobs: list[JobSpec] = field(default_factory=list)
     port: int = 9999
     instances: int = 1
     log_dir: Path = LOG_DIR
@@ -52,8 +70,7 @@ class BenchConfig:
 
 @dataclass
 class JobResult:
-    agent: str
-    seed: str
+    job: JobSpec
     run_id: str
     trajectory: Path
     error: str | None = None
@@ -96,20 +113,18 @@ class LogRouter:
             self._log.line(tag, text)
 
 
-async def run_suite(
-    config: BenchConfig, say: Say, server: HarnessServer | None = None
+async def run_jobs(
+    config: QueueConfig, say: Say, server: HarnessServer | None = None
 ) -> list[JobResult]:
-    """Run agents x seeds; returns one JobResult per job attempted."""
-    jobs: asyncio.Queue[tuple[str, str]] = asyncio.Queue()
-    for agent in config.agents:
-        for seed in config.suite.seeds:
-            jobs.put_nowait((agent, seed))
+    """Run the queued jobs in order; returns one JobResult per job attempted."""
+    jobs: asyncio.Queue[JobSpec] = asyncio.Queue()
+    for job in config.jobs:
+        jobs.put_nowait(job)
     results: list[JobResult] = []
 
     async def drive(srv: HarnessServer) -> None:
         say(
-            f"{jobs.qsize()} jobs ({', '.join(config.agents)} x "
-            f"{len(config.suite.seeds)} seeds) on {config.instances} game instance(s); "
+            f"{jobs.qsize()} jobs on {config.instances} game instance(s); "
             f"listening on {srv.host}:{srv.port} -- start the external process in-game"
         )
         await asyncio.gather(
@@ -131,7 +146,7 @@ async def _worker(
     index: int,
     server: HarnessServer,
     jobs: asyncio.Queue,
-    config: BenchConfig,
+    config: QueueConfig,
     results: list[JobResult],
     say: Say,
 ) -> None:
@@ -145,12 +160,10 @@ async def _worker(
         return
     while True:
         try:
-            agent_name, seed = jobs.get_nowait()
+            job = jobs.get_nowait()
         except asyncio.QueueEmpty:
             return
-        result = await asyncio.to_thread(
-            _run_job, env, router, agent_name, seed, config, say
-        )
+        result = await asyncio.to_thread(_run_job, env, router, job, config, say)
         results.append(result)
         if result.fatal:
             say(
@@ -163,18 +176,19 @@ async def _worker(
 def _run_job(
     env: CommunicationModEnv,
     router: LogRouter,
-    agent_name: str,
-    seed: str,
-    config: BenchConfig,
+    job: JobSpec,
+    config: QueueConfig,
     say: Say,
 ) -> JobResult:
-    suite = config.suite
-    log = ProtocolLog(config.log_dir, name=f"bench-{agent_name}-{seed}")
+    # Queued runs are ordinary runs: same log/trajectory names as a manual
+    # `play` session, with the job's identity carried by the run record, not
+    # the filename.
+    log = ProtocolLog(config.log_dir, name="play")
     router.attach(log)
     run_id = log.path.stem
 
     def narrate(msg: str) -> None:
-        say(f"[{agent_name} {seed}] {msg}")
+        say(f"[{job.name}] {msg}")
         log.line("--", msg)
 
     tally = RunTally()
@@ -183,11 +197,12 @@ def _run_job(
     error: str | None = None
     fatal = False
     try:
-        agent, system_prompt, identity = _build_agent(agent_name, seed, config)
+        agent, system_prompt, identity = _build_agent(job)
+        effort_note = f", effort {identity.reasoning_effort}" if identity.reasoning_effort else ""
         log.line(
             "--",
-            f"bench job: {identity.model} ({identity.api} api) | {agent_name} agent | "
-            f"{suite.character} ascension {suite.ascension} seed {seed} | suite {suite.name}",
+            f"model: {identity.model} @ {identity.base_url} ({identity.api} api{effort_note}) | "
+            f"{job.agent} agent | {job.character} ascension {job.ascension} seed {job.seed}",
         )
         if system_prompt is not None:
             log.line("--", "system prompt (constant; logged once):")
@@ -197,14 +212,14 @@ def _run_job(
         recorder = RunRecorder(
             store,
             run_id=run_id,
-            seed=seed,
-            character=suite.character,
-            ascension=suite.ascension,
+            seed=job.seed,
+            character=job.character,
+            ascension=job.ascension,
             model=identity.model,
             provider_base_url=identity.base_url,
             api=identity.api,
             reasoning_effort=identity.reasoning_effort,
-            agent=agent_name,
+            agent=job.agent,
             prompt_hash=identity.prompt_hash,
             tool_schema_hash=identity.tool_schema_hash,
         )
@@ -214,9 +229,9 @@ def _run_job(
             env.state,
             agent,
             recorder,
-            character=suite.character,
-            ascension=suite.ascension,
-            seed=seed,
+            character=job.character,
+            ascension=job.ascension,
+            seed=job.seed,
             log=log,
             say=narrate,
             tally=tally,
@@ -226,7 +241,7 @@ def _run_job(
         if not fatal and (tally.end_state or {}).get("in_game"):
             error = error or "run stopped while still in game"
             fatal = True
-    except Exception as exc:  # one bad job must not take the suite down silently
+    except Exception as exc:  # one bad job must not take the queue down silently
         error = f"{type(exc).__name__}: {exc}"
         # If the game is still mid-run (or the wire is gone), the next job
         # cannot start; only a clean menu state lets the worker continue.
@@ -248,8 +263,7 @@ def _run_job(
         router.detach()
         log.close()
     return JobResult(
-        agent=agent_name,
-        seed=seed,
+        job=job,
         run_id=run_id,
         trajectory=config.log_dir / "trajectories" / f"{run_id}.jsonl",
         error=error,
@@ -257,36 +271,34 @@ def _run_job(
     )
 
 
-def _build_agent(
-    agent_name: str, seed: str, config: BenchConfig
-) -> tuple[object, str | None, AgentIdentity]:
+def _build_agent(job: JobSpec) -> tuple[object, str | None, AgentIdentity]:
     """The agent, its system prompt (None for baselines), and its identity."""
-    if agent_name == "random":
+    if job.agent == "random":
         # Seed the pick sequence with the run seed: same game, same walk.
         return (
-            RandomAgent(rng_seed=seed),
+            RandomAgent(rng_seed=job.seed),
             None,
             AgentIdentity("random", "builtin", "none", None, None, None),
         )
-    if agent_name == "scripted":
+    if job.agent == "scripted":
         return (
             ScriptedAgent(),
             None,
             AgentIdentity("scripted", "builtin", "none", None, None, None),
         )
-    cls, prompt_template = SCAFFOLDS[agent_name]
-    provider = config.provider
+    cls, prompt_template = SCAFFOLDS[job.agent]
+    provider = job.provider
     if provider is None:
-        raise ValueError(f"agent {agent_name!r} needs a model provider; none configured")
-    system_prompt = prompt_template.format(character=config.suite.character.upper())
+        raise ValueError(f"agent {job.agent!r} needs a model provider; none configured")
+    system_prompt = prompt_template.format(character=job.character.upper())
     identity = AgentIdentity(
         model=provider.model,
         base_url=provider.base_url,
-        api=config.api or "chat",
+        api=job.api or "chat",
         prompt_hash=hashlib.sha256(system_prompt.encode("utf-8")).hexdigest()[:16],
         tool_schema_hash=hashlib.sha256(
             json.dumps(ToolRegistry().openai_tools(), sort_keys=True).encode("utf-8")
         ).hexdigest()[:16],
-        reasoning_effort=config.reasoning_effort,
+        reasoning_effort=job.reasoning_effort,
     )
-    return cls(provider, max_rounds=config.max_rounds), system_prompt, identity
+    return cls(provider, max_rounds=job.max_rounds), system_prompt, identity

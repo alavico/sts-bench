@@ -1,4 +1,4 @@
-"""Shared CLI plumbing for the entry-point modules (play, bench, smoke).
+"""Shared CLI plumbing for the entry-point modules (play, queue, bench, smoke).
 
 Tiny on purpose: the argument definitions and `.env` loading that were
 otherwise copy-pasted across the entry points live here once.

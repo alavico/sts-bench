@@ -1,7 +1,7 @@
 """One run, played end to end by an agent through a connected game.
 
 Every front end drives runs through this same loop -- the single-run play
-CLI and the suite runner differ only in setup. Per decision: parse the state
+CLI and the job-queue runner differ only in setup. Per decision: parse the state
 (unparsed states fall back to scripted raw play and get captured), ask the
 agent, guard against screen-cycle loops, translate, step, and record. The
 scripted smoke policy stays underneath as the safety net, and every fallback

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from sts_bench.report.campaign import CampaignRun, build_campaign_data, render_campaign_html
-from sts_bench.runner import SUITES
 
 from test_runner_metrics import make_decision, make_floor, make_run, strategic_records
 
@@ -40,9 +39,8 @@ def campaign_runs():
 
 
 def test_campaign_data_groups_configs_and_links_runs():
-    data = build_campaign_data(campaign_runs(), suite=SUITES["smoke"])
-    assert data["suite"]["name"] == "smoke"
-    assert data["seeds"][:2] == ["STSBENCH1", "STSBENCH2"]  # suite order kept
+    data = build_campaign_data(campaign_runs())
+    assert data["seeds"] == ["STSBENCH1", "STSBENCH2"]  # first-seen order
 
     labels = [config["label"] for config in data["configs"]]
     assert labels == ["test-model", "random"]
@@ -118,12 +116,12 @@ def test_campaign_runs_have_no_cost_without_pricing():
 
 
 def test_campaign_title_is_the_product_name():
-    data = build_campaign_data(campaign_runs(), suite=SUITES["smoke"])
+    data = build_campaign_data(campaign_runs())
     assert data["title"] == "Slay the Spire Bench"
 
 
 def test_campaign_page_is_self_contained_and_script_safe():
-    data = build_campaign_data(campaign_runs(), suite=SUITES["smoke"])
+    data = build_campaign_data(campaign_runs())
     # a hostile run id must not be able to close the script tag
     data["runs"][0]["run_id"] = "</script><script>alert(1)<!--"
     page = render_campaign_html(data)

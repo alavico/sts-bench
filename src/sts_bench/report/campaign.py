@@ -16,9 +16,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from ..replay import group
-from ..runner.metrics import RunMetrics, SuiteAggregate, aggregate, hash_drift
+from ..runner.metrics import ConfigAggregate, RunMetrics, aggregate, hash_drift
 from ..runner.reports import Pricing, run_cost
-from ..runner.seeds import Suite
 from ..trajectory import FloorRecord
 from .page import render_html
 
@@ -70,7 +69,6 @@ def _start_point(floors: list[FloorRecord]) -> dict[str, Any] | None:
 def build_campaign_data(
     runs: list[CampaignRun],
     *,
-    suite: Suite | None = None,
     pricing: Pricing | None = None,
     excluded_runs: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
@@ -79,19 +77,9 @@ def build_campaign_data(
     return {
         "title": "Slay the Spire Bench",
         "generated_at": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
-        "suite": (
-            {
-                "name": suite.name,
-                "character": suite.character,
-                "ascension": suite.ascension,
-                "seeds": list(suite.seeds),
-            }
-            if suite
-            else None
-        ),
         "warnings": hash_drift(aggregates),
         "excluded_runs": excluded_runs or [],
-        "seeds": _seed_order(suite, runs),
+        "seeds": _seed_order(runs),
         "configs": [_config(agg, pricing or {}) for agg in aggregates],
         "runs": [_run(run, by_config[run.metrics.config], pricing or {}) for run in runs],
     }
@@ -107,9 +95,9 @@ def render_campaign_html(data: dict[str, Any]) -> str:
     )
 
 
-def _seed_order(suite: Suite | None, runs: list[CampaignRun]) -> list[str]:
-    """Suite order first, then any seed the suite didn't name, first seen."""
-    seeds = list(suite.seeds) if suite else []
+def _seed_order(runs: list[CampaignRun]) -> list[str]:
+    """Seeds in first-seen order across the runs."""
+    seeds: list[str] = []
     for run in runs:
         seed = run.metrics.seed or "(random)"
         if seed not in seeds:
@@ -117,7 +105,7 @@ def _seed_order(suite: Suite | None, runs: list[CampaignRun]) -> list[str]:
     return seeds
 
 
-def _config(agg: SuiteAggregate, pricing: Pricing) -> dict[str, Any]:
+def _config(agg: ConfigAggregate, pricing: Pricing) -> dict[str, Any]:
     prompt, completion = agg.mean_tokens_per_run
     return {
         "label": agg.key.label,
@@ -154,7 +142,7 @@ def _run_cost(m: RunMetrics, pricing: Pricing) -> float | None:
     return run_cost(m.prompt_tokens, m.completion_tokens, m.cache_read_tokens, rates, m.model)
 
 
-def _cost_per_run(agg: SuiteAggregate, pricing: Pricing) -> float | None:
+def _cost_per_run(agg: ConfigAggregate, pricing: Pricing) -> float | None:
     costs = [_run_cost(run, pricing) for run in agg.runs]
     costs = [c for c in costs if c is not None]
     return sum(costs) / len(costs) if costs else None

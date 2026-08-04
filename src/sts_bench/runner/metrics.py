@@ -263,8 +263,8 @@ class RunMetrics:
 
 
 @dataclass
-class SuiteAggregate:
-    """One configuration's runs over a seed suite, ready for a report row."""
+class ConfigAggregate:
+    """One configuration's runs, ready for a report row."""
 
     key: ConfigKey
     runs: list[RunMetrics]
@@ -357,18 +357,18 @@ class SuiteAggregate:
         )
 
 
-def aggregate(runs: Iterable[RunMetrics]) -> list[SuiteAggregate]:
+def aggregate(runs: Iterable[RunMetrics]) -> list[ConfigAggregate]:
     """Group runs by configuration, in first-seen order."""
-    groups: dict[ConfigKey, SuiteAggregate] = {}
+    groups: dict[ConfigKey, ConfigAggregate] = {}
     for run in runs:
         entry = groups.get(run.config)
         if entry is None:
-            groups[run.config] = entry = SuiteAggregate(key=run.config, runs=[])
+            groups[run.config] = entry = ConfigAggregate(key=run.config, runs=[])
         entry.runs.append(run)
     return list(groups.values())
 
 
-def hash_drift(aggregates: list[SuiteAggregate]) -> list[str]:
+def hash_drift(aggregates: list[ConfigAggregate]) -> list[str]:
     """Identical setups whose prompt or tool schema was revised between runs.
 
     Most row splits need no comment: different ascension, character, or

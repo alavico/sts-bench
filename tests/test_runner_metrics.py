@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from sts_bench.env.rewards import Reward
-from sts_bench.runner import SUITES, RunMetrics, aggregate, comparison_report, hash_drift
+from sts_bench.runner import RunMetrics, aggregate, comparison_report, hash_drift
 from sts_bench.trajectory import (
     DecisionRecord,
     FloorRecord,
@@ -305,11 +305,8 @@ def test_comparison_report_renders():
             [make_run(run_id="run-3", model="baseline-random", agent="random", prompt_hash=None, tool_hash=None, floor_reached=4)]
         ),
     ]
-    report = comparison_report(
-        runs, suite=SUITES["smoke"], pricing={"test-model": (0.25, 2.0)}
-    )
-    assert "Suite **smoke**" in report
-    assert "STSBENCH1, STSBENCH2" in report
+    report = comparison_report(runs, pricing={"test-model": (0.25, 2.0)})
+    assert "STSBENCH1" in report and "STSBENCH2" in report
     assert "| test-model | 2 | 1 |" in report
     assert "**51 W**" in report  # the win, marked in the by-seed grid
     assert "baseline-random" in report  # labels name the model, never the agent
@@ -339,10 +336,9 @@ def test_report_from_files_combines_sessions(tmp_path):
             store.append(make_run(run_id=run_id, model=model, agent=agent))
         paths.append(tmp_path / f"{run_id}.jsonl")
 
-    report = report_from_files(paths, suite=SUITES["smoke"])
+    report = report_from_files(paths)
     assert "| scripted | 1 |" in report  # baseline label collapses model/agent
     assert "| test-model | 1 |" in report
-    assert "Suite **smoke**" in report
 
 
 def test_effort_distinguishes_configurations():
