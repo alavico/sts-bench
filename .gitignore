@@ -18,7 +18,9 @@ logs/
 queue.log
 runs.txt
 
-# Personal writing workspace (blog drafts, run-tracking sheets)
+# Personal writing workspace (blog drafts, planning docs, run-tracking sheets)
+docs/plan.md
+docs/spec.md
 docs/blog-runs.md
 docs/blog-plan.md
 docs/blog-artifacts/

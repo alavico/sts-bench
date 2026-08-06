@@ -110,5 +110,3 @@ uv run python -m sts_bench.report.dev logs/*/trajectories/bench-*.jsonl --suite 
 ```
 
 The trajectories are read once; each refresh re-renders from `report/assets/` on disk, so edits to `campaign.js`/`campaign.css`/`campaign.html` show in well under a second (changes to the Python payload need a server restart). It writes nothing and shares only the render functions with `bench`.
-
-`docs/plan.md` tracks milestones and design decisions.
