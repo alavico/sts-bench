@@ -6,7 +6,11 @@ Results from the benchmark campaign are published at [alavico.github.io/sts-benc
 
 ## Setup
 
-Keep API keys in a `.env` file in the repo root (gitignored, loaded automatically):
+The harness drives the real game through CommunicationMod:
+
+1. Install Slay the Spire with [ModTheSpire](https://github.com/kiooeht/ModTheSpire) and [CommunicationMod](https://github.com/ForgottenArbiter/CommunicationMod).
+2. Set the `command` option in CommunicationMod's config to launch the relay, e.g. `command=python3 /path/to/sts-bench/relay.py`. The relay forwards the mod's stdin/stdout to a TCP socket on port 9999; the harness is the server listening there, which is why it can run in your terminal and survive game restarts.
+3. Keep API keys in a `.env` file in the repo root (gitignored, loaded automatically):
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...
@@ -25,16 +29,17 @@ The default scaffold keeps one conversation per floor, so the model sees its ear
 
 ## Choosing the backend
 
-`--api` selects the wire format; `--model` the model. Each flagship provider runs through its native API surface — never a compat shim.
+`--api` selects the wire format; `--model` the model. Each provider runs through its native API rather than a compat shim.
 
 | Command | Plays |
 |---|---|
 | `uv run python -m sts_bench.play` | Claude via the native Messages API (`auto` picks it from the Anthropic key; default `claude-haiku-4-5`) |
 | `... --model claude-sonnet-4-6` | Claude native, specific model |
 | `... --api responses --model gpt-5.4` | OpenAI via the Responses API (reasoning summaries land in the log) |
+| `... --api gemini --model gemini-3.5-pro` | Gemini via the native API (thought summaries and exact thinking-token counts; default `gemini-3.5-flash`) |
 | `... --api chat --base-url http://localhost:11434/v1 --model llama3.3` | Any OpenAI-compatible server (Ollama, vLLM, ...) |
 
-`--reasoning-effort <level>` makes the model deliberate and surfaces what reasoning the API exposes (OpenAI: `minimal`–`high`; Claude: `low`–`max`, also enables adaptive thinking). Unset means provider default — for gpt-5-class models, essentially no reasoning.
+`--reasoning-effort <level>` makes the model deliberate and surfaces what reasoning the API exposes (OpenAI: `minimal`–`high`; Claude: `low`–`max`, which also turns on adaptive thinking). Unset uses the provider default, which for gpt-5-class models means almost no reasoning.
 
 Precedence: CLI flags > shell environment > `.env`. `STS_BENCH_API`, `STS_BENCH_MODEL`, `STS_BENCH_BASE_URL`, and `STS_BENCH_API_KEY` pin a default backend in the environment when you'd otherwise retype flags.
 
@@ -42,7 +47,7 @@ For Anthropic Sonnet models, sts-bench applies a local 30,000 input-token-per-mi
 
 ## Logs
 
-Logs are grouped one folder per day, `logs/<date>/`: protocol logs at the session root, with `trajectories/`, `reports/`, and `html/` subfolders separating the data, the markdown reports, and the rendered pages. Each run writes `logs/<date>/play-<timestamp>.log` (`logs/<date>/latest.log` symlinks the newest): game wire traffic verbatim (`>>`/`<<`), model traffic (`>m`/`<m`, including reasoning), and a readable narrative (`--`). States the schema can't parse are captured to `logs/unparsed/` (a cross-session harvest queue) — they're schema gaps; promote them to fixtures once fixed.
+Logs are grouped one folder per day, `logs/<date>/`: protocol logs at the session root, with `trajectories/`, `reports/`, and `html/` subfolders separating the data, the markdown reports, and the rendered pages. Each run writes `logs/<date>/play-<timestamp>.log` (`logs/<date>/latest.log` symlinks the newest): game wire traffic verbatim (`>>`/`<<`), model traffic (`>m`/`<m`, including reasoning), and a readable narrative (`--`). States the schema can't parse are captured to `logs/unparsed/` — each is a schema gap to fix. `uv run python -m sts_bench.harvest <log>` promotes any structurally new states from a session log into test fixtures.
 
 ## Trajectories
 
@@ -53,7 +58,7 @@ uv run python -m sts_bench.replay logs/<date>/trajectories/play-<timestamp>.json
 uv run python -m sts_bench.replay <file> --floor 14   # just the floor that went wrong
 ```
 
-Every replay verifies the packet property: each floor's decisions tile its stored conversation exactly — no message stored twice, none orphaned.
+Every replay also checks that each floor's decisions exactly tile the stored conversation — no message recorded twice, none orphaned.
 
 Resume a stopped run from its trajectory, preserving the original model/API/scaffold config and continuing the same JSONL after a successful replay to the checkpoint:
 
@@ -95,7 +100,9 @@ Reporting is a separate pass over whatever trajectories you point it at — ever
 uv run python -m sts_bench.bench --report-from logs/*/trajectories/*.jsonl --pricing costs.json
 ```
 
-The report lands in two forms — markdown in `logs/<date>/reports/` (one row per model/scaffold/effort configuration, floor-by-seed grid, per-run table; printed to stdout) and the consolidated campaign HTML page at `logs/campaign.html` (sortable configuration table with strategic columns like card-skip rate and potion use, floor-by-seed heatmap, floor-reached dot plot, HP-over-the-run overlay, spend bars) whose every run links down to a single-run HTML report rendered in that session's `html/` folder. `--pricing costs.json` (model → `[input, output]` dollars per Mtok) adds the cost column. Runs whose prompt or tool schemas differ are never averaged together — the report keeps them in separate rows and says why.
+The report lands in two forms. Markdown goes to `logs/<date>/reports/` and stdout: one row per model/scaffold/effort configuration, a floor-by-seed grid, and a per-run table. The campaign HTML page at `logs/campaign.html` consolidates every run: a sortable configuration table with strategic columns like card-skip rate and potion use, a floor-by-seed heatmap, a floor-reached dot plot, an HP-over-the-run overlay, and spend bars — and every run links down to its single-run HTML report in that session's `html/` folder.
+
+`--pricing costs.json` (model → `[input, output]` dollars per Mtok) adds the cost column. Runs whose prompt or tool schemas differ are never averaged together — the report keeps them in separate rows and says why.
 
 ## Development
 
@@ -103,10 +110,10 @@ The report lands in two forms — markdown in `logs/<date>/reports/` (one row pe
 uv run pytest
 ```
 
-Iterating on the campaign report's look is a live loop, not a rebuild. Serve any set of trajectories and the page reloads itself whenever you save an asset:
+The campaign page's assets reload live: serve any set of trajectories and the page re-renders whenever you save an asset:
 
 ```bash
-uv run python -m sts_bench.report.dev logs/*/trajectories/bench-*.jsonl --suite smoke
+uv run python -m sts_bench.report.dev logs/*/trajectories/*.jsonl --pricing costs.json
 ```
 
-The trajectories are read once; each refresh re-renders from `report/assets/` on disk, so edits to `campaign.js`/`campaign.css`/`campaign.html` show in well under a second (changes to the Python payload need a server restart). It writes nothing and shares only the render functions with `bench`.
+The trajectories are read once; each refresh re-renders from `report/assets/` on disk, so edits to `campaign.js`/`campaign.css`/`campaign.html` show immediately (changes to the Python payload need a server restart). It writes nothing and shares only the render functions with `bench`.
