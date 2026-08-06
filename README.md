@@ -1,6 +1,6 @@
 # sts-bench
 
-LLMs play Slay the Spire end to end via [CommunicationMod](https://github.com/ForgottenArbiter/CommunicationMod). The agent gets a compact state digest, queries observation tools for detail, and commits to one typed action per decision point.
+A benchmark that measures how well LLMs can play Slay the Spire via [CommunicationMod](https://github.com/ForgottenArbiter/CommunicationMod). The agent gets a compact state digest, queries observation tools for detail, and commits to one typed action per decision point.
 
 Results from the benchmark campaign are published at [alavico.github.io/sts-bench-results](https://alavico.github.io/sts-bench-results/) — the campaign table links down to a per-run report with every decision's full conversation.
 
@@ -9,8 +9,8 @@ Results from the benchmark campaign are published at [alavico.github.io/sts-benc
 The harness drives the real game through CommunicationMod:
 
 1. Install Slay the Spire with [ModTheSpire](https://github.com/kiooeht/ModTheSpire) and [CommunicationMod](https://github.com/ForgottenArbiter/CommunicationMod).
-2. Set the `command` option in CommunicationMod's config to launch the relay, e.g. `command=python3 /path/to/sts-bench/relay.py`. The relay forwards the mod's stdin/stdout to a TCP socket on port 9999; the harness is the server listening there, which is why it can run in your terminal and survive game restarts.
-3. Keep API keys in a `.env` file in the repo root (gitignored, loaded automatically):
+2. Set the `command` option in CommunicationMod's config to launch the relay, e.g. `command=python3 /path/to/sts-bench/relay.py`. The relay forwards the mod's stdin/stdout to a TCP socket on port 9999; the harness is the server listening there.
+3. Keep API keys in a `.env` file in the repo root
 
 ```bash
 ANTHROPIC_API_KEY=sk-ant-...
@@ -29,7 +29,7 @@ The default scaffold keeps one conversation per floor, so the model sees its ear
 
 ## Choosing the backend
 
-`--api` selects the wire format; `--model` the model. Each provider runs through its native API rather than a compat shim.
+`--api` selects the wire format; `--model` the model. Each provider runs through its native API.
 
 | Command | Plays |
 |---|---|
@@ -58,7 +58,7 @@ uv run python -m sts_bench.replay logs/<date>/trajectories/play-<timestamp>.json
 uv run python -m sts_bench.replay <file> --floor 14   # just the floor that went wrong
 ```
 
-Every replay also checks that each floor's decisions exactly tile the stored conversation — no message recorded twice, none orphaned.
+Every replay also checks that each floor's decisions exactly tile the stored conversation.
 
 Resume a stopped run from its trajectory, preserving the original model/API/scaffold config and continuing the same JSONL after a successful replay to the checkpoint:
 
