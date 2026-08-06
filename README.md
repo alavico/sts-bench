@@ -2,6 +2,8 @@
 
 LLMs play Slay the Spire end to end via [CommunicationMod](https://github.com/ForgottenArbiter/CommunicationMod). The agent gets a compact state digest, queries observation tools for detail, and commits to one typed action per decision point.
 
+Results from the benchmark campaign are published at [alavico.github.io/sts-bench-results](https://alavico.github.io/sts-bench-results/) — the campaign table links down to a per-run report with every decision's full conversation.
+
 ## Setup
 
 Keep API keys in a `.env` file in the repo root (gitignored, loaded automatically):

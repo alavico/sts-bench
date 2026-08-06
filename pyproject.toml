@@ -3,6 +3,7 @@ name = "sts-bench"
 version = "0.1.0"
 description = "A model-agnostic harness for having LLMs play Slay the Spire."
 readme = "README.md"
+license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.13.4",
