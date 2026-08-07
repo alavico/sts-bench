@@ -296,9 +296,6 @@ const METRICS = [
   { key: "win", label: "Wins", col: "wins / runs", of: (r) => r.winRate, max: 1,
     fmt: (_v, r) => `${r.wins}/${r.n}`, floorAxis: false,
     desc: "Outright wins out of attempted runs; counts stay visible because most configurations have limited replication." },
-  { key: "cost", label: "Cost", col: "cost / run · lower is better", of: (r) => r.cost, max: null,
-    fmt: (v) => money(v), floorAxis: false, lowerBetter: true,
-    desc: "Average estimated cost of an attempted run, from tokens actually spent. Longer bars mean lower cost." },
 ];
 
 function rankedLlm(metric) {
@@ -391,6 +388,15 @@ const CHARACTER = (DATA.configs[0] || {}).character || "ironclad";
 
 function header() {
   const character = CHARACTER.charAt(0).toUpperCase() + CHARACTER.slice(1);
+  const modelRuns = LLM.reduce((total, row) => total + row.n, 0);
+  const baselineRuns = BASELINES.reduce((total, row) => total + row.n, 0);
+  const scope = [
+    `${character} only`,
+    `Ascension ${ASCENSIONS.join(", ") || "0"}`,
+    `${plural(modelRuns, "model run")} + ${plural(baselineRuns, "baseline")}`,
+    EXCLUDED_RUNS.length ? `${plural(EXCLUDED_RUNS.length, "pilot")} excluded` : null,
+    plural(SEEDS.length, "fixed seed"),
+  ].filter(Boolean);
   return el("header", {},
     el("h1", {}, "Slay the Spire LLM Benchmark"),
     el("p", { class: "header-dek" },
@@ -398,16 +404,14 @@ function header() {
       el("a", { href: "https://www.megacrit.com/", target: "_blank", rel: "noreferrer" },
         "Slay the Spire"),
       ". At each decision point, a model receives a text representation of the current game"
-      + " state and selects an action. Conversation context is retained during combat and"
+      + " state and selects an action. Conversation context is retained within each floor and"
       + " reset between floors."),
     el("p", { class: "header-findings" },
       "Because of budget constraints, most model configurations were evaluated in a single"
       + " Ironclad run on one fixed seed. These early results show that the strongest tested"
       + " models can win at Ascension 10, while smaller models and lower reasoning settings"
       + " tended to reach lower floors."),
-    el("div", { class: "metaline" },
-      `${character} only · Ascension ${ASCENSIONS.join(", ") || "0"}`
-      + ` · ${plural(DATA.runs.length, "run")} · ${plural(SEEDS.length, "fixed seed")}`));
+    el("div", { class: "metaline" }, scope.join(" · ")));
 }
 
 /* ---------- leaderboard ---------- */
@@ -427,7 +431,7 @@ function lbTrack(row, metric, axisMax, base) {
       el("span", { class: "lb-mark", style: `left:${m.at * 100}%` })) : null,
     el("span", { class: "lb-bar", style: `background:${row.color};width:${width}%` }),
     metric.floorAxis && !base ? row.runs.map((run) => el("a", {
-      class: "lb-dot",
+      class: "lb-dot" + (["UNFINISHED", "CRASHED"].includes(run.outcome) ? " unfinished" : ""),
       href: run.page || null, target: run.page ? "_blank" : null,
       title: `${run.seed}: floor ${run.floor} · ${run.outcome}`,
       style: `left:${(Math.min(run.floor, WIN_FLOOR) / WIN_FLOOR) * 100}%;`
@@ -450,6 +454,7 @@ function leaderboardCard(rows, baselines, metric, title) {
   const entries = rows.map((row, i) => {
     const value = metric.of(row);
     const rank = i > 0 && value === priorValue ? priorRank : i + 1;
+    const unfinished = row.runs.filter((run) => ["UNFINISHED", "CRASHED"].includes(run.outcome)).length;
     priorValue = value;
     priorRank = rank;
     return el("div", { class: "lb-row lb-entry" },
@@ -457,7 +462,10 @@ function leaderboardCard(rows, baselines, metric, title) {
       el("div", { class: "lb-name" },
         el("div", { class: "who" }, configDot(row.color), el("b", {}, row.model)),
         el("div", { class: "lb-sub" }, row.sub, " ",
-          el("span", { class: "sample-badge" + (row.n === 1 ? " single" : "") }, `n=${row.n}`))),
+          el("span", { class: "sample-badge" + (row.n === 1 ? " single" : "") }, `n=${row.n}`),
+          unfinished
+            ? el("span", { class: "status-badge" }, `${unfinished} unfinished`)
+            : null)),
       lbTrack(row, metric, axisMax, false),
       el("div", { class: "lb-val" },
         el("b", { style: "color:" + row.color }, metric.fmt(value, row)),
@@ -487,6 +495,7 @@ function leaderboard() {
     const head = sectionHead("Leaderboard",
       metric.desc
       + (metric.floorAxis ? ` Victory means clearing the Act III boss at floor ${WIN_FLOOR}.` : "")
+      + (metric.floorAxis ? " Unfinished runs are labeled and shown with dashed gold dots." : "")
       + (store.ascFilter === "all" ? " Overview mode keeps ascensions in separate ranking groups." : ""),
       ctlCol("Metric", segGroup(METRICS.map((m) => ({
           label: m.label, on: m === metric,
@@ -967,6 +976,14 @@ function runLog() {
             el("td", {}, int(run.invalid)),
             el("td", {}, money(run.cost)));
         })))),
+      el("p", { class: "metric-defs" },
+        "Score is ",
+        el("a", {
+          href: "https://slay-the-spire.fandom.com/wiki/Score",
+          target: "_blank",
+          rel: "noreferrer",
+        }, "Slay the Spire's end-of-run game score"),
+        "; unfinished runs have no final score."),
     ];
   }, null, "runs");
 }

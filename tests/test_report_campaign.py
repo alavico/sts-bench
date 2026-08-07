@@ -130,3 +130,19 @@ def test_campaign_page_is_self_contained_and_script_safe():
     assert '"label":"test-model"' in page
     assert page.count("</script>") == 2  # the data tag and the renderer, nothing injected
     assert "http://" not in page.split("</head>")[0]  # no external assets in the head
+
+
+def test_campaign_page_explains_scope_and_incomplete_results():
+    data = build_campaign_data(
+        campaign_runs(),
+        excluded_runs=[{"run_id": "pilot-1", "reason": "preliminary prompt"}],
+    )
+    page = render_campaign_html(data)
+
+    assert "Conversation context is retained within each floor" in page
+    assert 'plural(modelRuns, "model run")' in page
+    assert 'plural(baselineRuns, "baseline")' in page
+    assert 'plural(EXCLUDED_RUNS.length, "pilot")' in page
+    assert "Unfinished runs are labeled and shown with dashed gold dots" in page
+    assert "https://slay-the-spire.fandom.com/wiki/Score" in page
+    assert 'label: "Cost", col: "cost / run' not in page

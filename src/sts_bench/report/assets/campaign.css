@@ -96,6 +96,7 @@ section > h2 { font-size: 24px; margin: 0 0 4px; }
   position: absolute; top: 50%; width: 9px; height: 9px; border-radius: 50%;
   transform: translate(-50%, -50%); box-shadow: 0 0 0 2px var(--panel); cursor: pointer;
 }
+.lb-dot.unfinished { border-color: var(--gold) !important; border-style: dashed !important; }
 .lb-val { text-align: right; }
 .lb-val b { display: block; font-family: var(--font-display); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 22px; line-height: 1; }
 .lb-meta { font-size: 11px; color: var(--dim); margin-top: 3px; }
@@ -105,6 +106,11 @@ section > h2 { font-size: 24px; margin: 0 0 4px; }
   font-family: var(--font-mono); vertical-align: 1px;
 }
 .sample-badge.single { color: var(--warn-fg); border-color: var(--warn-line); }
+.status-badge {
+  display: inline-block; border: 1px dashed var(--gold); border-radius: 4px;
+  padding: 0 4px; margin-left: 4px; color: var(--gold); font-size: 10px;
+  font-family: var(--font-mono); vertical-align: 1px;
+}
 
 .lb-base-band { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--line); }
 .lb-base-band .band-label { margin-bottom: 6px; }
@@ -193,6 +199,7 @@ a.hp-legend-item:hover { color: var(--text); }
 .scatter-key-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .scatter-key-value { color: var(--dim); font-family: var(--font-mono); white-space: nowrap; }
 .pricing-note, .metric-defs { color: var(--dim); font-size: 11.5px; margin: 9px 2px 0; }
+.metric-defs a { color: var(--blue); }
 
 /* ---------- strategy & run-log tables ---------- */
 
