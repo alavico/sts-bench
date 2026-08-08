@@ -4,6 +4,8 @@ A benchmark that measures how well LLMs can play Slay the Spire via [Communicati
 
 Results from the benchmark campaign are published at [alavico.github.io/sts-bench-results](https://alavico.github.io/sts-bench-results/) — the campaign table links down to a per-run report with every decision's full conversation.
 
+Blog write up can be found [here](https://albertoaviles.co/posts/sts-bench/)
+
 ## Setup
 
 The harness drives the real game through CommunicationMod:
